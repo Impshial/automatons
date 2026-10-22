@@ -1,6 +1,6 @@
 # Automatons — Minecraft 1.20.1 / Forge
 
-A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.1 includes independent Magica, core infusion, six-part assembly, portable workers, shared work totems, varied chest-to-core particles and optional JEI recipe pages.
+A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.2 includes independent Magica, core infusion, six-part assembly, portable workers, shared work totems, varied chest-to-core particles and optional JEI recipe pages.
 
 ## Install
 
@@ -11,7 +11,7 @@ Use Java 17 and Forge 47.4.10 for Minecraft 1.20.1. Put exactly one Automatons J
 1. Craft an **Infusing Pedestal** and **Empty Magica Cores** from vanilla ingredients. Neither requires a charged core.
 2. Collect white/purple **Magica** orbs from successful player breaks of eligible vegetation. Magica has its own balance and bar below XP; it never grants XP or repairs Mending tools.
 3. Right-click the infuser with an empty or partially filled core. Stay within four blocks with Magica available. Overlapping particles leave different points across the upper chest, vary in size and speed, and curve into the core from different angles. Infusion transfers one point every four ticks. Fifty points make one completed **Magica Core** in ten seconds at 20 TPS. A green effect and one chime signal completion. Use an empty hand to retrieve it. Walking away, logging out or running out of points pauses safely. Only the donor or an operator can retrieve the inserted core; breaking the pedestal drops it once.
-4. Craft an **Automaton Pedestal**, **Totem**, **Wand**, one **Head**, one **Automaton Core**, two **Arms** and two **Legs**. The first complete setup consumes six charged cores, or 300 Magica, excluding optional upgrades.
+4. Craft an **Automaton Pedestal**, **Totem**, **Wand**, one **Head**, one **Automaton Torso**, two **Arms** and two **Legs**. The first complete setup consumes six charged cores, or 300 Magica, excluding optional upgrades.
 5. Open the Automaton Pedestal and place the six components in the body-shaped slots. Take the result on the right to assemble one Automaton item. Shift-click works when inventory space exists. The display is a preview; assembly has no additional Magica fee. This pedestal becomes the worker's home.
 6. Place the item on clear, solid ground. It starts paused and Unassigned. Open its GUI, select **Lumberton**, and insert up to three ordinary axes. It preserves the exact supplied tools and switches when one breaks.
 7. Put ordinary single or double chests near the Totem. Use the wand in **Assign** mode to select the worker and then right-click your Totem. Assignment authorizes work. **Start Work** resumes a freshly placed worker with an existing valid link.
@@ -24,7 +24,7 @@ With JEI 15.56.0.205 or newer 15.x installed, press **R** over the Automaton ite
 
 Only completed player block breaks pay, once per logical plant action. Fortune does not multiply Magica. Fake players, machine/Automaton harvesting, indirect breaks and leaf decay do not pay. Direct placement followed by breaking does not pay; natural generation and subsequent plant growth qualify.
 
-| Source | Inclusive points |
+| Source | Large-orb value (inclusive points) |
 | --- | ---: |
 | Supported natural tree logs | 3–7 |
 | Fully mature supported crops | 2–4 |
@@ -35,19 +35,29 @@ Only completed player block breaks pay, once per logical plant action. Fortune d
 | Natural leaves | 0–1 |
 | Grass and ferns | 0–1 |
 
-Zero is intentional. Initial crop support is wheat, carrots, potatoes, beetroot and nether wart. Right-click berry picking is not a block break. Source tags and ranges are editable. Magica survives death by default; a server setting controls this.
+Each small orb is exactly one-third of the corresponding large value; fractional thirds persist and appear in the HUD. Flowers and grass drop one small orb. Mature crops drop one orb, with a 10% chance of a large one. Logs drop two small orbs, plus a 40% chance of one large orb. Other source categories retain their earlier large rewards. The table preserves the existing large-orb values. A zero roll produces no orbs. Initial crop support is wheat, carrots, potatoes, beetroot and nether wart. Right-click berry picking is not a block break. Source tags and ranges are editable. Magica survives death by default; a server setting controls this.
 
 ## Shared forestry
 
 A Totem accepts multiple same-owner workers. Each keeps its own home. The queue orders trees by horizontal distance from the Totem, with stable coordinate ties; workers claim different jobs. Other workers' claimed trees produce a waiting state. They share current totem upgrades and chest controls.
 
-The base tree-root range is 16 blocks outward, a 33×33 square, with a separate ±16-block root-height allowance. A rooted tree can extend its branches or canopy beyond the square. Normal oak, birch, spruce, jungle, dark oak, acacia, mangrove and cherry growth is supported, including appropriate 2×2 trunks. Directly placed construction logs are excluded. Protected destructive areas are respected across the whole tree.
+The base tree-root range is 16 blocks outward, a 33×33 square, with a separate ±16-block root-height allowance. A rooted tree can extend its branches or canopy beyond the square. Normal oak, birch, spruce, jungle, dark oak, acacia, mangrove and cherry growth is supported, including appropriate 2×2 trunks. Loose, stripped and player-placed logs inside the range are now harvested individually, including logs used in construction. Natural trees keep the felling animation; their log grain turns horizontal halfway through the fall, before landing. Protected destructive areas are respected across the whole tree.
 
-A worker approaches beside the trunk, chops the base, fells the tree visibly, then processes grounded sections. If the long fall will not fit, it tries a compact segmented fall. Unfinished timber owns its remaining wood and progress, so packing or unloading its worker does not erase the job. An eligible colleague can take over released timber; unavailable claimants have a bounded recovery delay. Players can right-click settled timber with an axe to process a nearby remaining section through the same consumption ledger.
+A worker approaches beside the trunk, chops the base, fells the tree visibly, then processes grounded sections. If the long fall will not fit, it tries distinct nearby grounded cells. Every remaining section has a different landing coordinate, including across active timber jobs. If no safe layout fits, the standing tree waits. Older stacked timber jobs replan their landing without discarding wood. Unfinished timber owns its remaining wood and progress, so packing or unloading its worker does not erase the job. An eligible colleague can take over released timber; unavailable claimants have a bounded recovery delay. Players can right-click settled timber with an axe to process a nearby remaining section through the same consumption ledger.
+
+Workers also seek visible, reachable dropped log items resting on the ground inside their Totem’s logging range. They collect them into cargo and deliver them through the same storage system. Pickup delays, item ownership, height limits and cargo space are respected.
 
 Workers keep cargo across trees while the next output fits. Actual stack compatibility matters: nine occupied slots can still accept matching stacks. Full cargo or another required return starts a service visit. The worker deposits everything accepted across reachable enabled chests, refills empty axe slots where possible, then resumes or waits for its remaining blocker. Rejected items stay in cargo. A routine capacity check does not send a partly loaded worker to a chest.
 
 Chest output and tool-supply toggles are independent. Double chests are one inventory, and both halves must be in range and usable. New/removed chests and available space are rechecked automatically. If all storage is confirmed gone, an authorized worker returns home but retains its work link so it can recover when storage returns.
+
+The Totem's **Show Work Area** button toggles a local terrain-following preview: translucent green cubes show logging coverage; blue cubes show storage coverage. Only air cells above blocks receive markers, at one block high. The preview follows current upgrades, remains visible after closing the GUI, and clears on logout or removing the totem. **Hide Work Area** turns it off.
+
+Grass and flowers do not block movement. Workers can cut obstructing leaves near the target; solid terrain requires a reachable route. Chopping includes a continuous axe swing, target-facing head/body and progressive damage cracks. Workers move away from falling timber before it can overlap them.
+
+In Survival, breaking the base of an eligible natural tree with a stone-or-better axe fells its remaining logs. The base drops once through normal breaking; fallen sections remain available for ordinary timber processing. Creative breaks retain vanilla behavior. Player-placed logs do not trigger whole-tree player felling, but Lumbertons can harvest them individually.
+
+Default worker preparation/processing times: Stone **7/4 seconds**, Iron **5/3**, Diamond **3.5/2**, Netherite **3.25/1.75**. See the balance table for all materials, upgrades and timing rules.
 
 ## Signals and recovery
 

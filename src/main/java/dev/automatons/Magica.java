@@ -11,6 +11,36 @@ public final class Magica {
         : Ledger.get(player.getServer()).magica.getOrDefault(player.getUUID(), 0);
   }
 
+  public static int remainder(Player player) {
+    return player.getServer() == null
+        ? 0
+        : Ledger.get(player.getServer()).magicaThirds.getOrDefault(player.getUUID(), 0);
+  }
+
+  public static long thirds(Player player) {
+    return balance(player) * 3L + remainder(player);
+  }
+
+  public static long addThirds(ServerPlayer player, long amount) {
+    long old = thirds(player), maximum = Integer.MAX_VALUE * 3L + 2;
+    long delta = amount >= 0 ? Math.min(amount, maximum - old) : Math.max(amount, -old);
+    long next = old + delta;
+    Ledger data = Ledger.get(player.server);
+    data.magica.put(player.getUUID(), (int) (next / 3));
+    data.magicaThirds.put(player.getUUID(), (int) (next % 3));
+    data.setDirty();
+    sync(player);
+    return delta;
+  }
+
+  public static void clear(ServerPlayer player) {
+    addThirds(player, -thirds(player));
+  }
+
+  public static String format(int points, int remainder) {
+    return "" + points + (remainder == 1 ? "⅓" : remainder == 2 ? "⅔" : "");
+  }
+
   public static int add(ServerPlayer player, int amount) {
     int old = balance(player);
     int next = (int) Math.min(Integer.MAX_VALUE, Math.max(0, (long) old + amount));
@@ -30,6 +60,7 @@ public final class Magica {
   public static void sync(ServerPlayer p) {
     CompoundTag n = new CompoundTag();
     n.putInt("Magica", balance(p));
+    n.putInt("Thirds", remainder(p));
     Network.balance(p, n);
   }
 

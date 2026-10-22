@@ -17,9 +17,9 @@ public class TimberRenderer extends EntityRenderer<Timber> {
   @Override
   public void render(
       Timber t, float yaw, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
-    float progress = Math.min(1, (t.progress() + partial) / t.duration);
+    float progress = t.layoutReady() ? Math.min(1, (t.progress() + partial) / t.duration) : 0;
     for (int i = 0; i < t.wood.size(); i++) {
-      if (t.consumed(i) || t.segmented && progress > .9f && i != t.next()) continue;
+      if (t.consumed(i)) continue;
       pose.pushPose();
       var from = t.sources.get(i);
       var to = t.targets.get(i);
@@ -35,7 +35,7 @@ public class TimberRenderer extends EntityRenderer<Timber> {
                     .lerp(net.minecraft.world.phys.Vec3.atLowerCornerOf(to), progress)
                 : TreeFinder.fallCorner(from, to, t.blockPosition(), t.direction, progress);
         pose.translate(corner.x - t.getX() + .5, corner.y - t.getY(), corner.z - t.getZ() + .5);
-        if (progress > .85f && state.hasProperty(RotatedPillarBlock.AXIS))
+        if (progress >= .5f && state.hasProperty(RotatedPillarBlock.AXIS))
           state = state.setValue(RotatedPillarBlock.AXIS, t.direction.getAxis());
       }
 
@@ -43,6 +43,27 @@ public class TimberRenderer extends EntityRenderer<Timber> {
       Minecraft.getInstance()
           .getBlockRenderer()
           .renderSingleBlock(state, pose, buffers, light, OverlayTexture.NO_OVERLAY);
+      if (progress >= 1 && t.workIndex() == i && t.crackStage() >= 0) {
+        var crack =
+            buffers.getBuffer(
+                net.minecraft.client.resources.model.ModelBakery.DESTROY_TYPES.get(t.crackStage()));
+        var projected =
+            new com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator(
+                crack, pose.last().pose(), pose.last().normal(), 1f);
+        Minecraft.getInstance()
+            .getBlockRenderer()
+            .getModelRenderer()
+            .renderModel(
+                pose.last(),
+                projected,
+                state,
+                Minecraft.getInstance().getBlockRenderer().getBlockModel(state),
+                1,
+                1,
+                1,
+                light,
+                OverlayTexture.NO_OVERLAY);
+      }
       pose.popPose();
     }
     super.render(t, yaw, partial, pose, buffers, light);

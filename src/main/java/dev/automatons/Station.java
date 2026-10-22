@@ -304,7 +304,7 @@ public class Station extends BlockEntity implements MenuProvider {
       BlockPos column = scanColumns.get(value / height),
           pos = worldPosition.offset(column.getX(), vertical(value % height), column.getZ());
       if (!l.hasChunkAt(pos)) roundUnloaded = true;
-      else if (TreeFinder.isRoot(l, pos)) {
+      else if (l.getBlockState(pos).is(net.minecraft.tags.BlockTags.LOGS)) {
         if (pendingRoots.size() >= 256) {
           cursor--;
           break;
@@ -328,16 +328,18 @@ public class Station extends BlockEntity implements MenuProvider {
             .removeIf(
                 e ->
                     l.hasChunkAt(e.getValue().root())
-                        && !TreeFinder.isRoot(l, e.getValue().root()));
+                        && !l.getBlockState(e.getValue().root())
+                            .is(net.minecraft.tags.BlockTags.LOGS));
         break;
       }
     }
     for (int i = 0; i < 2 && !pendingRoots.isEmpty() && WorldEvents.budget(128); i++) {
       BlockPos root = pendingRoots.iterator().next();
       pendingRoots.remove(root);
-      var result = TreeFinder.inspect(l, root, this);
+      var result = TreeFinder.work(l, root, this);
       if (result.tree() != null) {
         TreeFinder.Tree tree = result.tree();
+        trees.entrySet().removeIf(e -> tree.logs().contains(e.getValue().root()));
         trees.put(tree.root().asLong(), tree);
         pendingRoots.removeIf(tree.logs()::contains);
         if (trees.size() > 512) {

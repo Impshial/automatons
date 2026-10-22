@@ -246,6 +246,7 @@ public class WorkMenu extends AbstractContainerMenu {
     CompoundTag n = new CompoundTag();
     n.putBoolean("Editable", canEdit());
     n.putInt("Magica", Magica.balance(player));
+    n.putInt("MagicaThirds", Magica.remainder(player));
     ListTag lines = new ListTag();
     if (worker != null) {
       add(lines, worker.getDisplayName().getString());

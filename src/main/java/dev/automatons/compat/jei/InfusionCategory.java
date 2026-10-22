@@ -65,12 +65,8 @@ final class InfusionCategory implements IRecipeCategory<InfusionCategory.Display
   public void draw(Display recipe, IRecipeSlotsView slots, GuiGraphics g, double x, double y) {
     AssemblyCategory.arrow(g, 74, 23);
     var font = Minecraft.getInstance().font;
-    g.drawCenteredString(
-        font,
-        Component.translatable("jei.automatons.infusion.cost", CoreItem.CAPACITY),
-        85,
-        46,
-        0xff6d408d);
+    Component cost = Component.translatable("jei.automatons.infusion.cost", CoreItem.CAPACITY);
+    g.drawString(font, cost, (170 - font.width(cost)) / 2, 46, 0xff6d408d, false);
     g.drawWordWrap(
         font,
         Component.translatable("jei.automatons.infusion.help", Balance.INFUSE_RANGE.get()),

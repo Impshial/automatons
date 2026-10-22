@@ -1,5 +1,21 @@
 # Changelog
 
+## 0.2.2
+
+- Lumbertons seek reachable dropped log items on the ground within their Totem’s range and collect them into cargo for storage.
+- Added half-size small Magica orbs worth exactly one-third of the unchanged large value, persistent fractional balances, 10% large crop chance, and two small log orbs plus a 40% large chance. Flowers/grass yield small orbs.
+- Falling logs turn horizontal halfway through the animation.
+
+- Removed overlapping stacked timber fallback: every log reserves a distinct landing cell. Unsafe/no-space trees wait; older stacked jobs migrate with their remaining wood intact.
+
+- Taller purple/white Magica bar below a raised XP bar; health/food also reserve space. JEI infusion cost text has no shadow.
+- New translated arm/leg and full 3×3 head/torso recipes. Automaton Core display name becomes Automaton Torso; the old registry ID remains for saved items.
+- Refreshed symmetrical pedestal and Magica-tipped wand textures; lowered, more transparent pedestal preview.
+- Continuous chopping swings, corrected hand transform, target gaze and standing/fallen-log damage cracks. Workers navigate away from fallen timber and clear obstructing leaves.
+- Stone-or-better player felling after a completed Survival base-log break; conserved remaining-log ledger.
+- Lumbertons now harvest loose, stripped and placed logs as well as natural trees. Grass and flowers remain passable. Totem collision is explicitly blocked in navigation so workers route around its thin base.
+- Revised tool times and five-tick rounding keep Diamond and Netherite measurably faster. Show Work Area toggles one-block-high green/blue air-cell range markers following terrain.
+
 ## 0.2.1 — 22 October 2026
 
 - Infusion emits overlapping bursts of 2–4 differently sized particles from varied upper-chest positions. Each follows its own curved path, travel speed and approach angle into the core.

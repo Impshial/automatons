@@ -8,6 +8,7 @@ import net.minecraft.world.level.saveddata.SavedData;
 /** Server-wide identities and balances, independent of player life and dimension. */
 public final class Ledger extends SavedData {
   public final Map<UUID, Integer> magica = new HashMap<>();
+  public final Map<UUID, Integer> magicaThirds = new HashMap<>();
   public final Map<UUID, CompoundTag> workers = new HashMap<>();
 
   public static Ledger get(MinecraftServer server) {
@@ -21,8 +22,10 @@ public final class Ledger extends SavedData {
     Ledger data = new Ledger();
     for (Tag t : n.getList("Balances", 10)) {
       CompoundTag c = (CompoundTag) t;
-      if (c.hasUUID("Player"))
+      if (c.hasUUID("Player")) {
         data.magica.put(c.getUUID("Player"), Math.max(0, c.getInt("Points")));
+        data.magicaThirds.put(c.getUUID("Player"), Math.max(0, Math.min(2, c.getInt("Thirds"))));
+      }
     }
     for (Tag t : n.getList("Workers", 10)) {
       CompoundTag c = (CompoundTag) t;
@@ -33,13 +36,14 @@ public final class Ledger extends SavedData {
 
   @Override
   public CompoundTag save(CompoundTag n) {
-    n.putInt("Version", 2);
+    n.putInt("Version", 3);
     ListTag balances = new ListTag();
     magica.forEach(
         (id, points) -> {
           CompoundTag c = new CompoundTag();
           c.putUUID("Player", id);
           c.putInt("Points", points);
+          c.putInt("Thirds", magicaThirds.getOrDefault(id, 0));
           balances.add(c);
         });
     n.put("Balances", balances);

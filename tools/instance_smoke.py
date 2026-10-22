@@ -61,6 +61,7 @@ def args(entries):
 jvm=['-Xmx4G','-Dautomatons.visualSmoke=true']+args(BASE['arguments']['jvm'])+args(FORGE['arguments']['jvm'])
 if '--quick' in sys.argv:jvm.append('-Dautomatons.smokeTicks='+('640' if '--jei-review' in sys.argv else '570'))
 if '--jei-review' in sys.argv:jvm.append('-Dautomatons.jeiReview=true')
+if '--fall-review' in sys.argv:jvm.append('-Dautomatons.fallReview=true')
 if '--infusion-review' in sys.argv:jvm.append('-Dautomatons.infusionReview=true')
 jvm=[a+',1.20.1.jar' if a.startswith('-DignoreList=') else a for a in jvm]
 game=args(BASE['arguments']['game'])+args(FORGE['arguments']['game'])+['--width','1280','--height','960']
@@ -68,8 +69,8 @@ argfile=PROJECT/'build/instance-smoke.args'
 argfile.write_text('\n'.join('"'+a.replace('\\','/').replace('"','\\"')+'"' for a in jvm+[FORGE['mainClass']]+game),encoding='utf-8')
 if '--inspect' in sys.argv:
     print('Ready: '+str(len(classpath))+' installed libraries, Forge 47.4.10, offline smoke identity.');sys.exit(0)
-jar=PROJECT/'build/libs/automatons-0.2.1.jar';target=INSTANCE/'mods'/jar.name
-assert jar.is_file(), 'Build 0.2.1 first'
+jar=PROJECT/'build/libs/automatons-0.2.2.jar';target=INSTANCE/'mods'/jar.name
+assert jar.is_file(), 'Build 0.2.2 first'
 backup=INSTANCE/'.automatons-test-backups'/time.strftime('%Y%m%d-%H%M%S');backup.mkdir(parents=True)
 original_mods=list((INSTANCE/'mods').glob('automatons-*.jar'))
 # Finish every backup before changing the selected game directory.
@@ -83,6 +84,11 @@ try:
     shutil.copy2(jar,target)
     lab=INSTANCE/'saves/Automatons Lab'
     if not lab.exists():shutil.copytree(PROJECT/'run/saves/Automatons Lab',lab)
+    # Review the new default without inheriting the old lab world's display setting.
+    lab_config=lab/'serverconfig/automatons-server.toml'
+    if lab_config.exists():
+        text=lab_config.read_text(encoding='utf-8')
+        lab_config.write_text(re.sub(r'(?m)^(\s*displayHeight\s*=\s*)1\.75\s*$',r'\g<1>1.4',text),encoding='utf-8')
     with (PROJECT/'instance-smoke.log').open('w',encoding='utf-8') as log:
         process=subprocess.Popen([str(JAVA),'@'+str(argfile)],cwd=INSTANCE,stdout=log,stderr=subprocess.STDOUT)
         print('Instance client PID',process.pid,flush=True)

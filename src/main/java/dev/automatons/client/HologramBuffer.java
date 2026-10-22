@@ -30,7 +30,7 @@ public final class HologramBuffer implements MultiBufferSource {
       }
 
       public VertexConsumer color(int r, int g, int b, int a) {
-        out.color(255, 255, 255, 165);
+        out.color(255, 255, 255, 130);
         return this;
       }
 
@@ -61,7 +61,7 @@ public final class HologramBuffer implements MultiBufferSource {
       }
 
       public void defaultColor(int r, int g, int b, int a) {
-        out.defaultColor(210, 175, 255, 150);
+        out.defaultColor(255, 255, 255, 130);
       }
 
       public void unsetDefaultColor() {

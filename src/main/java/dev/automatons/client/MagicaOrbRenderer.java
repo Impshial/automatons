@@ -47,7 +47,8 @@ public final class MagicaOrbRenderer extends EntityRenderer<MagicaOrb> {
     pose.pushPose();
     pose.translate(0, .1, 0);
     pose.mulPose(entityRenderDispatcher.cameraOrientation());
-    pose.scale(.3f, .3f, .3f);
+    float size = orb.small() ? .15f : .3f;
+    pose.scale(size, size, size);
     float pulse = (float) (.5 + .5 * Math.sin((orb.tickCount + partial) / 2));
     int red = (int) (180 + 75 * pulse), green = (int) (110 + 145 * pulse);
     VertexConsumer out = buffers.getBuffer(RenderType.entityTranslucent(TEXTURE));

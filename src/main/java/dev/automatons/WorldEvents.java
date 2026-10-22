@@ -123,8 +123,10 @@ public final class WorldEvents {
 
   @SubscribeEvent
   public static void leave(net.minecraftforge.event.entity.EntityLeaveLevelEvent e) {
-    if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w)
+    if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w) {
+      w.clearChop();
       WorldData.get(l).release(w.getUUID());
+    }
   }
 
   @SubscribeEvent

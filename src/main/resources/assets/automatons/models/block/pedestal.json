@@ -5,9 +5,9 @@
     "bark": "automatons:block/bark",
     "log_end": "automatons:block/log_end",
     "iron": "automatons:block/iron",
-    "stone": "automatons:block/stone",
+    "stone": "automatons:block/pedestal_stone",
     "core": "automatons:block/core",
-    "particle": "automatons:block/planks"
+    "particle": "automatons:block/pedestal_stone"
   },
   "elements": [
     {

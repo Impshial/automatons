@@ -1,16 +1,21 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "L",
+    "P",
+    "I"
+  ],
+  "key": {
+    "L": {
       "tag": "automatons:overworld_logs"
     },
-    {
+    "P": {
       "tag": "automatons:overworld_planks"
     },
-    {
+    "I": {
       "item": "minecraft:iron_ingot"
     }
-  ],
+  },
   "result": {
     "item": "automatons:automaton_leg"
   }

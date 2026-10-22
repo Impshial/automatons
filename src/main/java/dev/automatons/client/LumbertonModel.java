@@ -75,9 +75,9 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
     rightArm.zRot = .025f + Mth.cos(age * .07f) * .015f;
     leftArm.zRot = -rightArm.zRot;
     body.yRot = 0;
-    if (w.status().equals("Chopping") || w.status().equals("Processing timber")) {
-      float swing = Mth.sin(w.getAttackAnim(age - (int) age) * Mth.PI);
-      rightArm.xRot = -.5f - swing * 1.1f;
+    if (w.chopTarget() != null) {
+      float swing = .5f + .5f * Mth.sin(age * .65f);
+      rightArm.xRot = -.45f - swing * 1.65f;
       body.yRot = -swing * .06f;
     } else if (w.status().equals("Unloading") || w.status().equals("Returning totem")) {
       leftArm.xRot -= .12f;
@@ -94,9 +94,8 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
   @Override
   public void translateToHand(HumanoidArm arm, PoseStack pose) {
     (arm == HumanoidArm.RIGHT ? rightArm : leftArm).translateAndRotate(pose);
-    pose.translate(arm == HumanoidArm.RIGHT ? -.06 : .06, .10, 0);
-    pose.translate(0, .625, 0);
-    pose.mulPose(com.mojang.math.Axis.ZP.rotationDegrees(180));
-    pose.translate(0, -.625, 0);
+    pose.translate(arm == HumanoidArm.RIGHT ? -.06 : .06, .125, 0);
+    // Vanilla hand-layer rotations already orient a handheld axe correctly.
+
   }
 }

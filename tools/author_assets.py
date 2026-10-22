@@ -165,7 +165,7 @@ for name,full in [('empty_magica_core',False),('magica_core',True)]:
     p[4][7]=white[3];p[5][6]=white[3];p[10][10]=purple[3]
     sprite(name,p,'Magica Core' if full else 'Empty Magica Core')
 p=canvas();material(p,4,3,8,9,'plank');rect(p,3,2,10,1,metal[1]);rect(p,3,12,10,2,metal[2]);rect(p,6,6,1,2,gold[3]);rect(p,9,6,1,2,gold[3]);rect(p,7,10,2,1,wood[0]);sprite('automaton_head',p,'Automaton Head')
-p=canvas();material(p,3,3,10,10,'plank');rect(p,2,3,2,11,metal[2]);rect(p,12,3,2,11,metal[2]);rect(p,5,6,6,4,purple[0]);rect(p,6,6,1,4,white[3]);rect(p,9,6,1,4,white[3]);sprite('automaton_core',p,'Automaton Core')
+p=canvas();material(p,3,3,10,10,'plank');rect(p,2,3,2,11,metal[2]);rect(p,12,3,2,11,metal[2]);rect(p,5,6,6,4,purple[0]);rect(p,6,6,1,4,white[3]);rect(p,9,6,1,4,white[3]);sprite('automaton_core',p,'Automaton Torso')
 for name,title,length in [('automaton_arm','Automaton Arm',12),('automaton_leg','Automaton Leg',10)]:
     p=canvas();material(p,5,2,6,length,'bark');rect(p,5,2,6,2,metal[2]);rect(p,5,length,6,2,metal[1]);rect(p,6,4,1,length-5,wood[5]);
     if name.endswith('leg'):rect(p,4,12,8,2,metal[2])
@@ -194,13 +194,13 @@ shaped('infusing_pedestal',['I I','DAD','BBB'],{'I':MC+'iron_ingot','D':MC+'poli
 shaped('pedestal',['SCS','IGI','SCS'],{'S':MC+'stone_bricks','C':MOD+'magica_core','I':MC+'iron_ingot','G':MC+'gold_ingot'})
 shaped('totem',[' C ','ILI',' S '],{'C':MOD+'magica_core','I':MC+'iron_ingot','L':'#automatons:overworld_logs','S':MC+'stone_bricks'})
 shaped('wand',['  C',' S ','S  '],{'C':MOD+'magica_core','S':MC+'stick'})
-shaped('automaton_core',['ICI','RRR','ICI'],{'I':MC+'iron_ingot','C':MOD+'magica_core','R':MC+'redstone'})
+shaped('automaton_core',['LIL','CRC','LIL'],{'L':'#automatons:overworld_logs','I':MC+'iron_ingot','C':MOD+'magica_core','R':MC+'redstone'})
 def shapeless(name,ingredients):
     assert 1<=len(ingredients)<=9,(name,len(ingredients))
     write(RES/f'data/automatons/recipes/{name}.json',{'type':'minecraft:crafting_shapeless','ingredients':[{'tag':v[1:]} if v.startswith('#') else {'item':v} for v in ingredients],'result':{'item':MOD+name}})
-shapeless('automaton_head',['#automatons:overworld_logs']*2+[MC+'iron_nugget']*2+[MC+'redstone'])
-shapeless('automaton_arm',['#automatons:overworld_logs',MC+'iron_ingot'])
-shapeless('automaton_leg',['#automatons:overworld_logs','#automatons:overworld_planks',MC+'iron_ingot'])
+shaped('automaton_head',['LPL','NRN','LIL'],{'L':'#automatons:overworld_logs','P':'#automatons:overworld_planks','N':MC+'iron_nugget','R':MC+'redstone','I':MC+'iron_ingot'})
+shaped('automaton_arm',['L','I'],{'L':'#automatons:overworld_logs','I':MC+'iron_ingot'})
+shaped('automaton_leg',['L','P','I'],{'L':'#automatons:overworld_logs','P':'#automatons:overworld_planks','I':MC+'iron_ingot'})
 shapeless('upgrade_plate',[MC+'iron_ingot']*2+[MC+'redstone']*2+[MC+'amethyst_shard'])
 upgrades={
 'storage_1':[MOD+'upgrade_plate',MC+'chest',MC+'compass',MOD+'magica_core'],
@@ -223,3 +223,33 @@ reward_tags={'logs':[MC+w+'_log' for w in woods], 'crops':[MC+x for x in ['wheat
 for category,values in reward_tags.items():write(RES/f'data/automatons/tags/blocks/magica/{category}.json',{'replace':False,'values':values})
 write(RES/'data/minecraft/tags/blocks/mineable/pickaxe.json',{'replace':False,'values':['automatons:pedestal','automatons:infusing_pedestal']})
 print('Authored redesign items, infuser, complete recipes, recipe-book unlocks and Magica source tags.')
+
+# 0.2.2: quiet symmetrical pedestal stone, dedicated to the home pedestal.
+p=canvas()
+for y in range(16):
+    for x in range(16):
+        edge=min(x,y,15-x,15-y)
+        p[y][x]=rgb(['34363f','a9a7b3','737280','62616f'][min(edge,3)])
+# The inset follows the square frame; no brick/checker noise.
+png(RES/'assets/automatons/textures/block/pedestal_stone.png',p)
+model=json.loads((RES/'assets/automatons/models/block/pedestal.json').read_text(encoding='utf-8'))
+model['textures']['stone']='automatons:block/pedestal_stone'
+model['textures']['particle']='automatons:block/pedestal_stone'
+write(RES/'assets/automatons/models/block/pedestal.json',model)
+# Slender diagonal handle, silver collar and a white-hot violet diamond core.
+p=canvas()
+for i in range(1,10):
+    rect(p,i,14-i,2,2,rgb('33283c'));p[14-i][i]=rgb('88678f')
+for x,y in [(8,6),(9,7),(9,5),(10,6)]:p[y][x]=rgb('b6b2c5')
+for y in range(0,8):
+    for x in range(8,16):
+        d=abs(x-11.5)+abs(y-3.5)
+        if d<=4:p[y][x]=rgb('4b335f')
+        if d<=3:p[y][x]=rgb('aa70e9')
+        if d<=2:p[y][x]=rgb('dbb9ff')
+        if d<=1:p[y][x]=rgb('ffffff')
+p[1][10]=rgb('f4eaff');p[2][9]=rgb('f4eaff')
+png(RES/'assets/automatons/textures/item/wand.png',p)
+# Keep the optional integration strings reproducible when regenerating art.
+lang.update({'jei.automatons.assembly':'Automaton Assembly','jei.automatons.infusion':'Magica Infusion','jei.automatons.recipes':'Recipes','jei.automatons.assembly.help':'Take the result at your pedestal. No extra Magica cost.','jei.automatons.infusion.cost':'%s Magica','jei.automatons.infusion.help':'Place an empty core on the infuser. Stay within %s blocks while it charges.'})
+write(RES/'assets/automatons/lang/en_us.json',lang)

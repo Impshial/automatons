@@ -19,6 +19,8 @@ import net.minecraftforge.network.NetworkHooks;
 public final class MagicaOrb extends Entity {
   private static final EntityDataAccessor<Integer> VALUE =
       SynchedEntityData.defineId(MagicaOrb.class, EntityDataSerializers.INT);
+  private static final EntityDataAccessor<Boolean> SMALL =
+      SynchedEntityData.defineId(MagicaOrb.class, EntityDataSerializers.BOOLEAN);
   public int age, count = 1;
   private int health = 5;
   private Player following;
@@ -30,6 +32,7 @@ public final class MagicaOrb extends Entity {
   @Override
   protected void defineSynchedData() {
     entityData.define(VALUE, 1);
+    entityData.define(SMALL, false);
   }
 
   public int value() {
@@ -40,8 +43,38 @@ public final class MagicaOrb extends Entity {
     entityData.set(VALUE, Math.max(1, value));
   }
 
-  public long total() {
-    return (long) value() * count;
+  public boolean small() {
+    return entityData.get(SMALL);
+  }
+
+  public void setSmall(boolean value) {
+    entityData.set(SMALL, value);
+  }
+
+  public long valueThirds() {
+    return value() * (small() ? 1L : 3L);
+  }
+
+  public long totalThirds() {
+    return valueThirds() * count;
+  }
+
+  public double total() {
+    return totalThirds() / 3.0;
+  }
+
+  public static void drop(ServerLevel level, Vec3 position, int largeValue, boolean small) {
+    if (largeValue <= 0) return;
+    MagicaOrb orb = Automatons.MAGICA_ORB.get().create(level);
+    orb.setValue(largeValue);
+    orb.setSmall(small);
+    orb.setPos(position);
+    orb.setYRot(level.random.nextFloat() * 360);
+    orb.setDeltaMovement(
+        level.random.nextDouble() * .4 - .2,
+        level.random.nextDouble() * .4,
+        level.random.nextDouble() * .4 - .2);
+    level.addFreshEntity(orb);
   }
 
   public static void award(ServerLevel level, Vec3 position, int amount) {
@@ -53,7 +86,12 @@ public final class MagicaOrb extends Entity {
           level.getEntitiesOfClass(
               MagicaOrb.class,
               AABB.ofSize(position, 1, 1, 1),
-              e -> !e.isRemoved() && (e.getId() - group) % 40 == 0 && e.value() == value);
+              e ->
+                  !e.isRemoved()
+                      && !e.small()
+                      && e.count < Integer.MAX_VALUE
+                      && (e.getId() - group) % 40 == 0
+                      && e.value() == value);
       if (!matches.isEmpty()) {
         MagicaOrb orb = matches.get(0);
         orb.count++;
@@ -76,6 +114,7 @@ public final class MagicaOrb extends Entity {
     if (other == this
         || other.isRemoved()
         || value() != other.value()
+        || small() != other.small()
         || (other.getId() - getId()) % 40 != 0
         || (long) count + other.count > Integer.MAX_VALUE) return false;
     count += other.count;
@@ -148,9 +187,9 @@ public final class MagicaOrb extends Entity {
       return;
     long now = p.serverLevel().getGameTime();
     if (p.getPersistentData().getLong("MagicaPickupAt") > now) return;
-    if (Magica.balance(p) > Integer.MAX_VALUE - value()) return;
+    if (Magica.thirds(p) > Integer.MAX_VALUE * 3L + 2 - valueThirds()) return;
     p.getPersistentData().putLong("MagicaPickupAt", now + 2);
-    Magica.add(p, value());
+    Magica.addThirds(p, valueThirds());
     Network.pickup(this, p);
     level()
         .playSound(
@@ -177,6 +216,7 @@ public final class MagicaOrb extends Entity {
   @Override
   protected void addAdditionalSaveData(CompoundTag n) {
     n.putInt("Value", value());
+    n.putBoolean("Small", small());
     n.putInt("Count", count);
     n.putInt("Age", age);
     n.putInt("Health", health);
@@ -185,6 +225,7 @@ public final class MagicaOrb extends Entity {
   @Override
   protected void readAdditionalSaveData(CompoundTag n) {
     setValue(n.getInt("Value"));
+    setSmall(n.getBoolean("Small"));
     count = Math.max(1, n.getInt("Count"));
     age = Math.max(0, n.getInt("Age"));
     health = n.getInt("Health");

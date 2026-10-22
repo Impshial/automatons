@@ -64,3 +64,23 @@ The final short packaged run exited 0 and its worker GUI text was inspected. Ver
 Completed the requested upper-chest particle bursts with random sizes, speeds, acceleration and curved approach angles. Added optional public-API JEI assembly and infusion categories, synchronized assembly recipe inputs, both pedestal catalysts and an assembly-screen Recipes link. The actual installed-mod-set Lab client verified both JEI output lookups and rendered pages, high chest emissions, moving donor and full core completion, then exited 0. The apparent crash was the harness's scheduled normal shutdown; no crash report was found. The side camera initially faced away and was corrected before the final screenshots.
 
 The dedicated server loaded without JEI and all 46 regression tests passed. Version 0.2.1 was built, inspected and installed, replacing only the prior Automatons JAR after preserving it in `.automatons-release-backups/20261022-163429-237`. The release JAR and source, revised docs, editable renderer, actual screenshots and logs are archived in the asset library. JEI recipe viewing does not perform automatic ingredient transfer.
+
+
+## 0.2.2 requested revisions
+
+Implemented the recipe/art/HUD/chopping changes, then incorporated the revised axe timings, ordinary placed/loose log harvesting, and Show Work Area toggle. Area cells are texture-free translucent overlays in air above terrain, exactly one block high, with no collision and no shared interior faces. The server retains protection and range checks for destructive work.
+
+The full suite now has 62 passing required tests, including actual uphill/downhill journeys and return delivery, Diamond/Netherite harvesting, and stone-or-better player felling accounting. The user's report of overlapping timber traced to the old intentional one-position segmented fallback. That fallback now assigns distinct grounded target cells and reserves them across timber jobs. No-space trees wait. Existing saved stacked jobs replan without losing inventory or consumed-section state.
+
+The first packaged client review passed (exit 0); final obstructed-fall/player-felling evidence and installation are recorded below.
+
+The final server suite (`revision-0.2.2-tests.log`) passes all 62 required tests. Added checks cover three small orbs equaling one whole point, saved fractional balances and whole-point spending, old large-orb compatibility, separate-size merging, exact 10/100 crop and 40/100 log probability branches, and dropped log collection with exact chest delivery while out-of-range items remain untouched. The release build and resource validation also pass.
+
+
+## 0.2.2 final client and deployment
+
+The final packaged client used the isolated `build/packaged-smoke/20261022-180643` copy of the designated mod set and exited normally with code 0. Actual captures show both Magica sizes, a 9⅓ balance after collecting a large 7-point and small 7/3-point orb, separated XP/Magica bars, shadow-free JEI text, new textures, lower translucent preview, seamless range cells, axe swings and damage cracks. Frames at review ticks 2012/2018/2026 show vertical grain before the midpoint and horizontal grain afterward while the logs are still airborne. Both JEI output lookups found one recipe. Core infusion finished at 50/50 with zero balance before the pickup review. XP remained 420.
+
+The obstructed worker fall used five distinct landing cells. The connected player’s stone axe broke the base once with one durability damage and produced one timber entity containing four remaining logs with distinct targets. The worker then entered Collecting logs, picked up that dropped base log, and processed the player’s timber. At the review cutoff, the chest held the first tree’s five logs and the worker carried eight items from the second job (normal cross-job cargo retention); exact dropped-log chest delivery is separately asserted by the dedicated server test. There was no manual multiplayer acceptance session.
+
+Installed **automatons-0.2.2.jar**, **354,864 bytes**, SHA-256 **7E425A2A0DB94F87814DF57201217E74CC576FD26B32C9076E9A9FC0EA96973C**. The previous release and changed stock-height configuration are preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-181131-692`. The installer verified the hash and changed only the old default pedestal height of 1.75 to 1.4; custom heights are retained. Release/source archives, updated editable assets and all final captures are mirrored in `F:\Minecraft\Automatons`.

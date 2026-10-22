@@ -1,11 +1,14 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "ICI",
-    "RRR",
-    "ICI"
+    "LIL",
+    "CRC",
+    "LIL"
   ],
   "key": {
+    "L": {
+      "tag": "automatons:overworld_logs"
+    },
     "I": {
       "item": "minecraft:iron_ingot"
     },

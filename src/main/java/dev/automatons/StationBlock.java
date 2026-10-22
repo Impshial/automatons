@@ -30,6 +30,13 @@ public class StationBlock extends BaseEntityBlock {
   }
 
   @Override
+  public net.minecraft.world.level.pathfinder.BlockPathTypes getBlockPathType(
+      BlockState state, BlockGetter level, BlockPos pos, net.minecraft.world.entity.Mob mob) {
+    // Thin decorative bases otherwise look walkable to the node evaluator but trap wide mobs.
+    return net.minecraft.world.level.pathfinder.BlockPathTypes.BLOCKED;
+  }
+
+  @Override
   public RenderShape getRenderShape(BlockState s) {
     return RenderShape.MODEL;
   }

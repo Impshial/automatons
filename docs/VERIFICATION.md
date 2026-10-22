@@ -1,4 +1,4 @@
-# Verification — 0.2.0 redesign and 0.2.1 update, 22 October 2026
+# Verification — through 0.2.2, 22 October 2026
 
 ## Executed server checks
 
@@ -83,3 +83,27 @@ The reported apparent crash matched the automated test's scheduled shutdown: its
 Reproduce the packaged visual checks with `python tools/instance_smoke.py --quick --infusion-review --jei-review` while the designated instance is closed; it opens only Automatons Lab and exits automatically. The optional camera exists only in the client review and is not added to the world. Use `-PwithJei` for a development client with JEI; ordinary server runs retain no JEI runtime dependency.
 
 Final release: **automatons-0.2.1.jar**, **318,358 bytes**, SHA-256 **1087C00189AC0864604D14EF63A510C22047B73CCFD063629D0BF50F3DFFB337**. Installed in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\mods`, with 0.2.0 backed up in `.automatons-release-backups/20261022-163429-237`. Exactly one Automatons JAR is installed. Evidence and captures are mirrored under `verification/0.2.1` and `screenshots/0.2.1` in the asset library; the release manifest records the matching source commit.
+
+
+## 0.2.2 revision validation — 22 October 2026
+
+The fresh dedicated-server suite passed **all 62 required GameTests**, with JEI absent from the server runtime. `revision-0.2.2-tests.log` contains the run and successful reobfuscated build. This expands the previous 46 tests with all six vanilla axe acceptance/timing checks; all six arm/two-high placements and three leg columns; complete Diamond/Netherite harvesting and exact log delivery; Stone-axe travel up and down three one-block terraces, harvesting, and delivery back at the storage elevation; clearing low leaf cover; completed player-break accounting; placed/stripped log collection through grass and flowers; loose-log range/protection checks; unique fallback landing cells; occupied-cell/duplicate-layout rejection; no-space waiting; and saved stacked-timber migration without losing sections.
+
+The terrain tests exposed thin totem bases being treated as walkable nodes and an escape path ending just short of clearing a fallen log. Totems now report blocked path nodes, and escape destinations allow for navigation's stopping tolerance. The final terrain tests require actual movement to the other elevation and exact five-log chest delivery back at the original elevation.
+
+The axe timings are representable by the five-tick worker clock. Stone, Iron, Diamond and Netherite preparation/processing durations are 140/80, 100/60, 70/40 and 65/35 ticks respectively. Wood and Gold retain their earlier defaults. Loose logs use processing time directly. These timings exclude navigation and the 30-tick fall animation.
+
+Asset validation passed: **91 JSON files, 33 correctly sized textures, a 24-unit creature rig, and correct partial-block UV density**. The old `automaton_core` registry ID remains; its display name is Automaton Torso, preserving existing saved items.
+
+The first packaged client run, using a fresh isolated copy of Rackworks Tester's mod set and config, exited normally with code 0. Reviewed captures show separate XP/Magica bars, the new wand and pedestal, lowered translucent preview, shadow-free 50-Magica JEI text, a seamless terrain-following area preview, chopping poses, and fallen-log cracks. Both JEI output lookups returned one category recipe. The worker delivered all five original logs and emptied its cargo. The final distinct-cell fallback and player-felling client result is recorded below.
+
+The final server suite (`revision-0.2.2-tests.log`) passes all 62 required tests. Added checks cover three small orbs equaling one whole point, saved fractional balances and whole-point spending, old large-orb compatibility, separate-size merging, exact 10/100 crop and 40/100 log probability branches, and dropped log collection with exact chest delivery while out-of-range items remain untouched. The release build and resource validation also pass.
+
+
+## 0.2.2 final client and deployment
+
+The final packaged client used the isolated `build/packaged-smoke/20261022-180643` copy of the designated mod set and exited normally with code 0. Actual captures show both Magica sizes, a 9⅓ balance after collecting a large 7-point and small 7/3-point orb, separated XP/Magica bars, shadow-free JEI text, new textures, lower translucent preview, seamless range cells, axe swings and damage cracks. Frames at review ticks 2012/2018/2026 show vertical grain before the midpoint and horizontal grain afterward while the logs are still airborne. Both JEI output lookups found one recipe. Core infusion finished at 50/50 with zero balance before the pickup review. XP remained 420.
+
+The obstructed worker fall used five distinct landing cells. The connected player’s stone axe broke the base once with one durability damage and produced one timber entity containing four remaining logs with distinct targets. The worker then entered Collecting logs, picked up that dropped base log, and processed the player’s timber. At the review cutoff, the chest held the first tree’s five logs and the worker carried eight items from the second job (normal cross-job cargo retention); exact dropped-log chest delivery is separately asserted by the dedicated server test. There was no manual multiplayer acceptance session.
+
+Installed **automatons-0.2.2.jar**, **354,864 bytes**, SHA-256 **7E425A2A0DB94F87814DF57201217E74CC576FD26B32C9076E9A9FC0EA96973C**. The previous release and changed stock-height configuration are preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-181131-692`. The installer verified the hash and changed only the old default pedestal height of 1.75 to 1.4; custom heights are retained. Release/source archives, updated editable assets and all final captures are mirrored in `F:\Minecraft\Automatons`.

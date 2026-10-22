@@ -21,6 +21,7 @@ public final class VisualSmoke {
   private static boolean opened, setup;
   private static int ticks, sounds;
   private static java.util.UUID modelId;
+  private static String framedWork = "";
   private static final BlockPos HOME = new BlockPos(-3, 64, 0),
       TOTEM = new BlockPos(3, 64, 0),
       INFUSER = new BlockPos(-3, 64, 4);
@@ -163,7 +164,8 @@ public final class VisualSmoke {
             p.setItemInHand(
                 net.minecraft.world.InteractionHand.MAIN_HAND,
                 new ItemStack(Automatons.WAND.get()));
-            Magica.add(p, 500 - Magica.balance(p));
+            Magica.clear(p);
+            Magica.add(p, 500);
             p.giveExperiencePoints(140);
           });
       return;
@@ -214,6 +216,13 @@ public final class VisualSmoke {
           });
     }
     if (ticks == 260) image("05-shared-totem-gui");
+    if (ticks == 265 && mc.level.getBlockEntity(TOTEM) instanceof Station station)
+      RangeOverlay.toggle(station);
+    if (ticks == 282) server(p -> p.teleportTo(p.serverLevel(), 22, 76, 26, 140, 35));
+    if (ticks == 294) image("18-work-area");
+    if (ticks == 298 && mc.level.getBlockEntity(TOTEM) instanceof Station station)
+      RangeOverlay.toggle(station);
+    if (ticks == 299) server(p -> p.teleportTo(p.serverLevel(), -3, 64, 3, 180, 12));
     if (ticks == 280)
       server(
           p -> {
@@ -221,7 +230,7 @@ public final class VisualSmoke {
             p.teleportTo(p.serverLevel(), -3, 64, 3.3, 180, -5);
             Station home = (Station) p.serverLevel().getBlockEntity(HOME);
             for (int i = 0; i < 6; i++) home.inventory.setStackInSlot(i, ItemStack.EMPTY);
-            Magica.add(p, -Magica.balance(p));
+            Magica.clear(p);
           });
     if (ticks == 310) image("06-empty-pedestal-hologram");
     if (ticks == 330)
@@ -265,14 +274,26 @@ public final class VisualSmoke {
           });
     }
     if (ticks == 552)
-      server(p -> MagicaOrb.award(p.serverLevel(), p.position().add(0, .3, -1.3), 7));
+      server(
+          p -> {
+            for (int i = 0; i < 2; i++) {
+              MagicaOrb orb = Automatons.MAGICA_ORB.get().create(p.serverLevel());
+              orb.setValue(7);
+              orb.setSmall(i == 0);
+              orb.setPos(p.position().add(i == 0 ? -.55 : .55, 1.1, -2.8));
+              orb.setNoGravity(true);
+              orb.setDeltaMovement(Vec3.ZERO);
+              p.serverLevel().addFreshEntity(orb);
+            }
+          });
     if (ticks == 560) image("12-magica-orbs");
-    if (ticks == 568)
+    if (ticks == 568) image("20-fractional-magica");
+    if (ticks == 569)
       server(
           p ->
               System.out.println(
                   "AUTOMATONS_MAGICA_PICKUP points="
-                      + Magica.balance(p)
+                      + Magica.format(Magica.balance(p), Magica.remainder(p))
                       + " xp="
                       + p.totalExperience));
     if (ticks == 570)
@@ -314,6 +335,9 @@ public final class VisualSmoke {
                             .setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false)
                             .setValue(net.minecraft.world.level.block.LeavesBlock.DISTANCE, 1),
                         3);
+            if (Boolean.getBoolean("automatons.fallReview"))
+              for (Direction d : Direction.Plane.HORIZONTAL)
+                l.setBlock(base.relative(d, 3), Blocks.STONE.defaultBlockState(), 3);
             if (l.getEntity(modelId) instanceof Lumberton w) {
               w.setNoAi(false);
               w.authorized = true;
@@ -325,10 +349,75 @@ public final class VisualSmoke {
       int now = ticks;
       server(
           p -> {
-            if (p.serverLevel().getEntity(modelId) instanceof Lumberton w)
+            if (p.serverLevel().getEntity(modelId) instanceof Lumberton w) {
               System.out.println("AUTOMATONS_WORK " + now + " " + w.diagnostic());
+              if (w.chopTarget() != null && !w.status().equals(framedWork)) {
+                framedWork = w.status();
+                Vec3 target = w.position().add(0, .8, 0);
+                Vec3 forward =
+                    Vec3.atCenterOf(w.chopTarget())
+                        .subtract(w.position())
+                        .multiply(1, 0, 1)
+                        .normalize();
+                Vec3 camera = target.add(-forward.z * 4, 1.5, forward.x * 4);
+                Vec3 delta = target.subtract(camera);
+                float yaw = (float) (Math.atan2(delta.z, delta.x) * 180 / Math.PI) - 90;
+                float pitch =
+                    (float)
+                        (-Math.atan2(delta.y, Math.sqrt(delta.x * delta.x + delta.z * delta.z))
+                            * 180
+                            / Math.PI);
+                p.teleportTo(p.serverLevel(), camera.x, camera.y, camera.z, yaw, pitch);
+              }
+            }
           });
     }
+    if (Boolean.getBoolean("automatons.fallReview") && ticks == 2000)
+      server(
+          p -> {
+            var l = p.serverLevel();
+            BlockPos root = new BlockPos(10, 64, -7);
+            for (int y = 0; y < 5; y++)
+              l.setBlock(root.above(y), Blocks.OAK_LOG.defaultBlockState(), 3);
+            for (int x = -2; x <= 2; x++)
+              for (int z = -2; z <= 2; z++)
+                for (int y = 3; y <= 5; y++)
+                  if (x != 0 || z != 0 || y == 5)
+                    l.setBlock(
+                        root.offset(x, y, z),
+                        Blocks.OAK_LEAVES
+                            .defaultBlockState()
+                            .setValue(net.minecraft.world.level.block.LeavesBlock.PERSISTENT, false)
+                            .setValue(net.minecraft.world.level.block.LeavesBlock.DISTANCE, 1),
+                        3);
+            p.setItemInHand(
+                net.minecraft.world.InteractionHand.MAIN_HAND, new ItemStack(Items.STONE_AXE));
+            p.teleportTo(l, 14, 67, -3, 135, 25);
+            boolean broken = p.gameMode.destroyBlock(root);
+            System.out.println(
+                "AUTOMATONS_PLAYER_FELL broke="
+                    + broken
+                    + " damage="
+                    + p.getMainHandItem().getDamageValue());
+          });
+    if (Boolean.getBoolean("automatons.fallReview") && ticks == 2010)
+      server(
+          p -> {
+            var jobs =
+                p.serverLevel().getEntitiesOfClass(Timber.class, new AABB(5, 63, -13, 17, 75, 0));
+            System.out.println(
+                "AUTOMATONS_PLAYER_TIMBER jobs="
+                    + jobs.size()
+                    + " remaining="
+                    + jobs.stream().mapToInt(Timber::remaining).sum()
+                    + " distinct="
+                    + jobs.stream()
+                        .allMatch(
+                            t -> new java.util.HashSet<>(t.targets).size() == t.targets.size()));
+          });
+    if (Boolean.getBoolean("automatons.fallReview")
+        && (ticks == 2012 || ticks == 2018 || ticks == 2026)) image("fall-midpoint-" + ticks);
+    if (Boolean.getBoolean("automatons.fallReview") && ticks == 2040) image("19-player-felling");
     if (ticks == 3010)
       server(
           p -> {

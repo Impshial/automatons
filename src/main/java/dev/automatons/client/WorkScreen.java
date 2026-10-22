@@ -13,7 +13,7 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
   private final List<Button> chestButtons = new ArrayList<>(),
       memberButtons = new ArrayList<>(),
       editButtons = new ArrayList<>();
-  private Button previous, next, back, unbind;
+  private Button previous, next, back, unbind, ranges;
   private int scroll;
 
   public WorkScreen(WorkMenu menu, Inventory inv, Component title) {
@@ -54,6 +54,27 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
         chestButtons.add(button(89, 66 + row * 18, 36, "Out", 20 + row * 2));
         chestButtons.add(button(129, 66 + row * 18, 37, "Tool", 21 + row * 2));
       }
+      ranges =
+          addRenderableWidget(
+              Button.builder(
+                      Component.literal("Show Work Area"),
+                      b -> {
+                        RangeOverlay.toggle(menu.station);
+                        b.setMessage(
+                            Component.literal(
+                                RangeOverlay.shown(menu.station)
+                                    ? "Hide Work Area"
+                                    : "Show Work Area"));
+                      })
+                  .bounds(leftPos + 82, topPos + 123, 88, 16)
+                  .build());
+      ranges.setTooltip(
+          Tooltip.create(
+              Component.literal(
+                  "Green: logging | Blue: storage. Terrain markers are one air block high.")));
+      ranges.setMessage(
+          Component.literal(
+              RangeOverlay.shown(menu.station) ? "Hide Work Area" : "Show Work Area"));
       button(8, 123, 28, "<", 4);
       button(51, 123, 28, ">", 5);
       for (int row = 0; row < 4; row++)
@@ -138,7 +159,14 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
       g.fill(leftPos + x - 1, topPos + 62, leftPos + x + 17, topPos + 64, 0xffffbc36);
     }
     if (!menu.isWorker && !menu.isTotem)
-      MagicaHud.bar(g, leftPos + 187, topPos + 87, 104, menu.snapshot.getInt("Magica"), 4);
+      MagicaHud.bar(
+          g,
+          leftPos + 187,
+          topPos + 87,
+          104,
+          menu.snapshot.getInt("Magica"),
+          4,
+          menu.snapshot.getInt("MagicaThirds"));
   }
 
   private void lines(GuiGraphics g, ListTag lines, int start, int end) {
@@ -211,7 +239,14 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
       g.drawCenteredString(font, "Result", 238, 30, 0xffeee8f6);
       g.drawCenteredString(font, "Take to assemble", 238, 69, 0xffeee8f6);
       g.drawString(font, "Magica", 187, 77, 0xffe8d7ff, false);
-      g.drawString(font, menu.snapshot.getInt("Magica") + " points", 187, 94, 0xffeee8f6, false);
+      g.drawString(
+          font,
+          Magica.format(menu.snapshot.getInt("Magica"), menu.snapshot.getInt("MagicaThirds"))
+              + " points",
+          187,
+          94,
+          0xffeee8f6,
+          false);
       lines(g, menu.snapshot.getList("Lines", 8), 116, 224);
     }
   }
@@ -235,7 +270,9 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
         && hoveredSlot != null
         && hoveredSlot.index < 6
         && !hoveredSlot.hasItem()) {
-      String[] names = {"Head", "Left arm", "Automaton Core", "Right arm", "Left leg", "Right leg"};
+      String[] names = {
+        "Head", "Left arm", "Automaton Torso", "Right arm", "Left leg", "Right leg"
+      };
       g.renderTooltip(font, Component.literal(names[hoveredSlot.index]), x, y);
     }
   }

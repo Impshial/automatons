@@ -53,7 +53,7 @@ public final class Balance {
     DISPLAY_PERIOD = b.defineInRange("displayRotationSeconds", 8.0, 1, 60);
     DISPLAY_SCALE = b.defineInRange("displayScale", .7, .1, 1.5);
     DISPLAY_BOB = b.defineInRange("displayBobAmplitude", .04, 0, .2);
-    DISPLAY_HEIGHT = b.defineInRange("displayHeight", 1.75, 1.2, 3);
+    DISPLAY_HEIGHT = b.defineInRange("displayHeight", 1.4, 1.0, 3);
     b.pop();
     b.push("magicaYields");
     addYield(b, "logs", 3, 7);

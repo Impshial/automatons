@@ -1,22 +1,27 @@
 {
-  "type": "minecraft:crafting_shapeless",
-  "ingredients": [
-    {
-      "tag": "automatons:overworld_logs"
-    },
-    {
-      "tag": "automatons:overworld_logs"
-    },
-    {
-      "item": "minecraft:iron_nugget"
-    },
-    {
-      "item": "minecraft:iron_nugget"
-    },
-    {
-      "item": "minecraft:redstone"
-    }
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "LPL",
+    "NRN",
+    "LIL"
   ],
+  "key": {
+    "L": {
+      "tag": "automatons:overworld_logs"
+    },
+    "P": {
+      "tag": "automatons:overworld_planks"
+    },
+    "N": {
+      "item": "minecraft:iron_nugget"
+    },
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
   "result": {
     "item": "automatons:automaton_head"
   }

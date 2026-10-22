@@ -65,13 +65,25 @@ public final class Inventories {
     int efficiency =
         Math.max(
             EnchantmentHelper.getItemEnchantmentLevel(Enchantments.BLOCK_EFFICIENCY, axe), bonus);
+    int extra =
+        axe.getItem() instanceof TieredItem t && t.getTier().getLevel() >= Tiers.DIAMOND.getLevel()
+            ? 10
+            : axe.getItem() instanceof TieredItem t
+                    && t.getTier().getLevel() < Tiers.STONE.getLevel()
+                ? 0
+                : 20;
+    double unenchanted = base * 6.0 / Math.max(1, quality) + extra;
+    double effective = quality + (efficiency > 0 ? efficiency * efficiency + 1 : 0);
+    // Work is scheduled every five ticks. Round to that interval, not a hidden ceiling.
     return Math.max(
         10,
-        Math.round(
-            (float)
-                (base
-                    * 6.0
-                    / Math.max(1, quality + (efficiency > 0 ? efficiency * efficiency + 1 : 0))
-                    * Math.max(.2, 1 - .2 * speed))));
+        5
+            * Math.round(
+                (float)
+                    (unenchanted
+                        * quality
+                        / Math.max(1, effective)
+                        * Math.max(.2, 1 - .2 * speed)
+                        / 5.0)));
   }
 }

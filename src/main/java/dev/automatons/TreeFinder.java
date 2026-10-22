@@ -106,8 +106,41 @@ public final class TreeFinder {
   }
 
   private static boolean workFootprint(Station s, Tree t, BlockPos p) {
+    if (s == null)
+      return Math.abs(p.getX() - t.root.getX()) <= 64 && Math.abs(p.getZ() - t.root.getZ()) <= 64;
     if (within(s, p)) return true;
     return p.getX() >= t.minX && p.getX() <= t.maxX && p.getZ() >= t.minZ && p.getZ() <= t.maxZ;
+  }
+
+  public static boolean loose(Tree tree) {
+    return tree.logs.size() == 1 && tree.leaves.isEmpty();
+  }
+
+  /** Natural trees retain felling; other in-range logs are ordinary one-block jobs. */
+  public static Result work(ServerLevel l, BlockPos at, Station station) {
+    if (!l.getBlockState(at).is(BlockTags.LOGS)) return new Result(null, "Not a log");
+    ArrayDeque<BlockPos> queue = new ArrayDeque<>();
+    Set<BlockPos> seen = new HashSet<>();
+    queue.add(at);
+    while (!queue.isEmpty() && seen.size() < 512) {
+      BlockPos p = queue.removeFirst();
+      if (!seen.add(p) || !l.hasChunkAt(p) || !l.getBlockState(p).is(BlockTags.LOGS)) continue;
+      if (isRoot(l, p)) {
+        Result natural = inspect(l, p, station);
+        if (natural.tree != null && natural.tree.logs.contains(at)) return natural;
+      }
+      for (Direction d : Direction.values()) {
+        BlockPos q = p.relative(d);
+        if (Math.abs(q.getX() - at.getX()) <= 12
+            && Math.abs(q.getZ() - at.getZ()) <= 12
+            && Math.abs(q.getY() - at.getY()) <= 48) queue.add(q);
+      }
+    }
+    Tree single = new Tree(at.immutable(), List.of(at.immutable()), List.of(), 1);
+    return rootWithin(station, single)
+            && Permissions.allowed(l, at, station.owner, Permissions.Action.CUT)
+        ? new Result(single, "Log")
+        : new Result(null, "Log outside range or protected");
   }
 
   public static Result inspect(ServerLevel l, BlockPos candidate, Station station) {
@@ -276,15 +309,19 @@ public final class TreeFinder {
   }
 
   public static Landing landing(
-      ServerLevel l, Tree tree, Station station, UUID owner, Lumberton worker) {
+      ServerLevel l,
+      Tree tree,
+      Station station,
+      UUID owner,
+      net.minecraft.world.entity.Entity worker) {
     List<BlockPos> crown = exclusiveCrown(l, tree);
     if (crown == null) {
-      station.scanReason = "Canopy crosses unavailable area";
+      if (station != null) station.scanReason = "Canopy crosses unavailable area";
       return null;
     }
     for (BlockPos p : crown)
       if (!Permissions.allowed(l, p, owner, Permissions.Action.CUT)) {
-        station.scanReason = "Protected tree attachments";
+        if (station != null) station.scanReason = "Protected tree attachments";
         return null;
       }
     for (Direction d : Direction.Plane.HORIZONTAL) {
@@ -311,6 +348,7 @@ public final class TreeFinder {
           }
         }
         if (target == null
+            || Timber.reserves(l, target, worker)
             || !workFootprint(station, tree, target)
             || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)) {
           valid = false;
@@ -372,75 +410,90 @@ public final class TreeFinder {
   }
 
   private static Landing compact(
-      ServerLevel l, Tree tree, Station station, UUID owner, Lumberton worker) {
+      ServerLevel l,
+      Tree tree,
+      Station station,
+      UUID owner,
+      net.minecraft.world.entity.Entity worker) {
     Set<BlockPos> source = new HashSet<>(tree.logs), canopy = new HashSet<>(tree.leaves);
-    // All wood is held by one persistent job; one grounded section is exposed at a time.
-    for (int radius = 0; radius <= 2; radius++)
+    List<BlockPos> candidates = new ArrayList<>();
+    int reach = Math.min(32, Math.max(3, (int) Math.ceil(Math.sqrt(tree.logs.size())) + 2));
+    for (int radius = 0; radius <= reach; radius++)
       for (int dx = -radius; dx <= radius; dx++)
         for (int dz = -radius; dz <= radius; dz++) {
           if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-          for (int dy = 1; dy >= -8; dy--) {
+          for (int dy = 2; dy >= -8; dy--) {
             BlockPos target = tree.root.offset(dx, dy, dz);
-            if (!l.hasChunkAt(target) || l.isOutsideBuildHeight(target)) continue;
-            if (source.contains(target.below())
+            if (!l.hasChunkAt(target)
+                || l.isOutsideBuildHeight(target)
+                || source.contains(target.below())
                 || canopy.contains(target.below())
                 || !l.getBlockState(target.below()).isFaceSturdy(l, target.below(), Direction.UP)
                 || (!clearTimberSpace(l.getBlockState(target))
                     && !source.contains(target)
                     && !(canopy.contains(target)
                         && naturalAttachment(l, target)
-                        && l.getFluidState(target).isEmpty()))) continue;
-            if (!workFootprint(station, tree, target)
-                || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)) continue;
-            Set<BlockPos> sweep = new HashSet<>();
-            boolean valid = true;
-            for (BlockPos start : tree.logs) {
-              int steps = Math.max(4, (int) Math.ceil(Math.sqrt(start.distSqr(target)) * 2));
-              for (int step = 0; step <= steps && valid; step++) {
-                Vec3 point =
-                    Vec3.atLowerCornerOf(start)
-                        .lerp(Vec3.atLowerCornerOf(target), step / (double) steps);
-                for (BlockPos q :
-                    BlockPos.betweenClosed(
-                        BlockPos.containing(point),
-                        BlockPos.containing(point.add(.999, .999, .999)))) {
-                  BlockPos p = q.immutable();
-                  sweep.add(p);
-                  if (!l.hasChunkAt(p)
-                      || WorldData.get(l).protectedAt(p)
-                      || l.isOutsideBuildHeight(p)
-                      || !workFootprint(station, tree, p)
-                      || (!source.contains(p)
-                          && !canopy.contains(p)
-                          && !clearTimberSpace(l.getBlockState(p)))) {
-                    station.scanReason = "Fall obstructed by " + l.getBlockState(p) + " at " + p;
-                    valid = false;
-                    break;
-                  }
-                }
-              }
-              if (!valid) break;
-            }
-            if (valid)
-              for (BlockPos p : sweep)
-                if (!l.getEntities(
+                        && l.getFluidState(target).isEmpty()))
+                || !workFootprint(station, tree, target)
+                || Timber.reserves(l, target, worker)
+                || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)
+                || !l.getEntities(
                         worker,
-                        new AABB(p),
+                        new AABB(target).inflate(.1),
                         e -> e instanceof net.minecraft.world.entity.LivingEntity)
-                    .isEmpty()) {
-                  station.scanReason = "Fall occupied at " + p;
-                  valid = false;
-                  break;
-                }
-            if (valid)
-              return new Landing(
-                  java.util.Collections.nCopies(tree.logs.size(), target),
-                  sweep,
-                  Direction.NORTH,
-                  true);
+                    .isEmpty()) continue;
+            candidates.add(target);
+            break;
           }
         }
-    return null;
+    List<BlockPos> targets = new ArrayList<>();
+    Set<BlockPos> used = new HashSet<>(), sweep = new HashSet<>();
+    for (BlockPos start : tree.logs) {
+      boolean placed = false;
+      for (BlockPos target : candidates) {
+        if (used.contains(target)) continue;
+        Set<BlockPos> path = new HashSet<>();
+        boolean valid = true;
+        int steps = Math.max(4, (int) Math.ceil(Math.sqrt(start.distSqr(target)) * 2));
+        for (int step = 0; step <= steps && valid; step++) {
+          Vec3 point =
+              Vec3.atLowerCornerOf(start).lerp(Vec3.atLowerCornerOf(target), step / (double) steps);
+          for (BlockPos q :
+              BlockPos.betweenClosed(
+                  BlockPos.containing(point), BlockPos.containing(point.add(.999, .999, .999)))) {
+            BlockPos at = q.immutable();
+            path.add(at);
+            if (!l.hasChunkAt(at)
+                || l.isOutsideBuildHeight(at)
+                || WorldData.get(l).protectedAt(at)
+                || !workFootprint(station, tree, at)
+                || (!source.contains(at)
+                    && !canopy.contains(at)
+                    && !clearTimberSpace(l.getBlockState(at)))
+                || !l.getEntities(
+                        worker,
+                        new AABB(at),
+                        e -> e instanceof net.minecraft.world.entity.LivingEntity)
+                    .isEmpty()) {
+              valid = false;
+              break;
+            }
+          }
+        }
+        if (valid) {
+          targets.add(target);
+          used.add(target);
+          sweep.addAll(path);
+          placed = true;
+          break;
+        }
+      }
+      if (!placed) {
+        if (station != null) station.scanReason = "No distinct safe landing space";
+        return null;
+      }
+    }
+    return new Landing(targets, sweep, Direction.NORTH, true);
   }
 
   /** Only foliage with no other possible log support is transferred into the job. */
@@ -510,7 +563,13 @@ public final class TreeFinder {
   }
 
   public static boolean landingStillSafe(
-      ServerLevel l, Tree tree, Landing plan, Station s, UUID owner, Lumberton worker) {
+      ServerLevel l,
+      Tree tree,
+      Landing plan,
+      Station s,
+      UUID owner,
+      net.minecraft.world.entity.Entity worker) {
+    if (new HashSet<>(plan.targets).size() != plan.targets.size()) return false;
     Set<BlockPos> source = new HashSet<>(tree.logs);
     Set<BlockPos> canopy = new HashSet<>(tree.leaves);
     for (BlockPos p : plan.sweep) {
@@ -525,6 +584,7 @@ public final class TreeFinder {
     }
     for (BlockPos p : plan.targets)
       if (!workFootprint(s, tree, p)
+          || Timber.reserves(l, p, worker)
           || !Permissions.allowed(l, p, owner, Permissions.Action.FALL)
           || (!clearTimberSpace(l.getBlockState(p))
               && !(plan.segmented
@@ -537,6 +597,11 @@ public final class TreeFinder {
   }
 
   public static boolean revalidate(ServerLevel l, Tree tree, Station s, UUID owner) {
+    if (loose(tree))
+      return l.hasChunkAt(tree.root)
+          && l.getBlockState(tree.root).is(BlockTags.LOGS)
+          && rootWithin(s, tree)
+          && Permissions.allowed(l, tree.root, owner, Permissions.Action.CUT);
     if (!isRoot(l, tree.root) || !rootWithin(s, tree)) return false;
     long remainingLeaves =
         tree.leaves.stream()

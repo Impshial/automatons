@@ -19,7 +19,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
     value = Dist.CLIENT)
 public final class ClientSetup {
   public static final Set<Long> protectedChunks = new HashSet<>();
-  public static int magica;
+  public static int magica, magicaThirds;
   public static String protectionDimension = "";
 
   @SubscribeEvent
@@ -62,7 +62,10 @@ public final class ClientSetup {
             new net.minecraft.client.particle.ItemPickupParticle(
                 mc.getEntityRenderDispatcher(), mc.renderBuffers(), mc.level, orb, player));
     }
-    if (message.kind() == 3) magica = Math.max(0, n.getInt("Magica"));
+    if (message.kind() == 3) {
+      magica = Math.max(0, n.getInt("Magica"));
+      magicaThirds = Math.max(0, Math.min(2, n.getInt("Thirds")));
+    }
     if (message.kind() == 2) {
       Screen previous = mc.screen;
       mc.setScreen(

@@ -29,7 +29,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       ACTIVE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   private static final EntityDataAccessor<String> STATUS =
       SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.STRING);
+  private static final EntityDataAccessor<Optional<BlockPos>> CHOP_TARGET =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
   public UUID owner, homeId, totemId, timberId;
+  private Timber escapeTimber;
+  private UUID looseLogItem;
+  private long nextLogSearch, nextLogPath;
+  private long nextEscapePath;
+  private BlockPos crackTarget;
+
   public BlockPos home, totem;
   public String homeDimension = "", totemDimension = "";
   public boolean authorized = true, packing, deploying;
@@ -98,6 +106,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   protected void defineSynchedData() {
     super.defineSynchedData();
+    entityData.define(CHOP_TARGET, Optional.empty());
     entityData.define(JOB, 1);
     entityData.define(FACE, 0);
     entityData.define(ACTIVE, 0);
@@ -124,6 +133,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public void suspendWork() {
+    clearChop();
     wantsJob = false;
     servicing = false;
     clearPending();
@@ -308,13 +318,18 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void state(String text) {
+    if (!text.equals("Chopping")
+        && !text.equals("Clearing leaves")
+        && !text.equals("Processing timber")) clearChop();
     if (!text.equals(status())) debugWork(status() + " -> " + text);
     entityData.set(STATUS, text);
     int face = 0;
     if (tickCount < angryUntil) face = 5;
     else if (alerts != 0 || text.contains("missing") || text.contains("blocked")) face = 4;
     else if (tickCount < smileUntil) face = 1;
-    else if (text.equals("Chopping") || text.equals("Processing timber")) face = 3;
+    else if (text.equals("Chopping")
+        || text.equals("Clearing leaves")
+        || text.equals("Processing timber")) face = 3;
     else if (text.equals("Seeking tree")) face = 2;
     entityData.set(FACE, face);
   }
@@ -329,6 +344,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void tick() {
     super.tick();
+    if (!level().isClientSide && chopTarget() != null) aimAt(chopTarget());
     if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0) {
       getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(Balance.WALK.get());
       brain();
@@ -348,7 +364,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       ItemStack s = e.getItem(), rest = s.copy();
       if (Inventories.axe(s)) {
         for (int i = 0; i < 3 && !rest.isEmpty(); i++) rest = tools.insertItem(i, rest, false);
-      } else if (s.is(net.minecraft.tags.ItemTags.SAPLINGS)
+      } else if (s.is(net.minecraft.tags.ItemTags.LOGS) && looseLogAllowed(e, station())
+          || s.is(net.minecraft.tags.ItemTags.SAPLINGS)
           || s.is(Items.STICK)
           || s.is(Items.APPLE)) {
         rest = Inventories.insert(cargo, rest, false);
@@ -357,6 +374,79 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       else e.setItem(rest);
       selectTool();
     }
+  }
+
+  private boolean looseLogAllowed(ItemEntity item, Station station) {
+    if (station == null
+        || item.isRemoved()
+        || item.hasPickUpDelay()
+        || !item.onGround()
+        || !item.getItem().is(net.minecraft.tags.ItemTags.LOGS)
+        || !TreeFinder.within(station, item.blockPosition())
+        || Math.abs(item.getY() - station.getBlockPos().getY()) > Balance.ROOT_HEIGHT.get())
+      return false;
+    CompoundTag saved = item.saveWithoutId(new CompoundTag());
+    return !saved.hasUUID("Owner") || saved.getUUID("Owner").equals(owner);
+  }
+
+  private boolean collectLooseLogs(Station station) {
+    ServerLevel l = (ServerLevel) level();
+    ItemEntity target =
+        looseLogItem != null && l.getEntity(looseLogItem) instanceof ItemEntity item ? item : null;
+    if (target != null && !looseLogAllowed(target, station)) {
+      looseLogItem = null;
+      target = null;
+    }
+    if (target == null && tickCount >= nextLogSearch) {
+      nextLogSearch = tickCount + 40;
+      var candidates =
+          l.getEntitiesOfClass(
+              ItemEntity.class,
+              new AABB(station.getBlockPos())
+                  .inflate(station.lumberRange(), Balance.ROOT_HEIGHT.get(), station.lumberRange()),
+              e ->
+                  looseLogAllowed(e, station)
+                      && hasLineOfSight(e)
+                      && Inventories.insert(cargo, e.getItem(), true).getCount()
+                          < e.getItem().getCount());
+      candidates.sort(Comparator.comparingDouble(this::distanceToSqr));
+      for (ItemEntity candidate : candidates.stream().limit(24).toList()) {
+        if (!WorldEvents.pathBudget()) break;
+        Path path = navigation.createPath(candidate.blockPosition(), 0);
+        if (path != null && path.canReach()) {
+          target = candidate;
+          looseLogItem = candidate.getUUID();
+          navigation.moveTo(path, 1);
+          nextLogPath = tickCount + 20;
+          break;
+        }
+      }
+    }
+    if (target == null) return false;
+    if (distanceToSqr(target) < 2) {
+      pickup();
+      if (target.isRemoved()
+          || Inventories.insert(cargo, target.getItem(), true).getCount()
+              == target.getItem().getCount()) {
+        looseLogItem = null;
+        navigation.stop();
+        return false;
+      }
+    }
+    if (tickCount >= nextLogPath || navigation.isDone()) {
+      if (WorldEvents.pathBudget()) {
+        Path path = navigation.createPath(target.blockPosition(), 0);
+        if (path == null || !path.canReach()) {
+          looseLogItem = null;
+          nextLogSearch = tickCount + 40;
+          return false;
+        }
+        navigation.moveTo(path, 1);
+        nextLogPath = tickCount + 20;
+      }
+    }
+    state("Collecting logs");
+    return true;
   }
 
   public boolean inReach(BlockPos p) {
@@ -406,7 +496,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
           if (!level().hasChunkAt(q) || !level().hasChunkAt(q.above()) || !reachesFrom(feet, p))
             continue;
           if (level().getBlockState(q.below()).isFaceSturdy(level(), q.below(), Direction.UP)
-              && level().noCollision(this, box)) candidates.add(q);
+              && level().noCollision(this, box)
+              && !Timber.blocksWorker(level(), box)) candidates.add(q);
         }
     candidates.sort(
         Comparator.comparingDouble((BlockPos q) -> distanceToSqr(Vec3.atBottomCenterOf(q)))
@@ -471,6 +562,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void clearPending() {
+    clearChop();
     landingBlockedSince = -1;
     resumeRoot = null;
     pendingLanding = null;
@@ -650,7 +742,28 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       if (canReach(p)) return p;
       if (pathDeferred) return null;
     }
+    for (BlockPos leaf :
+        BlockPos.betweenClosedStream(tree.root().offset(-3, -1, -3), tree.root().offset(3, 2, 3))
+            .map(BlockPos::immutable)
+            .filter(p -> accessLeaf(tree, p))
+            .sorted(Comparator.comparingDouble(p -> distanceToSqr(Vec3.atCenterOf(p))))
+            .limit(48)
+            .toList()) {
+      if (!Permissions.allowed((ServerLevel) level(), leaf, owner, Permissions.Action.CUT))
+        continue;
+      if (canReach(leaf)) return leaf;
+      if (pathDeferred) return null;
+    }
     return null;
+  }
+
+  private boolean accessLeaf(TreeFinder.Tree tree, BlockPos p) {
+    var state = level().getBlockState(p);
+    return p.getY() >= tree.root().getY() - 1
+        && p.getY() <= tree.root().getY() + 2
+        && Math.abs(p.getX() - tree.root().getX()) <= 3
+        && Math.abs(p.getZ() - tree.root().getZ()) <= 3
+        && state.is(net.minecraft.tags.BlockTags.LEAVES);
   }
 
   public void acceptNext(Station s) {
@@ -739,7 +852,89 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (tickCount >= serviceRetry) beginService(status());
   }
 
+  public BlockPos chopTarget() {
+    return entityData.get(CHOP_TARGET).orElse(null);
+  }
+
+  public void clearChop() {
+    if (level().isClientSide) return;
+    if (crackTarget != null) ((ServerLevel) level()).destroyBlockProgress(getId(), crackTarget, -1);
+    crackTarget = null;
+    entityData.set(CHOP_TARGET, Optional.empty());
+    Timber t = timber();
+    if (t != null && getUUID().equals(t.worker)) t.showProcessing(-1, 0, 1);
+  }
+
+  private void aimAt(BlockPos pos) {
+    Vec3 delta = Vec3.atCenterOf(pos).subtract(getEyePosition());
+    float yaw = (float) (Math.atan2(delta.z, delta.x) * 180 / Math.PI) - 90;
+    float pitch =
+        (float)
+            (-Math.atan2(delta.y, Math.sqrt(delta.x * delta.x + delta.z * delta.z))
+                * 180
+                / Math.PI);
+    setYRot(yaw);
+    setYHeadRot(yaw);
+    yBodyRot = yaw;
+    setXRot(pitch);
+    lookControl.setLookAt(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5, 360, 360);
+  }
+
+  private void workVisual(BlockPos pos, int progress, int duration) {
+    if (!pos.equals(chopTarget())) clearChop();
+    entityData.set(CHOP_TARGET, Optional.of(pos.immutable()));
+    aimAt(pos);
+    if (!level().getBlockState(pos).isAir()) {
+      crackTarget = pos.immutable();
+      ((ServerLevel) level())
+          .destroyBlockProgress(getId(), pos, Math.min(9, progress * 10 / Math.max(1, duration)));
+    }
+    Timber t = timber();
+    if (t != null) t.showProcessing(t.next(), progress, duration);
+  }
+
+  public void moveClearOf(Timber timber) {
+    escapeTimber = timber;
+  }
+
+  private boolean escapeFallingTimber() {
+    if (escapeTimber == null) return false;
+    if (escapeTimber.isRemoved() || !escapeTimber.dangerAt(getBoundingBox())) {
+      escapeTimber = null;
+      navigation.stop();
+      return false;
+    }
+    clearChop();
+    state("Moving clear of timber");
+    if (tickCount < nextEscapePath && !navigation.isDone()) return true;
+    nextEscapePath = tickCount + 20;
+    List<BlockPos> exits = new ArrayList<>();
+    for (int dx = -4; dx <= 4; dx++)
+      for (int dz = -4; dz <= 4; dz++)
+        for (int dy = -2; dy <= 2; dy++) {
+          BlockPos q = blockPosition().offset(dx, dy, dz);
+          Vec3 feet = Vec3.atBottomCenterOf(q);
+          AABB box = getDimensions(Pose.STANDING).makeBoundingBox(feet);
+          if (level().hasChunkAt(q)
+              && level().getBlockState(q.below()).isFaceSturdy(level(), q.below(), Direction.UP)
+              && level().noCollision(this, box)
+              && !escapeTimber.dangerAt(box.inflate(.6, 0, .6))
+              && !Timber.blocksWorker(level(), box)) exits.add(q);
+        }
+    exits.sort(Comparator.comparingDouble(q -> distanceToSqr(Vec3.atBottomCenterOf(q))));
+    for (BlockPos q : exits) {
+      if (!WorldEvents.pathBudget()) break;
+      Path path = navigation.createPath(q, 0);
+      if (path != null && path.canReach()) {
+        navigation.moveTo(path, 1);
+        return true;
+      }
+    }
+    return true;
+  }
+
   private void impact(BlockPos pos, int progress, int duration) {
+    workVisual(pos, progress, duration);
     int cadence = Math.max(5, Math.min(20, duration / 4));
     if (progress / cadence == (progress - 5) / cadence && progress != 5) return;
     swing(InteractionHand.MAIN_HAND);
@@ -758,6 +953,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   private void brain() {
     ServerLevel l = (ServerLevel) level();
     wantsJob = false;
+    if (escapeFallingTimber()) return;
     selectTool();
     if (owner == null) {
       alerts = 0;
@@ -848,6 +1044,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       }
       return;
     }
+    if (chopTarget() == null && collectLooseLogs(s)) return;
     Timber timber = timber();
     if (timberId != null && timber == null) {
       if (timberAnchor != null && !l.hasChunkAt(timberAnchor)) {
@@ -897,7 +1094,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         return;
       }
       if (!WorldEvents.budget(128)) return;
-      var restored = TreeFinder.inspect(l, resumeRoot, s).tree();
+      var restored = TreeFinder.work(l, resumeRoot, s).tree();
       resumeRoot = null;
       if (restored != null && data.reserve(restored.logs(), getUUID())) pending = restored;
       else workTicks = 0;
@@ -923,11 +1120,76 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       }
       return;
     }
+    if (!pending.logs().contains(pendingAction)
+        && !level()
+            .getBlockState(pendingAction)
+            .is(net.minecraft.world.level.block.Blocks.MANGROVE_ROOTS)
+        && !level()
+            .getBlockState(pendingAction)
+            .is(net.minecraft.world.level.block.Blocks.MUDDY_MANGROVE_ROOTS)) {
+      if (!accessLeaf(pending, pendingAction)) {
+        pendingAction = null;
+        workTicks = 0;
+        clearChop();
+        return;
+      }
+      if (!travel(pendingAction, "Travelling", "Clearing leaves")) return;
+      if (!Permissions.allowed(l, pendingAction, owner, Permissions.Action.CUT)) {
+        clearPending();
+        return;
+      }
+      workTicks += 5;
+      impact(pendingAction, workTicks, 20);
+      if (workTicks >= 20) {
+        var leaf = l.getBlockState(pendingAction);
+        for (ItemStack drop :
+            net.minecraft.world.level.block.Block.getDrops(
+                leaf, l, pendingAction, null, this, activeTool())) {
+          ItemStack rest = Inventories.insert(cargo, drop, false);
+          if (!rest.isEmpty())
+            net.minecraft.world.level.block.Block.popResource(l, pendingAction, rest);
+        }
+        l.setBlock(pendingAction, l.getFluidState(pendingAction).createLegacyBlock(), 3);
+        wear(1);
+        clearChop();
+        pendingAction = null;
+        workTicks = 0;
+        routes.clear();
+      }
+      return;
+    }
     if (!travel(pendingAction, "Travelling", "Chopping")) {
       if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160) {
         failedTrees.put(pending.root().asLong(), l.getGameTime() + 80);
         clearPending();
         beginService("Waiting for reachable work");
+      }
+      return;
+    }
+    if (TreeFinder.loose(pending)) {
+      int duration =
+          Inventories.duration(
+              activeTool(), Balance.PROCESS.get(), s.tier("speed"), s.tier("efficiency"));
+      workTicks += 5;
+      impact(pendingAction, workTicks, duration);
+      if (workTicks >= duration) {
+        var state = l.getBlockState(pendingAction);
+        var drops =
+            net.minecraft.world.level.block.Block.getDrops(
+                state, l, pendingAction, l.getBlockEntity(pendingAction), this, activeTool());
+        if (!Inventories.fits(cargo, drops)) {
+          beginService("Cargo full");
+          return;
+        }
+        if (l.destroyBlock(pendingAction, false, this)) {
+          for (ItemStack drop : drops) Inventories.insert(cargo, drop, false);
+          data.placedLogs.remove(pendingAction.asLong());
+          data.naturalLogs.remove(pendingAction.asLong());
+          data.setDirty();
+          wear(1);
+          s.trees.remove(pending.root().asLong());
+          clearPending();
+        }
       }
       return;
     }
@@ -958,10 +1220,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     lookControl.setLookAt(Vec3.atCenterOf(pendingAction));
     int duration =
         Inventories.duration(
-            activeTool(),
-            Balance.PREP.get() * pending.baseCount(),
-            s.tier("speed"),
-            s.tier("efficiency"));
+                activeTool(), Balance.PREP.get(), s.tier("speed"), s.tier("efficiency"))
+            * pending.baseCount();
     if (workTicks < duration) {
       workTicks += 5;
       impact(pendingAction, workTicks, duration);
@@ -1049,6 +1309,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
+    clearChop();
     super.dropCustomDeathLoot(source, looting, recentlyHit);
     for (int i = 0; i < 3; i++) {
       spawnAtLocation(tools.getStackInSlot(i));

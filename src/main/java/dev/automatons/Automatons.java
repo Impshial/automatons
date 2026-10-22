@@ -155,6 +155,7 @@ public final class Automatons {
     ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Balance.SPEC);
     MinecraftForge.EVENT_BUS.register(WorldEvents.class);
     MinecraftForge.EVENT_BUS.register(MagicaHarvest.class);
+    MinecraftForge.EVENT_BUS.register(PlayerFelling.class);
     Network.init();
   }
 

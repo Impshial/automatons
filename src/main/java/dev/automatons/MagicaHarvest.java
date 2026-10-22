@@ -53,6 +53,27 @@ public final class MagicaHarvest {
     return "";
   }
 
+  public record Drop(int largeValue, boolean small) {}
+
+  public static List<Drop> drops(String category, int largeValue, int percentile) {
+    if (largeValue <= 0) return List.of();
+    return switch (category) {
+      case "flowers", "grass" -> List.of(new Drop(largeValue, true));
+      case "crops" -> List.of(new Drop(largeValue, percentile >= 10));
+      case "logs" -> percentile < 40
+          ? List.of(
+              new Drop(largeValue, true), new Drop(largeValue, true), new Drop(largeValue, false))
+          : List.of(new Drop(largeValue, true), new Drop(largeValue, true));
+      default -> List.of(new Drop(largeValue, false));
+    };
+  }
+
+  public static void award(ServerLevel level, Vec3 position, String category) {
+    for (Drop drop :
+        drops(category, Balance.roll(category, level.random), level.random.nextInt(100)))
+      MagicaOrb.drop(level, position, drop.largeValue(), drop.small());
+  }
+
   @SubscribeEvent(priority = EventPriority.LOWEST)
   public static void broken(BlockEvent.BreakEvent event) {
     if (event.isCanceled()
@@ -117,8 +138,7 @@ public final class MagicaHarvest {
     for (Pending p : pending.values()) {
       if (!p.level.hasChunkAt(p.pos) || p.level.getBlockState(p.pos).equals(p.before)) continue;
       // Only a completed removal pays. The event's pre-break state decided eligibility.
-      int amount = Balance.roll(p.category, p.level.random);
-      if (amount > 0) MagicaOrb.award(p.level, Vec3.atCenterOf(p.pos), amount);
+      award(p.level, Vec3.atCenterOf(p.pos), p.category);
       WorldData d = WorldData.get(p.level);
       d.placedLogs.remove(p.pos.asLong());
       d.placedPlants.remove(p.pos.asLong());
@@ -131,8 +151,7 @@ public final class MagicaHarvest {
 
   @SubscribeEvent
   public static void death(LivingDeathEvent e) {
-    if (e.getEntity() instanceof ServerPlayer p && !Balance.KEEP_MAGICA.get())
-      Magica.add(p, -Magica.balance(p));
+    if (e.getEntity() instanceof ServerPlayer p && !Balance.KEEP_MAGICA.get()) Magica.clear(p);
   }
 
   @SubscribeEvent
