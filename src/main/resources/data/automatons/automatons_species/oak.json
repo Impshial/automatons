@@ -1,0 +1,13 @@
+{
+  "logs": [
+    "minecraft:oak_log"
+  ],
+  "leaves": [
+    "minecraft:oak_leaves"
+  ],
+  "max_height": 31,
+  "max_spread": 7,
+  "max_logs": 128,
+  "large_trunk": false,
+  "supported": true
+}

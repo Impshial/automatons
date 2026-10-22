@@ -1,0 +1,319 @@
+Build the first playable version of my Minecraft 1.20.1 mod, working title Automatons. Implement the Lumberton and the pedestal, totem, wand, protection, inventory, and upgrade systems specified below.
+
+Implement and verify the mod. Work through the requirements in manageable stages, preserving progress in the repository. Respect the repository's instructions and any existing user-authored work. Distinguish completed functionality from anything that remains unverified.
+
+1. Inspect the project and establish the target.
+
+- Read relevant repository instructions, build configuration, dependencies, existing code, and assets before editing.
+- Target Minecraft 1.20.1. If this is a fresh project, use Forge 47.x and Java 17. If a compatible Forge version is already configured, retain it. Do not upgrade Minecraft or migrate loaders as part of this task.
+- Use the working mod name Automatons and namespace automatons unless the repository already establishes a different name.
+- Keep this mod independent of my other Minecraft projects.
+- Use vanilla/Forge facilities where practical. Add dependencies only when needed and explain them.
+- The finished deliverable must include a buildable mod, real models and textures, functional GUIs, survival recipes, and a compiled JAR. Do not substitute a design document, screenshots, placeholder blocks, or decorative mock GUIs for working features.
+
+2. Separate settled requirements from adjustable implementation defaults.
+
+Settled requirements include the specified appearance, 1.5-block height, Minecraft pixel density, expressive face textures, three tool slots, job-appropriate tool selection, totem-based upgrades, home pedestal, chunk protection, and a help beacon for missing tools, no eligible wood, full storage, or full cargo.
+
+The following choices make this first implementation concrete, but are provisional balance/design defaults. Keep them centralized and easy to change, and identify them in your completion notes:
+
+- One assigned automaton per totem. A pedestal can own multiple automatons and their totems.
+- Square horizontal storage and lumber ranges centered on the totem.
+- Base Storage Range: 4 blocks outward, forming a 9 x 9 footprint including the center block. Chest height allowance: 4 blocks above or below the totem.
+- Base Lumber Range: 16 blocks outward, forming a 33 x 33 footprint. Search trunk bases within 16 blocks above or below the totem, then validate the associated tree within bounded tree-detection limits.
+- Nine cargo slots, separate from the three tool slots.
+- Speed has not been approved yet. Use the separately identified provisional speed targets below only as configurable starting values, not established user decisions.
+- Four universal upgrade slots on the totem, with incompatible and conflicting combinations rejected.
+- One public protection map per dimension for this first version. Protected chunks apply to all this mod's automatons. Record who created each protection; allow its creator or a server operator to revoke it. Respect compatible external claims where available.
+- A 64-block-tall visual protection curtain. This is only the display height, not the protected height.
+- Provisional recipes and upgrade values described below. Do not represent them as permanently settled balance decisions.
+
+3. Implement the Lumberton model and textures.
+
+- Give the Lumberton wooden construction, iron reinforcement, broad shoulders, long blocky arms, and a small square wooden head. Its flat face has two separate amber eyes and a small mouth. Include a small amber chest marking.
+- The complete standing mob must be approximately 1.5 blocks tall. Give it a matching collision box and eye height, with a width suitable for ordinary paths and doorways.
+- Hold the actual equipped axe in its hand. Do not bake an axe into the body model or render a tool that the entity does not own.
+- Include idle, walking, looking, chopping, and carrying/returning behavior with restrained Minecraft-style animations. Keep held-item positioning correct during movement and swings.
+
+4. Enforce Minecraft pixel density, not an arbitrary atlas size.
+
+- New block-face textures and inventory item sprites must use a 16 x 16 base pixel design.
+- Preserve approximately one texture pixel per 1/16 of a block on model surfaces at the model's final rendered scale. A model 1.5 blocks tall spans 24 such units vertically.
+- An entity texture atlas may be 64 x 64, 128 x 128, or another suitable atlas size to fit all model faces and expression frames. A larger atlas must provide more layout space, not finer artwork per block.
+- Build and unwrap the entity at its intended final size. Do not shrink a full-sized golem while leaving its UV density too fine, and do not stretch a 16-pixel face across a larger surface merely to force a 16 x 16 atlas.
+- Keep cuboid dimensions and UV boundaries aligned to the pixel grid wherever practical. Use proportional UV coverage on smaller block-model faces as well.
+- Use crisp pixels, simple shading, a limited palette, and nearest-neighbor texture sampling where applicable. Avoid blurred resampling, painted microdetail, smooth gradients in the material textures, and photoreal surface maps.
+- Author the actual game textures and geometry. Document model dimensions, atlas dimensions, and the pixel-density convention for verification and maintenance.
+
+5. Give the face expressions driven by actual state.
+
+Provide coordinated face texture variants or a precisely aligned face overlay for at least:
+
+- Idle: neutral eyes and a small mouth while unassigned or waiting without an error.
+- Smile: a brief response to assignment, successful unloading, or receiving replacement tools.
+- Raised eyebrow: searching or investigating when no eligible tree is immediately available.
+- Focused: actively chopping the trunk or processing fallen timber.
+- Frown: out of usable tools, no eligible wood, full cargo, blocked storage, or another sustained problem.
+- Anger: a short reaction to being hurt. This expression does not make the Lumberton an aggressive combat mob.
+- Calm: recalled and waiting at home, optionally reusing the neutral expression.
+
+Keep the head geometry and its wooden material consistent between expressions. Use coarse pixel changes to the eyes, brows, and mouth. Avoid face-layer z-fighting. Synchronize meaningful state changes from the server and use short display timers for temporary expressions so the face does not flicker every tick. A happy transient expression must not hide a persistent critical problem indefinitely.
+
+6. Implement the Automaton Pedestal as the home and creation block.
+
+- The pedestal is required to create survival automatons. Crafting a Lumberton must occur through the pedestal GUI, not by crafting a spawn egg in a normal crafting table.
+- The pedestal GUI accepts the recipe ingredients, clearly shows whether the recipe is complete, and offers a Create Lumberton action.
+- Creation consumes the ingredients exactly once and spawns one Lumberton at a valid nearby position. If no safe spawn position exists, do not consume the recipe.
+- Store a persistent home pedestal identity and dimension on each created automaton. Store its owner and register the worker with that pedestal.
+- A newly created Lumberton waits near its home until assigned to a totem.
+- Include Call All Home and Resume Work buttons. They affect this pedestal's automatons only.
+- Call All Home is a persistent recall: workers stop initiating work, preserve their totem assignments and carried items, travel home, and remain there.
+- Resume Work releases that recall and allows assigned workers to continue if their other requirements are satisfied. It does not invent assignments for unassigned workers.
+- A falling tree already committed to an animation must settle safely, but recall must prevent starting another chopping action. Save remaining timber for later processing.
+- Keep recall authoritative across save/reload, including workers that were unloaded when the button was used.
+- If the home pedestal is destroyed, keep the worker and inventory intact, show Home missing, and provide a deliberate owner-only rebind action through the worker GUI and wand. Do not silently adopt a newly placed pedestal at the same coordinates or lose the mob.
+
+7. Implement a universal Automaton Totem.
+
+- The totem is a placeable block with a cylinder-like upright shape and a glowing top. Approximate the cylinder using Minecraft-appropriate stepped or faceted geometry, preserving the pixel-density rules.
+- It is the worker's job anchor and the location for its upgrades. The automaton keeps its original home pedestal.
+- Assigning a worker to a totem establishes the totem's connection to that worker's home automatically through their persistent identities.
+- Use persistent identities so breaking and replacing a totem at the same position does not silently restore an old assignment.
+- Enforce the initial one-worker capacity. Reject an occupied totem with an understandable message rather than replacing its worker silently.
+- Reassignment releases the old reservation and applies the new totem's supported settings and upgrades. Upgrades remain in their respective blocks.
+- An unassigned totem displays a neutral GUI. When a Lumberton is assigned, display the shared assignment, storage, and upgrade controls alongside the Lumberton job panel. Select the panel from the assigned worker's job type.
+- Display worker name/type, home connection, working status, Storage Range, Lumber Range, registered chests, tool counts/durability, tree queue summary, and upgrade slots.
+- Distinguish no trees, no reachable trees, protected trees, missing tools, no storage, full storage, recall, and temporarily unloaded dependencies.
+
+8. Define storage discovery and the two ranges clearly.
+
+- Measure both horizontal ranges from the totem, using the same inclusive square-boundary rule everywhere. The inner Storage Range is not an exclusion zone for trees.
+- Show both range and resulting footprint in the GUI, such as 4 blocks outward / 9 x 9.
+- A chest is eligible only if it lies within the storage footprint and height allowance and can actually be reached and used by the worker.
+- Discover nearby chests automatically. Show them in the GUI and let the owner disable one so a nearby personal chest is not inadvertently used. Use a consistent deterministic ordering, preferring reachable nearer storage.
+- Support vanilla single and double chests without counting a double chest twice. Use item-handler access where appropriate for supported modded chest compatibility, but do not treat every nearby machine inventory as a Lumberton chest.
+- Deposit collected wood, sticks, saplings, and other legitimate tree drops into eligible storage. Transfer only the quantity the chest accepts, and preserve the remainder in cargo.
+- A chest may also supply appropriate replacement tools. Expose per-chest toggles for output and tool supply.
+- Chests and totems may be inside protected chunks. Ordinary storage operations remain allowed there.
+- If one chest is destroyed and another eligible usable chest remains, use the remaining chest. If all eligible chests are gone, return home while retaining the totem assignment and show No storage.
+- Full storage stops harvesting, sends the worker to its totem, and activates the help beacon. Full cargo independently causes the same return and signal; the worker then attempts to unload into eligible nearby storage and clears that condition when enough space exists to proceed. Unreachable storage pauses work with a clear status and bounded retries. Do not discard cargo, harvest indefinitely, or loop pathfinding without a delay.
+- A temporarily unloaded chunk is not evidence that its chest, pedestal, or totem was destroyed. Preserve the relationship and wait for a reliable check.
+- When storage returns, resume only if the worker is not recalled and the other requirements are met.
+
+9. Implement the wand with Assign, Protect, and Revoke modes.
+
+- Hold Shift and scroll the mouse wheel to change mode. Consume the scroll appropriately so this action does not also change hotbar slots.
+- Show the current mode with a brief action-bar message and a readable item tooltip.
+- Assign: right-click an owned automaton, then a valid totem. Show selection feedback and a success/failure message. Validate owner, dimension, target existence, and capacity on the server.
+- Provide an explicit way to cancel a pending selection and invalidate stale selections safely.
+- Use a separate explicit rebind workflow for replacing a missing home pedestal so assigning a job never accidentally changes a worker's home.
+
+10. Protect and revoke entire chunks, with confirmation.
+
+- Protect: right-click a block to select its chunk. Display Yes / No confirmation before changing protection.
+- Revoke: right-click a block in a protected chunk. Display Yes / No confirmation before removing protection.
+- Closing the dialog, pressing Escape, or selecting No changes nothing. Confirm the original selected chunk rather than whichever chunk the player later looks at.
+- Already-protected and already-unprotected cases should show a brief message and remain unchanged.
+- A protected chunk covers its complete 16 x 16 horizontal footprint and the dimension's entire legal vertical range. Use the dimension's actual minimum and maximum build limits, including negative heights; do not hardcode Overworld bounds.
+- Protection prevents this mod's destructive job actions. It permits walking, returning home, storage access, restocking, and unloading.
+- The Lumberton must never cut a protected tree block, process protected fallen timber, or fell a tree into or through protected space. Check protection at the action itself, not only when discovering or assigning the tree.
+- If a required part of a tree is protected, skip that tree rather than partially destroying it.
+- Centralize action permissions so tree cutting, felling, timber processing, movement, and inventory interaction are checked according to the action being performed.
+- Protection changes invalidate affected queued tasks. If protection is added while a committed fall animation is running, pause that job safely without yielding further drops or damaging protected contents; retain its state for later resolution.
+- This is not a general claim system that prevents the player or unrelated vanilla mechanics from changing blocks.
+
+11. Render chunk protection as the approved fading curtain.
+
+- Render only while the local player holds the wand in Protect or Revoke mode, including correct handling of either hand. If both hands hold wands, use the main-hand wand as the deterministic display source.
+- Protect mode: a continuous translucent green band around protected areas.
+- Revoke mode: the same boundaries rendered translucent red.
+- Assign mode or wand put away: no protection curtain.
+- Use filled translucent vertical surfaces, not merely a wireframe or thin outline. Start visibly translucent at the bottom and smoothly fade upward to zero opacity over 64 blocks.
+- Provisional display placement: anchor the visible band near the player's local elevation so it can also be seen underground or on elevated platforms. Keep the horizontal walls exactly on chunk boundaries. Document this choice; it does not change protection height.
+- Merge shared edges of neighboring protected chunks so only the outside perimeter remains, including correct boundaries around unprotected holes.
+- Render nearby relevant boundaries efficiently, with normal visibility/culling and no full-world geometry generation each frame.
+
+12. Make the totem maintain the tree queue.
+
+- While loaded and active, the totem continuously refreshes its knowledge of eligible trees using bounded incremental scans, cached results, and sensible delays.
+- Do not scan the entire search volume every tick, force-load distant chunks, or recursively traverse an unbounded forest.
+- Use a server-wide workload budget as well as per-totem limits so many totems do not all perform expensive work in the same tick.
+- Track each individual tree, its recognized trunk/branch logs, current status, and reservation. Suggested statuses are Available, Assigned, Felling, Processing, Blocked, and Finished.
+- Reserve a tree across overlapping totems, keyed by dimension and a stable tree/job identity. Do not let two workers independently produce drops from the same tree.
+- Revalidate the target before starting and before each mutation. Account for player changes, new protection, tools, cargo space, and loaded chunks.
+- Release stale reservations when workers are removed, reassigned, or recalled before committing work. Retain ownership of already-felled timber until it is completed or safely reassigned.
+- Retry temporarily blocked jobs with backoff. Periodically discover new growth and remove stale entries.
+- Keep scanning while the worker waits at the totem for more wood. Do not suspend discovery merely because the help beacon is active.
+- Set No eligible wood only after enough loaded-area discovery has completed to justify it. A temporarily empty queue during an unfinished scan, pending reservation check, or chunk unload is not proof that the entire work area is empty.
+- Separate the resumable authoritative job data from disposable discovery caches. Rebuild or revalidate caches after reload.
+
+13. Recognize trees conservatively.
+
+- The Lumberton harvests actual trees, including valid trees grown by players, and ignores ordinary wooden construction.
+- Do not identify a tree merely because a block is a log, or because a connected flood fill eventually reaches leaves.
+- Validate a plausible rooted trunk, species-appropriate trunk and branch structure, and supporting natural leaf canopy. Handle neighboring canopies without absorbing an entire forest or attached wooden house.
+- Use appropriate vanilla tags and extensible species definitions, rather than fragile display-name checks.
+- Respect bounds on traversal, height, branch spread, and total blocks per candidate. If classification is ambiguous or exceeds those limits, skip it and provide a meaningful reason.
+- Track directly player-placed structural logs going forward as an additional safety signal, while allowing sapling-grown trees. Acknowledge that old untracked logs and arbitrary modded structures cannot be perfectly classified through geometry alone.
+- Support the ordinary Overworld tree families present in Minecraft 1.20.1, including 2 x 2 trunks and branched forms. Add explicit handling or report a deliberate unsupported case for unusual shapes rather than silently harvesting them incorrectly.
+- Do not treat nether fungi, giant mushrooms, or arbitrary modded vegetation as supported trees merely because their blocks share a loose tag.
+- Require the entire destructive job to fit the permitted work area and protection policy. Trees straddling an unsafe boundary are skipped.
+
+14. Include controlled tree felling and grounded processing.
+
+- The intended behavior is visible: inspect a tree, chop its base, bring it down, then walk along the fallen timber chopping it into collectible materials.
+- Find and validate a landing direction and footprint before beginning. Try another direction when obstructed. If none is safe, mark the tree blocked rather than overwriting terrain or buildings.
+- Validate the trunk, branches, animation sweep, and landing area against protected chunks, work boundaries, loaded world data, and interfering blocks. Account for occupants so the fall does not trap or injure players or mobs in this first version.
+- Use a controlled falling animation and deterministic landing positions. The feature does not require general-purpose rigid-body physics.
+- Represent grounded wood as persistent, harvestable fallen-timber objects or another equally robust dedicated representation. Preserve the source wood types and resource amounts. It must not replace existing terrain, containers, crops, or player blocks.
+- Lay log sections in a recognizable line along suitable ground. Branched and large trees need a bounded layout that preserves their timber without blindly requiring an impossible straight line through nearby structures.
+- Give every converted source log one authoritative identity in the job. Transfer it from standing tree to fallen timber without producing both the original block loot and duplicate fallen loot.
+- The initial felling phase has an explicit tool-wear cost based on the trunk cut. Subsequent processing applies normal per-section tool wear. Document the chosen cost; do not make large trees free to process or charge twice for the same processing action accidentally.
+- A fallen section yields its final drops only when processed. Use appropriate loot/tool semantics and effective enchantments. Leaves can produce their normal appropriate drops once.
+- Remove or animate the recognized crown responsibly so branches and leaves are not stranded as permanent floating structures. Do not erase leaves belonging to neighboring trees or decorations.
+- The worker processes the remaining sections, unloads when necessary, and finishes that job before selecting another tree. Interrupted timber must remain available after recall, missing tools, entity unloading, and restart.
+- Allow players to chop fallen timber too. Player and automaton interactions must share the same consumption/drop rules and cannot duplicate a section.
+- Persist enough progress to resume a partly converted or settled job safely. Reconcile source-block removal, timber creation, and completed drops after normal save/reload; use idempotent identities and a clear recovery path for interrupted conversion. Do not promise impossible crash guarantees without implementing and verifying them.
+
+15. Give the automaton exactly three tool slots and a separate cargo inventory.
+
+- The worker has three internal tool slots, each holding at most one appropriate tool. The active held tool is one of these slots, not a fourth hidden tool.
+- The Lumberton accepts axes suitable for its job. Include vanilla axes and compatible modded axes through explicit tags/capabilities or a documented extension mechanism.
+- It must never pick up or extract swords, pickaxes, shovels, hoes, fishing rods, or unrelated items as replacement tools.
+- Enforce the same job filter for direct player insertion, shift-click transfers, chest withdrawal, ground pickup, and any exposed automation interface.
+- Provide a worker GUI, opened without the wand, showing the three tool slots, active-tool indicator, durability, cargo, status, home, and totem. Restrict editing appropriately to its owner.
+- Ground pickup is limited to appropriate tools and legitimate job output; do not make it vacuum every nearby dropped item. Respect ownership/pickup restrictions where available.
+- Automatically replenish empty tool slots from eligible chests marked for tool supply when the worker is near storage. Take only what fits, preserve each ItemStack's data, and do not continuously replace usable tools merely because another axe looks better.
+- Use a deterministic tool preference and advance to another valid stored axe when the current one breaks. Preserve enchantments, custom names, and durability.
+- Apply normal durability and compatible enchantment effects. Do not generate a free axe, silently repair a broken one, or keep a rendered/equipped copy separate from the real slot.
+- Transfer and loot operations must be server-authoritative and safe under simultaneous access by players or other automation.
+- On death, drop the inventories exactly once according to the implemented ownership/death policy. Preserve inventory data through normal unload/reload.
+
+16. Use the totem beacon for every specified work-stopping condition.
+
+- Maintain independent alert reasons: No usable tools, No eligible wood, Storage full, and Cargo full. The GUI must show all current reasons, not just whichever was detected last.
+- Any of these reasons stops new harvesting, sends the worker back to its assigned totem, and makes the totem emit a vertical beacon-like light into the sky. Activate the signal when the problem is established, even while the worker is still travelling back.
+- No usable tools means all three tool slots lack a usable job-appropriate tool. Return to the totem's storage area to restock, or wait for the player to supply an axe. Do not continue chopping barehanded or invent a tool.
+- No eligible wood means the validated job queue contains neither a reachable permitted tree nor unfinished eligible fallen timber. The totem keeps scanning while the worker waits.
+- Storage full means the registered eligible output chests cannot accept the relevant output, not that one chest happens to be full while another can accept it.
+- Cargo full means the worker has insufficient capacity for the next safe collection/processing step. Stop first, return to the totem, signal, and attempt unloading into available local chests. Ordinary fullness must be able to resolve automatically through unloading.
+- Fullness and missing storage are distinct. If all chests have actually been destroyed, return to the home pedestal and show No storage; do not confuse destruction with temporarily full chests or unloaded data.
+- This is a custom help signal. It does not require a vanilla beacon block, mineral pyramid, fuel, or potion effects. Use amber/gold as the provisional beam color for all four reasons.
+- Render efficiently from the loaded totem toward the dimension's upper extent. Keep the alert active indoors as well; do not require an unobstructed sky check. Rendering limits do not require forced chunk loading.
+- Resolve each reason independently. A tool alert clears when the worker actually acquires a usable axe. A cargo alert clears after adequate inventory capacity is restored. A storage alert clears after suitable reachable output space is available.
+- As soon as scanning discovers valid available trees or logs from an unfinished tree job, clear No eligible wood. If no other blocking condition remains and the worker is not recalled, extinguish the beam and automatically return it to work. No manual Resume Work button is required for recovery from an ordinary alert.
+- Logs here means legitimate harvestable tree wood or this mod's fallen timber. It does not grant permission to chop a wooden building merely because its logs are nearby.
+- If a new tree is found while the worker still lacks tools or storage space, keep the other warning active. The beam is visible whenever any supported alert remains unresolved. No single recovered condition can erase unrelated blockers.
+- Recheck supplies and storage on relevant changes and at bounded intervals. Validate the selected job again before resuming so a stale observation or another worker's reservation does not cause a false recovery.
+- The player can supply tools through the worker GUI or an eligible supply chest, free chest space, add another eligible chest, remove cargo directly, or grow suitable trees in the working area.
+- Call All Home overrides travel to the totem: a recalled worker goes to its pedestal and stays there. Resolving alerts can clear the beam, but never cancels recall. Outstanding alert reasons can remain signalled at the still-assigned totem.
+- If the totem is destroyed, clear the invalid job assignment and its beam, and return to the home pedestal while retaining inventory.
+- Reassignment or worker removal clears the old totem's stale alert. Unloading pauses processing and rendering without erasing the persisted condition.
+
+17. Keep tools, jobs, and upgrades consistent.
+
+- Totem upgrades grant effects only to the worker currently bound to that totem. They are not a general aura affecting every nearby mob.
+- Store upgrades in the totem, persist them, show their effects in the GUI, and drop their real item stacks exactly once if the totem is broken.
+- Define supported job types, conflicts, level limits, stacking rules, and effective values in a reusable upgrade system.
+- Implement these initial upgrades with provisional values: Storage Range (+4 blocks per level, two levels), Lumber Range (+8 per level, two levels), Work Speed (20 percent less chopping time per level, two levels with a safe minimum duration), and Tool Enchantment (effective Efficiency I or II).
+- Use explicit tiered upgrade items or another clearly documented inventory scheme. Do not allow accidental unlimited stacking in the four slots.
+- A totem enchantment is an effective bonus for work calculations. It must not permanently write an enchantment onto every axe moved through the worker. Combine existing enchantments according to a declared rule; for Efficiency, use the higher existing or granted level rather than adding them together.
+- Changes to range or upgrades invalidate or revalidate pending actions immediately. Do not keep working outside a newly reduced range.
+- If a range reduction strands already-felled timber, preserve it for player recovery or later reassignment instead of deleting it or continuing prohibited processing.
+
+18. Keep movement and work speed separate, with provisional starting values.
+
+Speed was raised as an unresolved design question. The following targets are proposals for initial testing, not approved final balance. Expose them as clearly named configuration values and call them out in the handoff so they can be changed without rewriting behavior.
+
+- Walking: approximately 2 blocks per second on unobstructed level ground at normal server tick rate. Measure actual navigation speed in game rather than assuming an attribute value directly equals blocks per second.
+- Loaded movement: use the same walking speed initially. Do not silently introduce weight penalties or sprinting behavior.
+- Single-trunk felling preparation: approximately 4 seconds with an unenchanted iron axe. Scale the preparation work with the number of trunk-base logs cut for a larger tree.
+- Fallen-log processing: approximately 2 seconds per log with an unenchanted iron axe, before upgrades. This is separate from the tree's tipping animation.
+- Falling animation: approximately 1.5 seconds for the controlled visual sequence, with bounded adjustments for tree size if necessary. Work-speed upgrades must not make the physical presentation unreadably instantaneous.
+- Unloading: a short stop with a bounded transfer of accepted stacks. Do not add an arbitrary multi-second delay for every individual item.
+- Tool quality, compatible enchantments, and the Work Speed upgrade may affect chopping/processing duration. Use a documented bounded formula and a minimum duration, with the iron-axe values above as the calibration reference.
+- The Work Speed upgrade changes chopping speed. Keep walking speed independently configurable.
+- Animate swings in sync with work progress and apply drops/durability once at completion, not once per rendered swing. Tick-based progression should not multiply yield during server lag or unloaded time.
+
+19. Define explicit behavior priorities and recovery.
+
+Use a state machine or equivalent understandable task structure. At minimum represent Unassigned, Idle at home, Seeking tree, Travelling, Chopping, Felling, Processing timber, Unloading, Restocking, Needs tools, No eligible wood, Storage full, Cargo full, Storage blocked, Returning totem, Waiting at totem, Returning home, Recalled, and Dependency unloaded.
+
+- Safety, valid world state, and protection checks precede destructive actions.
+- An explicit pedestal recall overrides ordinary work and travel prompted by any totem alert.
+- A confirmed broken totem sends the worker home and clears its job assignment.
+- Missing tools, no eligible wood, full chests, or full cargo send it to the totem and raise the beam when not recalled. Keep all outstanding reasons and recover automatically when their prerequisites are restored.
+- Cargo limits and unavailable storage stop further harvesting before overflow; the worker can still perform the unloading and restocking actions needed to recover.
+- Temporary absence of loaded data must not delete bindings or completed progress.
+- Use bounded pathfinding retries and fallback waiting states. Do not teleport through walls, destroy obstacles, or silently chunk-load to make a path succeed.
+- If a target location is unreachable, keep the worker safe, retain its inventory and assignment, and expose a clear status rather than spinning forever.
+- Keep state reasons separate when necessary: a worker may be recalled and still need tools. Do not clear one condition merely because another takes priority.
+
+20. Add functional GUIs, recipes, and useful feedback.
+
+- All menus must operate on actual server state, with validated actions and synchronized values. Handle a block breaking or worker being reassigned while its menu is open.
+- Include proper quick-move behavior, slot filtering, tooltips, input validation, and ordinary inventory interactions.
+- Keep text concise and player-facing. Show what a setting does and why work is paused. Do not put implementation vocabulary into the user flow.
+- Provide a creative tab and an explicitly development-only spawn egg or equivalent test aid if useful. Survival creation remains pedestal-based.
+- Implement datapack-friendly recipes with item tags where appropriate and sensible renewable materials. The recipes below are provisional starting balance, not settled canon:
+  * Pedestal, shaped 3 x 3: stone brick / amethyst shard / stone brick; iron ingot / gold ingot / iron ingot; stone brick / stone brick / stone brick.
+  * Totem, shaped 3 x 3: empty / amethyst shard / empty; iron ingot / oak log / iron ingot; empty / stone brick / empty.
+  * Wand, shaped 3 x 3: empty / empty / amethyst shard; empty / stick / empty; stick / empty / empty.
+  * Lumberton, custom pedestal recipe: 6 oak logs, 4 iron ingots, 1 amethyst shard, and 1 iron axe. The axe becomes the first tool in its inventory, preserving that ingredient's actual durability and enchantments. Do not consume it and create a second fresh axe. Its wood and iron appearance must match these materials.
+  * Give the four implemented upgrade families reasonable data-driven crafting recipes based on the same wood/iron/amethyst theme and appropriate vanilla ingredients. Put the exact selected recipes in the documentation, with higher levels requiring their lower-level item. Do not leave them creative-only.
+- If a craft needs a safe output/spawn location or sufficient inventory space, validate that before consuming anything.
+- Include readable messages for assignment, recall, protected chunks, full storage, missing tools, invalid recipes, and unsupported trees.
+
+21. Keep server, persistence, and performance behavior dependable.
+
+- Make the server authoritative for ownership, inventories, reservations, recipes, protection, tool wear, item drops, and world changes.
+- Validate network requests for the sender, permissions, active menu/context, dimension, coordinates, range, and target existence. Never trust a client-supplied inventory result or arbitrary chunk access request.
+- Keep client rendering and input registration separate so a dedicated server can load the mod.
+- Persist home/totem identities, owner, inventories, active tool, important task state, protection data, upgrades, alerts, and unfinished fallen timber.
+- Apply appropriate dirty marking and synchronization. Do not send complete tree/log lists to every nearby client every tick.
+- Avoid forced chunk loading by default. Workers and totems continue normal processing only where the required world data is loaded, with dependencies reconciled when it becomes available again.
+- Use item and job identities to prevent double withdrawals, repeated loot, stale claims, and duplicate entities after reload.
+- Keep runtime logs useful and avoid per-tick spam. Include concise diagnostic reasons for skipped or stalled jobs.
+
+22. Verify the actual player experience and important failure cases.
+
+Run the available build and appropriate focused automated checks, and use an in-game client plus dedicated-server smoke check when the environment permits. Do not claim a visual or gameplay test ran if it did not. Verify at least:
+
+- Pedestal crafting consumes the correct ingredients once, transfers the actual recipe axe, spawns one worker, and assigns the right home.
+- The 1.5-block model, selected head, face expressions, held axe, animations, texture density, and block/item textures look consistent in game.
+- A worker can be assigned, find eligible storage, identify a tree, fell it, process its timber, unload, and accept another job.
+- Ordinary wooden buildings, player-placed decorative logs, neighboring trees, and protected blocks are not absorbed into a tree job.
+- Each of the three tool slots accepts only job-appropriate tools, including shift-click, chest extraction, and dropped-item pickup. No fourth tool appears.
+- A worn axe breaks, the next stored axe is equipped, the last tool shortage sends the worker to its totem, the beam appears, and supplying a valid axe clears that reason without erasing other alerts.
+- Inappropriate items do not clear the beam. Tool shortage during a partly processed tree preserves the timber and job.
+- With no trees or unfinished timber left, the worker returns to the totem and signals. The totem continues scanning; a newly grown eligible tree clears the no-work reason and starts work automatically when other conditions permit.
+- Full output chests and full cargo independently trigger return-to-totem and the beam. Freeing chest space and unloading restore normal work without a manual release.
+- Simultaneous blockers remain independent: discovering wood while tools or storage are unavailable must not prematurely clear the beam. Resolving every blocker while recalled must not release the worker from home.
+- Walking, trunk preparation, falling, and log-processing speeds are measured against the clearly labelled provisional values, with upgrades and tool effects checked separately.
+- Recall overrides work and tool travel, survives reload, retains assignments, and resumes only when released.
+- Destroying a totem, removing the last chest, unloading a dependency, and making a path unreachable produce the intended distinct states.
+- Protect and Revoke require confirmation, handle cancellation, use the correct chunk at negative coordinates, and cover the actual full dimension height.
+- Protection curtains appear only in the correct wand modes, are green/red as appropriate, merge neighboring edges, and fade upward correctly.
+- Protection added after discovery or during work stops further prohibited actions, including across chunk boundaries and tree-fall paths.
+- Overlapping totems cannot duplicate a tree assignment, source log, fallen section, inventory transfer, or loot drop.
+- Full chests and partial insertions preserve remaining cargo. Chest and totem replacement do not incorrectly restore destroyed identities.
+- Upgrade changes apply to the correct worker, respect limits, and do not permanently enchant supplied tools.
+- Save/reload during chopping, felling, grounded processing, tool shortage, and recall preserves a coherent recoverable job.
+- Several active totems stay within the scan/work budget without large periodic server stalls.
+- The packaged mod starts on a dedicated server without loading client-only classes.
+
+23. Deliver the implementation and a precise handoff.
+
+- Build the distributable JAR and provide its exact path and installation requirements.
+- Provide a brief usage guide covering pedestal creation, tool supply, wand assignment, the two ranges, upgrades, protection/revoke, recall, all beacon alert reasons, automatic recovery, and adjustable speed values.
+- Include the authored textures and model sources in the repository. Retain an editable model source where feasible and document the atlas layout and expression mapping.
+- Record the provisional defaults and recipes in one easy-to-find design/configuration document.
+- Report tests actually performed, their results, and any concrete remaining limits. Explain skipped unusual tree types or unavailable visual testing plainly.
+- Continue implementing and fixing issues until this Lumberton workflow is functional. Do not silently cut tree felling, GUI behavior, inventory rules, or art quality from scope and then call the whole task complete.
+
+Technical reference sources, if needed:
+https://docs.minecraftforge.net/en/1.20.1/gettingstarted/
+https://docs.minecraftforge.net/en/1.20.1/blockentities/
+https://docs.minecraftforge.net/en/1.20.1/gui/menus/
+https://docs.minecraftforge.net/en/1.20.1/resources/client/models/
+https://docs.minecraftforge.net/en/1.20.1/networking/simpleimpl/

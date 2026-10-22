@@ -1,0 +1,13 @@
+{
+  "logs": [
+    "minecraft:dark_oak_log"
+  ],
+  "leaves": [
+    "minecraft:dark_oak_leaves"
+  ],
+  "max_height": 31,
+  "max_spread": 7,
+  "max_logs": 128,
+  "large_trunk": true,
+  "supported": true
+}

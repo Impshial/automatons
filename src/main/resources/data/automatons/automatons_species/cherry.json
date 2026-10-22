@@ -1,0 +1,13 @@
+{
+  "logs": [
+    "minecraft:cherry_log"
+  ],
+  "leaves": [
+    "minecraft:cherry_leaves"
+  ],
+  "max_height": 31,
+  "max_spread": 7,
+  "max_logs": 128,
+  "large_trunk": false,
+  "supported": true
+}

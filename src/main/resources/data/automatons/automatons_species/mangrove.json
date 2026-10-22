@@ -1,0 +1,13 @@
+{
+  "logs": [
+    "minecraft:mangrove_log"
+  ],
+  "leaves": [
+    "minecraft:mangrove_leaves"
+  ],
+  "max_height": 31,
+  "max_spread": 7,
+  "max_logs": 128,
+  "large_trunk": false,
+  "supported": false
+}

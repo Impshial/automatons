@@ -1,0 +1,17 @@
+{
+  "type": "automatons:creation",
+  "wood": {
+    "tag": "minecraft:oak_logs"
+  },
+  "wood_count": 6,
+  "metal": {
+    "item": "minecraft:iron_ingot"
+  },
+  "metal_count": 4,
+  "core": {
+    "item": "minecraft:amethyst_shard"
+  },
+  "tool": {
+    "item": "minecraft:iron_axe"
+  }
+}
