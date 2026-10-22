@@ -262,7 +262,8 @@ public class Station extends BlockEntity implements MenuProvider {
               Timber.class,
               new AABB(worldPosition).inflate(lumberRange() + 32, 80, lumberRange() + 32),
               t ->
-                  !t.finished()
+                  !t.placeOnLanding
+                      && !t.finished()
                       && Objects.equals(owner, t.owner)
                       && TreeFinder.within(this, t.blockPosition()));
     }

@@ -45,4 +45,4 @@ Continuous arm cycles run while the synchronized chopping target is active. Head
 
 Show Work Area draws flat-colored translucent green (logging) and blue (storage) air cells above terrain. Shared interior faces are omitted: surfaces are seamless and texture-free. No world blocks or collisions are created. The area is one block high per column and refreshes as terrain/upgrades change.
 
-Magica pickups have two physical display sizes: large orbs keep their 0.3 render scale; small orbs use 0.15 with the same white/purple material. The HUD and pedestal GUI show exact thirds using ⅓/⅔. Timber changes its grain axis at the fall midpoint so it lands already oriented horizontally.
+Magica pickups have two physical display sizes: large orbs keep their 0.3 render scale; small orbs use 0.15 with the same white/purple material. The HUD and pedestal GUI show whole-number balances; exact thirds remain in the saved balance and bar fill. In 0.2.3 the complete trunk and branches rotate together through 90 degrees, preserving relative positions and continuously rotating their grain into the final horizontal orientation.

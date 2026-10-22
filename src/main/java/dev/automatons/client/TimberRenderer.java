@@ -7,7 +7,6 @@ import net.minecraft.client.renderer.*;
 import net.minecraft.client.renderer.entity.*;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.resources.ResourceLocation;
-import net.minecraft.world.level.block.RotatedPillarBlock;
 
 public class TimberRenderer extends EntityRenderer<Timber> {
   public TimberRenderer(EntityRendererProvider.Context c) {
@@ -25,21 +24,26 @@ public class TimberRenderer extends EntityRenderer<Timber> {
       var to = t.targets.get(i);
       var state = t.wood.get(i);
       if (progress >= 1) {
-        pose.translate(to.getX() - t.getX() + .5, to.getY() - t.getY(), to.getZ() - t.getZ() + .5);
-        if (state.hasProperty(RotatedPillarBlock.AXIS))
-          state = state.setValue(RotatedPillarBlock.AXIS, t.direction.getAxis());
+        pose.translate(to.getX() - t.getX(), to.getY() - t.getY(), to.getZ() - t.getZ());
+        state = TreeFinder.fallenState(state, t.direction);
+      } else if (t.rigidFall) {
+        var root = t.blockPosition();
+        pose.translate(
+            root.getX() + .5 - t.getX(),
+            root.getY() + .5 - t.getY() + TreeFinder.fallLift(t.landingLift(), progress),
+            root.getZ() + .5 - t.getZ());
+        pose.mulPose(
+            t.direction.getAxis() == net.minecraft.core.Direction.Axis.X
+                ? com.mojang.math.Axis.ZP.rotationDegrees(-t.direction.getStepX() * 90 * progress)
+                : com.mojang.math.Axis.XP.rotationDegrees(t.direction.getStepZ() * 90 * progress));
+        pose.translate(
+            from.getX() - root.getX() - .5,
+            from.getY() - root.getY() - .5,
+            from.getZ() - root.getZ() - .5);
       } else {
-        var corner =
-            t.segmented
-                ? net.minecraft.world.phys.Vec3.atLowerCornerOf(from)
-                    .lerp(net.minecraft.world.phys.Vec3.atLowerCornerOf(to), progress)
-                : TreeFinder.fallCorner(from, to, t.blockPosition(), t.direction, progress);
-        pose.translate(corner.x - t.getX() + .5, corner.y - t.getY(), corner.z - t.getZ() + .5);
-        if (progress >= .5f && state.hasProperty(RotatedPillarBlock.AXIS))
-          state = state.setValue(RotatedPillarBlock.AXIS, t.direction.getAxis());
+        pose.translate(from.getX() - t.getX(), from.getY() - t.getY(), from.getZ() - t.getZ());
       }
 
-      pose.translate(-.5, 0, -.5);
       Minecraft.getInstance()
           .getBlockRenderer()
           .renderSingleBlock(state, pose, buffers, light, OverlayTexture.NO_OVERLAY);

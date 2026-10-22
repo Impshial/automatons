@@ -106,10 +106,10 @@ public final class TreeFinder {
   }
 
   private static boolean workFootprint(Station s, Tree t, BlockPos p) {
-    if (s == null)
-      return Math.abs(p.getX() - t.root.getX()) <= 64 && Math.abs(p.getZ() - t.root.getZ()) <= 64;
-    if (within(s, p)) return true;
-    return p.getX() >= t.minX && p.getX() <= t.maxX && p.getZ() >= t.minZ && p.getZ() <= t.maxZ;
+    // The root selects the job. A full-length tree may fall beyond its former upright footprint.
+    return (s == null || rootWithin(s, t))
+        && Math.abs(p.getX() - t.root.getX()) <= 64
+        && Math.abs(p.getZ() - t.root.getZ()) <= 64;
   }
 
   public static boolean loose(Tree tree) {
@@ -209,6 +209,27 @@ public final class TreeFinder {
     List<BlockPos> ordered = new ArrayList<>(logs);
     ordered.sort(
         Comparator.comparingInt((BlockPos p) -> p.getY()).thenComparingLong(BlockPos::asLong));
+    // Vanilla crowns can extend six leaf connections from their supporting logs.
+    // Collect the full crown before testing the rigid sweep; exclusivity is checked separately.
+    Set<BlockPos> frontier = new HashSet<>(logs), visited = new HashSet<>(logs);
+    for (int depth = 0; depth < 6; depth++) {
+      Set<BlockPos> next = new HashSet<>();
+      for (BlockPos from : frontier)
+        for (Direction direction : Direction.values()) {
+          BlockPos at = from.relative(direction);
+          if (!visited.add(at)) continue;
+          if (!l.hasChunkAt(at)) return new Result(null, "Canopy crosses unloaded chunks");
+          BlockState state = l.getBlockState(at);
+          if (definition.leaves().contains(state.getBlock())
+              && !state.getValue(LeavesBlock.PERSISTENT)
+              && !data.placedPlants.contains(at.asLong())) {
+            leaves.add(at);
+            next.add(at);
+          }
+        }
+      if (leaves.size() > 4096) return new Result(null, "Canopy too large");
+      frontier = next;
+    }
     leaves.addAll(attachments(l, logs, leaves, definition.logs().contains(Blocks.MANGROVE_LOG)));
     Tree tree = new Tree(canonical, List.copyOf(ordered), List.copyOf(leaves), roots.size());
     if (station != null && !rootWithin(station, tree))
@@ -324,176 +345,123 @@ public final class TreeFinder {
         if (station != null) station.scanReason = "Protected tree attachments";
         return null;
       }
-    for (Direction d : Direction.Plane.HORIZONTAL) {
-      List<BlockPos> targets = new ArrayList<>();
-      Set<BlockPos> sweep = new HashSet<>();
-      boolean valid = true;
-      int width = tree.logs.size() > 32 ? 4 : tree.baseCount > 1 ? 2 : 1;
-      Set<BlockPos> source = new HashSet<>(tree.logs);
-      Set<BlockPos> canopy = new HashSet<>(tree.leaves);
-      for (int i = 0; i < tree.logs.size() && valid; i++) {
-        BlockPos start = tree.logs.get(i);
-        int along = i / width + 1, side = i % width - width / 2;
-        BlockPos xz = tree.root.relative(d, along).relative(d.getClockWise(), side);
-        BlockPos target = null;
-        for (int dy = 2; dy >= -3; dy--) {
-          BlockPos p = xz.offset(0, dy, 0);
-          if (!l.hasChunkAt(p)) break;
-          if (!source.contains(p.below())
-              && !canopy.contains(p.below())
-              && l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP)
-              && clearTimberSpace(l.getBlockState(p))) {
-            target = p;
-            break;
-          }
-        }
-        if (target == null
-            || Timber.reserves(l, target, worker)
-            || !workFootprint(station, tree, target)
-            || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)) {
-          valid = false;
-          break;
-        }
-        targets.add(target);
-        // Sample the tipping arc at <= half-block spacing; include the full log cube at each
-        // sample.
-        int steps =
-            Math.max(
-                16,
-                4 * (start.getY() - tree.root.getY() + 2 + (int) Math.sqrt(start.distSqr(target))));
-        for (int step = 0; step <= steps && valid; step++) {
-          double f = step / (double) steps;
-          Vec3 point = fallCorner(start, target, tree.root, d, f);
-          double px = point.x, py = point.y, pz = point.z;
-          for (BlockPos q :
-              BlockPos.betweenClosed(
-                  BlockPos.containing(px, py, pz),
-                  BlockPos.containing(px + .999, py + .999, pz + .999))) {
-            BlockPos p = q.immutable();
-            sweep.add(p);
-            if (!workFootprint(station, tree, p)
-                || !l.hasChunkAt(p)
-                || WorldData.get(l).protectedAt(p)
-                || l.isOutsideBuildHeight(p)) {
-              valid = false;
-              break;
-            }
-            if (!source.contains(p)
-                && !canopy.contains(p)
-                && !clearTimberSpace(l.getBlockState(p))) {
-              valid = false;
-              break;
-            }
-          }
-        }
-        if (l.getEntities(
-                    worker,
-                    new AABB(target).inflate(.2),
-                    e -> e instanceof net.minecraft.world.entity.LivingEntity)
-                .size()
-            > 0) valid = false;
-      }
-      if (valid) {
-        for (BlockPos p : sweep)
-          if (!l.getEntities(
-                  worker,
-                  new AABB(p).inflate(.1),
-                  e -> e instanceof net.minecraft.world.entity.LivingEntity)
-              .isEmpty()) {
+    Set<BlockPos> source = new HashSet<>(tree.logs), canopy = new HashSet<>(crown);
+    String failure = "No resting support";
+    // One rigid transform preserves trunk/branch offsets. Prefer the lowest clear resting height.
+    for (int lift = -8; lift <= 8; lift++)
+      for (Direction d : Direction.Plane.HORIZONTAL) {
+        List<BlockPos> targets = new ArrayList<>();
+        Set<BlockPos> sweep = new HashSet<>();
+        boolean valid = true, supported = false;
+        for (BlockPos start : tree.logs) {
+          BlockPos target = fallenPosition(start, tree.root, d, lift);
+          if (!workFootprint(station, tree, target)
+              || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)
+              || Timber.reserves(l, target, worker)
+              || (!source.contains(target)
+                  && !canopy.contains(target)
+                  && !clearTimberSpace(l.getBlockState(target)))) {
             valid = false;
             break;
           }
-      }
-      if (valid) return new Landing(targets, sweep, d);
-    }
-    return compact(l, tree, station, owner, worker);
-  }
-
-  private static Landing compact(
-      ServerLevel l,
-      Tree tree,
-      Station station,
-      UUID owner,
-      net.minecraft.world.entity.Entity worker) {
-    Set<BlockPos> source = new HashSet<>(tree.logs), canopy = new HashSet<>(tree.leaves);
-    List<BlockPos> candidates = new ArrayList<>();
-    int reach = Math.min(32, Math.max(3, (int) Math.ceil(Math.sqrt(tree.logs.size())) + 2));
-    for (int radius = 0; radius <= reach; radius++)
-      for (int dx = -radius; dx <= radius; dx++)
-        for (int dz = -radius; dz <= radius; dz++) {
-          if (Math.max(Math.abs(dx), Math.abs(dz)) != radius) continue;
-          for (int dy = 2; dy >= -8; dy--) {
-            BlockPos target = tree.root.offset(dx, dy, dz);
-            if (!l.hasChunkAt(target)
-                || l.isOutsideBuildHeight(target)
-                || source.contains(target.below())
-                || canopy.contains(target.below())
-                || !l.getBlockState(target.below()).isFaceSturdy(l, target.below(), Direction.UP)
-                || (!clearTimberSpace(l.getBlockState(target))
-                    && !source.contains(target)
-                    && !(canopy.contains(target)
-                        && naturalAttachment(l, target)
-                        && l.getFluidState(target).isEmpty()))
-                || !workFootprint(station, tree, target)
-                || Timber.reserves(l, target, worker)
-                || !Permissions.allowed(l, target, owner, Permissions.Action.FALL)
-                || !l.getEntities(
-                        worker,
-                        new AABB(target).inflate(.1),
-                        e -> e instanceof net.minecraft.world.entity.LivingEntity)
-                    .isEmpty()) continue;
-            candidates.add(target);
-            break;
-          }
+          targets.add(target);
+          supported |=
+              !source.contains(target.below())
+                  && !canopy.contains(target.below())
+                  && l.getBlockState(target.below()).isFaceSturdy(l, target.below(), Direction.UP);
         }
-    List<BlockPos> targets = new ArrayList<>();
-    Set<BlockPos> used = new HashSet<>(), sweep = new HashSet<>();
-    for (BlockPos start : tree.logs) {
-      boolean placed = false;
-      for (BlockPos target : candidates) {
-        if (used.contains(target)) continue;
-        Set<BlockPos> path = new HashSet<>();
-        boolean valid = true;
-        int steps = Math.max(4, (int) Math.ceil(Math.sqrt(start.distSqr(target)) * 2));
-        for (int step = 0; step <= steps && valid; step++) {
-          Vec3 point =
-              Vec3.atLowerCornerOf(start).lerp(Vec3.atLowerCornerOf(target), step / (double) steps);
-          for (BlockPos q :
-              BlockPos.betweenClosed(
-                  BlockPos.containing(point), BlockPos.containing(point.add(.999, .999, .999)))) {
-            BlockPos at = q.immutable();
-            path.add(at);
-            if (!l.hasChunkAt(at)
-                || l.isOutsideBuildHeight(at)
-                || WorldData.get(l).protectedAt(at)
-                || !workFootprint(station, tree, at)
-                || (!source.contains(at)
-                    && !canopy.contains(at)
-                    && !clearTimberSpace(l.getBlockState(at)))
-                || !l.getEntities(
-                        worker,
-                        new AABB(at),
-                        e -> e instanceof net.minecraft.world.entity.LivingEntity)
-                    .isEmpty()) {
-              valid = false;
-              break;
+        if (!valid || !supported) continue;
+        for (BlockPos start : tree.logs) {
+          int steps = Math.max(16, (int) Math.ceil(Math.sqrt(start.distSqr(tree.root)) * 4));
+          for (int step = 0; step <= steps && valid; step++) {
+            AABB box = fallBounds(start, tree.root, d, lift, step / (double) steps);
+            for (BlockPos q :
+                BlockPos.betweenClosed(
+                    BlockPos.containing(box.minX + .0001, box.minY + .0001, box.minZ + .0001),
+                    BlockPos.containing(box.maxX - .0001, box.maxY - .0001, box.maxZ - .0001))) {
+              BlockPos at = q.immutable();
+              if (!sweep.add(at)) continue;
+              if (!workFootprint(station, tree, at)
+                  || !l.hasChunkAt(at)
+                  || l.isOutsideBuildHeight(at)
+                  || WorldData.get(l).protectedAt(at)
+                  || (!source.contains(at)
+                      && !canopy.contains(at)
+                      && !clearTimberSpace(l.getBlockState(at)))
+                  || !l.getEntities(
+                          worker,
+                          new AABB(at),
+                          e -> e instanceof net.minecraft.world.entity.LivingEntity)
+                      .isEmpty()) {
+                failure =
+                    d
+                        + " lift="
+                        + lift
+                        + " obstruction="
+                        + l.getBlockState(at)
+                        + " relative="
+                        + at.subtract(tree.root);
+                valid = false;
+                break;
+              }
             }
           }
+          if (!valid) break;
         }
-        if (valid) {
-          targets.add(target);
-          used.add(target);
-          sweep.addAll(path);
-          placed = true;
-          break;
-        }
+        if (valid) return new Landing(targets, sweep, d);
       }
-      if (!placed) {
-        if (station != null) station.scanReason = "No distinct safe landing space";
-        return null;
-      }
-    }
-    return new Landing(targets, sweep, Direction.NORTH, true);
+    if (station != null) station.scanReason = "No clear connected fall: " + failure;
+    return null;
+  }
+
+  public static BlockPos fallenPosition(
+      BlockPos source, BlockPos root, Direction direction, int lift) {
+    int x = source.getX() - root.getX(),
+        y = source.getY() - root.getY(),
+        z = source.getZ() - root.getZ();
+    return direction.getAxis() == Direction.Axis.X
+        ? root.offset(direction.getStepX() * y, lift - direction.getStepX() * x, z)
+        : root.offset(x, lift - direction.getStepZ() * z, direction.getStepZ() * y);
+  }
+
+  public static double fallLift(int lift, double progress) {
+    double angle = progress * Math.PI / 2;
+    // Lift the rotating base's corner above the supporting ground, common to the entire tree.
+    return lift * Math.sin(angle) + .5 * (Math.sin(angle) + Math.cos(angle) - 1);
+  }
+
+  public static Vec3 fallCenter(
+      BlockPos source, BlockPos root, Direction d, int lift, double progress) {
+    double angle = progress * Math.PI / 2, c = Math.cos(angle), s = Math.sin(angle);
+    double x = source.getX() - root.getX(),
+        y = source.getY() - root.getY(),
+        z = source.getZ() - root.getZ();
+    Vec3 offset =
+        d.getAxis() == Direction.Axis.X
+            ? new Vec3(x * c + d.getStepX() * y * s, y * c - d.getStepX() * x * s, z)
+            : new Vec3(x, y * c - d.getStepZ() * z * s, z * c + d.getStepZ() * y * s);
+    return Vec3.atCenterOf(root).add(offset).add(0, fallLift(lift, progress), 0);
+  }
+
+  public static AABB fallBounds(
+      BlockPos source, BlockPos root, Direction d, int lift, double progress) {
+    Vec3 center = fallCenter(source, root, d, lift, progress);
+    double extent = (Math.sin(progress * Math.PI / 2) + Math.cos(progress * Math.PI / 2)) / 2;
+    return AABB.ofSize(
+        center,
+        d.getAxis() == Direction.Axis.X ? extent * 2 : 1,
+        extent * 2,
+        d.getAxis() == Direction.Axis.Z ? extent * 2 : 1);
+  }
+
+  public static BlockState fallenState(BlockState state, Direction direction) {
+    if (!state.hasProperty(RotatedPillarBlock.AXIS)) return state;
+    Direction.Axis axis = state.getValue(RotatedPillarBlock.AXIS);
+    return state.setValue(
+        RotatedPillarBlock.AXIS,
+        axis == Direction.Axis.Y
+            ? direction.getAxis()
+            : axis == direction.getAxis() ? Direction.Axis.Y : axis);
   }
 
   /** Only foliage with no other possible log support is transferred into the job. */
@@ -548,20 +516,6 @@ public final class TreeFinder {
     return result.size() > 4096 ? null : result;
   }
 
-  public static Vec3 fallCorner(
-      BlockPos source, BlockPos target, BlockPos root, Direction direction, double f) {
-    double height = source.getY() - root.getY(),
-        arc = Math.sin(f * Math.PI / 2),
-        settle = Math.max(0, Math.min(1, (f - .7) / .3));
-    double x = source.getX() + direction.getStepX() * height * arc,
-        z = source.getZ() + direction.getStepZ() * height * arc,
-        y = root.getY() + height * Math.cos(f * Math.PI / 2);
-    return new Vec3(
-        x + (target.getX() - x) * settle,
-        y + (target.getY() - y) * settle,
-        z + (target.getZ() - z) * settle);
-  }
-
   public static boolean landingStillSafe(
       ServerLevel l,
       Tree tree,
@@ -582,17 +536,20 @@ public final class TreeFinder {
               worker, new AABB(p), e -> e instanceof net.minecraft.world.entity.LivingEntity)
           .isEmpty()) return false;
     }
-    for (BlockPos p : plan.targets)
+    boolean supported = false;
+    for (BlockPos p : plan.targets) {
       if (!workFootprint(s, tree, p)
           || Timber.reserves(l, p, worker)
           || !Permissions.allowed(l, p, owner, Permissions.Action.FALL)
           || (!clearTimberSpace(l.getBlockState(p))
-              && !(plan.segmented
-                  && (source.contains(p)
-                      || canopy.contains(p)
-                          && naturalAttachment(l, p)
-                          && l.getFluidState(p).isEmpty())))
-          || !l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP)) return false;
+              && !source.contains(p)
+              && !(canopy.contains(p) && naturalAttachment(l, p)))) return false;
+      supported |=
+          !source.contains(p.below())
+              && !canopy.contains(p.below())
+              && l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP);
+    }
+    if (!supported) return false;
     return true;
   }
 

@@ -378,7 +378,7 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 80)
-  public static void compact_fall_preserves_obstacles_and_all_logs(GameTestHelper h) {
+  public static void connected_fall_spans_obstacles_and_preserves_all_logs(GameTestHelper h) {
     Rig r = rig(h);
     BlockPos base = new BlockPos(17, 1, 14);
     tree(h, base);
@@ -387,16 +387,25 @@ public final class RedesignGameTests {
     w.setNoAi(true);
     var tree = TreeFinder.inspect(h.getLevel(), h.absolutePos(base), r.totem).tree();
     var plan = TreeFinder.landing(h.getLevel(), tree, r.totem, r.player.getUUID(), w);
-    h.assertTrue(
-        plan != null && plan.segmented(), "Long-line obstruction did not use compact fall");
+    h.assertTrue(plan != null && !plan.segmented(), "No connected landing over obstacles");
     Timber timber = Timber.commit(h.getLevel(), tree, plan, w, r.totem);
     h.assertTrue(timber != null && timber.wood.size() == 5, "Conversion lost wood");
     h.assertTrue(
         new HashSet<>(timber.targets).size() == 5, "Fallback stacked logs at one coordinate");
+    h.assertTrue(
+        timber.targets.stream().map(BlockPos::getY).distinct().count() == 1,
+        "Trunk scattered across different landing heights");
+    h.assertTrue(
+        timber.targets.stream()
+            .anyMatch(pos -> h.getLevel().getBlockState(pos.below()).is(Blocks.STONE)),
+        "Tree did not rest on an obstacle");
+    h.assertTrue(
+        timber.targets.get(0).distManhattan(timber.targets.get(4)) == 4,
+        "Five-log trunk did not preserve its length");
     h.runAfterDelay(
         45,
         () -> {
-          h.assertTrue(timber.progress() >= timber.duration, "Compact timber did not settle");
+          h.assertTrue(timber.progress() >= timber.duration, "Connected timber did not settle");
           for (Direction d : Direction.Plane.HORIZONTAL)
             h.assertTrue(
                 h.getBlockState(base.relative(d, 3)).is(Blocks.STONE), "Fall overwrote obstacle");
@@ -970,6 +979,7 @@ public final class RedesignGameTests {
           PlayerFelling.broken(event);
           h.getLevel().destroyBlock(root, true, p);
         });
+    Timber[] falling = {null};
     h.runAfterDelay(
         5,
         () -> {
@@ -986,6 +996,31 @@ public final class RedesignGameTests {
                   .mapToInt(e -> e.getItem().getCount())
                   .sum();
           h.assertTrue(drops == 1, "Base log was not paid exactly once");
+          falling[0] = jobs.get(0);
+          h.assertTrue(falling[0].placeOnLanding, "Player fall was not set to create real blocks");
+        });
+    h.runAfterDelay(
+        70,
+        () -> {
+          Timber t = falling[0];
+          h.assertTrue(t != null && t.isRemoved(), "Player timber did not become blocks");
+          for (BlockPos at : t.targets) {
+            var state = h.getLevel().getBlockState(at);
+            h.assertTrue(
+                state.is(Blocks.OAK_LOG)
+                    && state.getValue(RotatedPillarBlock.AXIS) == t.direction.getAxis(),
+                "Landed log is not a real horizontal oak block");
+            h.assertTrue(
+                MagicaHarvest.category(h.getLevel(), at, state).equals("logs"),
+                "Natural log provenance lost at landing");
+            h.getLevel().destroyBlock(at, true, p);
+          }
+          int drops =
+              h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(root).inflate(12)).stream()
+                  .filter(e -> e.getItem().is(Items.OAK_LOG))
+                  .mapToInt(e -> e.getItem().getCount())
+                  .sum();
+          h.assertTrue(drops == 5, "Normal block breaking lost/duplicated logs: " + drops);
           h.succeed();
         });
   }
@@ -1212,6 +1247,175 @@ public final class RedesignGameTests {
                   && excluded.getItem().getCount() == 3
                   && count(c, Items.BIRCH_LOG) == 0,
               "Collected logs outside range");
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void rigid_tree_rotation_preserves_distances_and_landing_cells(GameTestHelper h) {
+    BlockPos root = new BlockPos(10, 4, 10);
+    List<BlockPos> shape =
+        List.of(root, root.above(7), root.offset(2, 5, -1), root.offset(-1, 3, 2));
+    for (Direction direction : Direction.Plane.HORIZONTAL)
+      for (double f : new double[] {0, .25, .5, .75, 1}) {
+        for (BlockPos a : shape) {
+          Vec3 actual = TreeFinder.fallCenter(a, root, direction, 3, f);
+          if (f == 1)
+            h.assertTrue(
+                actual.distanceTo(Vec3.atCenterOf(TreeFinder.fallenPosition(a, root, direction, 3)))
+                    < .00001,
+                "Rotating model did not meet its block target");
+          for (BlockPos b : shape)
+            h.assertTrue(
+                Math.abs(
+                        actual.distanceToSqr(TreeFinder.fallCenter(b, root, direction, 3, f))
+                            - a.distSqr(b))
+                    < .00001,
+                "Tree stretched or separated during rotation");
+        }
+      }
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 160)
+  public static void player_landing_reload_waits_for_obstruction_without_duplicate_loot(
+      GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos base = new BlockPos(18, 1, 14);
+    tree(h, base);
+    var tree = TreeFinder.inspect(h.getLevel(), h.absolutePos(base), null).tree();
+    var plan = TreeFinder.landing(h.getLevel(), tree, null, r.player.getUUID(), r.player);
+    h.assertTrue(plan != null, "No player layout");
+    Timber original =
+        Timber.commitPlayer(h.getLevel(), tree, plan, r.player, new ItemStack(Items.STONE_AXE));
+    h.assertTrue(original != null, "Player transfer failed");
+    original.crownLoot.clear();
+    original.crownLoot.add(new ItemStack(Items.APPLE, 2));
+    CompoundTag saved = original.saveWithoutId(new CompoundTag());
+    original.discard();
+    Timber restored = Automatons.TIMBER.get().create(h.getLevel());
+    restored.load(saved);
+    h.getLevel().addFreshEntity(restored);
+    h.assertTrue(restored.placeOnLanding && restored.rigidFall, "Reload lost player landing mode");
+    var w = worker(h, r, new BlockPos(4, 1, 4));
+    w.setNoAi(true);
+    h.assertTrue(!restored.claim(w), "Worker took over player block placement");
+    BlockPos obstruction = restored.targets.get(2);
+    h.getLevel().setBlock(obstruction, Blocks.STONE.defaultBlockState(), 3);
+    h.runAfterDelay(
+        15,
+        () -> {
+          h.assertTrue(
+              restored.progress() == 0 && restored.remaining() == 5,
+              "Blocked fall advanced or lost wood");
+          h.assertTrue(
+              h.getLevel().getBlockState(obstruction).is(Blocks.STONE),
+              "Fall overwrote obstruction");
+          h.getLevel().setBlock(obstruction, Blocks.AIR.defaultBlockState(), 3);
+        });
+    h.runAfterDelay(
+        90,
+        () -> {
+          h.assertTrue(restored.isRemoved(), "Clear landing did not resume after reload");
+          for (BlockPos at : restored.targets)
+            h.assertTrue(
+                h.getLevel().getBlockState(at).is(Blocks.OAK_LOG), "Missing real log after reload");
+          int apples =
+              h
+                  .getLevel()
+                  .getEntitiesOfClass(ItemEntity.class, new AABB(h.absolutePos(base)).inflate(8))
+                  .stream()
+                  .filter(e -> e.getItem().is(Items.APPLE))
+                  .mapToInt(e -> e.getItem().getCount())
+                  .sum();
+          h.assertTrue(apples == 2, "Crown loot lost or duplicated on landing: " + apples);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2200)
+  public static void worker_routes_around_virtual_timber_barrier(GameTestHelper h) {
+    Rig r = rig(h);
+    var chest = chest(h, r, new BlockPos(13, 1, 14));
+    Timber barrier = Automatons.TIMBER.get().create(h.getLevel());
+    barrier.owner = UUID.randomUUID();
+    barrier.rigidFall = true;
+    barrier.setPos(Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(18, 1, 8))));
+    for (int z = 8; z <= 20; z++) {
+      BlockPos at = h.absolutePos(new BlockPos(18, 1, z));
+      barrier.sources.add(at);
+      barrier.targets.add(at);
+      barrier.wood.add(Blocks.OAK_LOG.defaultBlockState());
+      barrier.sweep.add(at);
+    }
+    CompoundTag saved = barrier.saveWithoutId(new CompoundTag());
+    saved.putInt("Progress", 30);
+    barrier.load(saved);
+    h.getLevel().addFreshEntity(barrier);
+    h.setBlock(new BlockPos(23, 1, 14), Blocks.BIRCH_LOG);
+    var w = worker(h, r, new BlockPos(14, 1, 14));
+    h.assertTrue(
+        w.navigationBlocked(h.absolutePos(new BlockPos(18, 1, 14))),
+        "Timber missing from route obstacle query: bounds=" + barrier.getBoundingBox());
+    boolean[] wentAround = {false};
+    double edge = h.absolutePos(new BlockPos(18, 1, 8)).getZ();
+    h.onEachTick(
+        () -> {
+          if (w.getX() > barrier.getX() - .8 && (w.getZ() < edge || w.getZ() > edge + 13))
+            wentAround[0] = true;
+        });
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(
+              count(chest, Items.BIRCH_LOG) == 1,
+              "Worker failed to route around timber: " + w.diagnostic());
+          h.assertTrue(
+              wentAround[0],
+              "Worker crossed virtual timber instead of finding a route: "
+                  + w.diagnostic()
+                  + " bounds="
+                  + barrier.getBoundingBox());
+          h.assertTrue(barrier.remaining() == 13, "Worker consumed somebody else's timber");
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2200)
+  public static void blocked_timber_does_not_prevent_other_reachable_work(GameTestHelper h) {
+    Rig r = rig(h);
+    var chest = chest(h, r, new BlockPos(13, 1, 14));
+    tree(h, new BlockPos(22, 1, 21));
+    var w = worker(h, r, new BlockPos(15, 1, 14));
+    var tree =
+        TreeFinder.inspect(h.getLevel(), h.absolutePos(new BlockPos(22, 1, 21)), r.totem).tree();
+    var plan = TreeFinder.landing(h.getLevel(), tree, r.totem, w.owner, w);
+    h.assertTrue(plan != null, "No fixture fall");
+    Timber timber = Timber.commit(h.getLevel(), tree, plan, w, r.totem);
+    h.assertTrue(timber != null, "No fixture timber");
+    w.timberId = timber.getUUID();
+    h.getLevel().setBlock(timber.targets.get(0), Blocks.STONE.defaultBlockState(), 3);
+    h.setBlock(new BlockPos(19, 1, 10), Blocks.BIRCH_LOG);
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(
+              count(chest, Items.BIRCH_LOG) == 1,
+              "Blocked job starved reachable log: " + w.diagnostic());
+          h.assertTrue(timber.remaining() == 5 && !timber.isRemoved(), "Deferred timber was lost");
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 500)
+  public static void worker_unloads_cargo_while_area_scan_is_incomplete(GameTestHelper h) {
+    Rig r = rig(h);
+    var chest = chest(h, r, new BlockPos(13, 1, 14));
+    var w = worker(h, r, new BlockPos(19, 1, 14));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.OAK_LOG, 5));
+    h.onEachTick(() -> r.totem.invalidateTrees());
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(!r.totem.scanComplete, "Fixture unexpectedly finished discovery");
+          h.assertTrue(
+              count(chest, Items.OAK_LOG) == 5,
+              "Cargo stuck behind incomplete scan: " + w.diagnostic());
+          h.assertTrue(w.cargo.getStackInSlot(0).isEmpty(), "Delivered cargo duplicated");
         });
   }
 }

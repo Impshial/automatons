@@ -1,6 +1,6 @@
 # Automatons — Minecraft 1.20.1 / Forge
 
-A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.2 includes independent Magica, core infusion, six-part assembly, portable workers, shared work totems, varied chest-to-core particles and optional JEI recipe pages.
+A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.3 includes independent Magica, core infusion, six-part assembly, portable workers, shared work totems, varied chest-to-core particles and optional JEI recipe pages.
 
 ## Install
 
@@ -35,15 +35,15 @@ Only completed player block breaks pay, once per logical plant action. Fortune d
 | Natural leaves | 0–1 |
 | Grass and ferns | 0–1 |
 
-Each small orb is exactly one-third of the corresponding large value; fractional thirds persist and appear in the HUD. Flowers and grass drop one small orb. Mature crops drop one orb, with a 10% chance of a large one. Logs drop two small orbs, plus a 40% chance of one large orb. Other source categories retain their earlier large rewards. The table preserves the existing large-orb values. A zero roll produces no orbs. Initial crop support is wheat, carrots, potatoes, beetroot and nether wart. Right-click berry picking is not a block break. Source tags and ranges are editable. Magica survives death by default; a server setting controls this.
+Each small orb is exactly one-third of the corresponding large value; fractional thirds persist internally; the HUD and pedestal readout show whole points only. Flowers and grass drop one small orb. Mature crops drop one orb, with a 10% chance of a large one. Logs drop two small orbs, plus a 40% chance of one large orb. Other source categories retain their earlier large rewards. The table preserves the existing large-orb values. A zero roll produces no orbs. Initial crop support is wheat, carrots, potatoes, beetroot and nether wart. Right-click berry picking is not a block break. Source tags and ranges are editable. Magica survives death by default; a server setting controls this.
 
 ## Shared forestry
 
 A Totem accepts multiple same-owner workers. Each keeps its own home. The queue orders trees by horizontal distance from the Totem, with stable coordinate ties; workers claim different jobs. Other workers' claimed trees produce a waiting state. They share current totem upgrades and chest controls.
 
-The base tree-root range is 16 blocks outward, a 33×33 square, with a separate ±16-block root-height allowance. A rooted tree can extend its branches or canopy beyond the square. Normal oak, birch, spruce, jungle, dark oak, acacia, mangrove and cherry growth is supported, including appropriate 2×2 trunks. Loose, stripped and player-placed logs inside the range are now harvested individually, including logs used in construction. Natural trees keep the felling animation; their log grain turns horizontal halfway through the fall, before landing. Protected destructive areas are respected across the whole tree.
+The base tree-root range is 16 blocks outward, a 33×33 square, with a separate ±16-block root-height allowance. A rooted tree can extend its branches or canopy beyond the square. Normal oak, birch, spruce, jungle, dark oak, acacia, mangrove and cherry growth is supported, including appropriate 2×2 trunks. Loose, stripped and player-placed logs inside the range are now harvested individually, including logs used in construction. Natural trees rotate as connected trunks and branches, preserving their original spacing throughout the fall. Protected destructive areas are respected across the whole tree.
 
-A worker approaches beside the trunk, chops the base, fells the tree visibly, then processes grounded sections. If the long fall will not fit, it tries distinct nearby grounded cells. Every remaining section has a different landing coordinate, including across active timber jobs. If no safe layout fits, the standing tree waits. Older stacked timber jobs replan their landing without discarding wood. Unfinished timber owns its remaining wood and progress, so packing or unloading its worker does not erase the job. An eligible colleague can take over released timber; unavailable claimants have a bounded recovery delay. Players can right-click settled timber with an axe to process a nearby remaining section through the same consumption ledger.
+A worker approaches beside the trunk, chops the base, fells the tree visibly, then processes grounded sections. The tree keeps its shape and tries four fall directions, resting on terrain or obstacles without scattering its logs. It can bridge lower terrain. Every section has a different landing coordinate, including across active timber jobs. If no safe connected layout fits, the standing tree waits. Older stacked timber jobs replan their landing without discarding wood. Unfinished timber owns its remaining wood and progress, so packing or unloading its worker does not erase the job. An eligible colleague can take over released timber; unavailable claimants have a bounded recovery delay. Players can right-click settled timber with an axe to process a nearby remaining section through the same consumption ledger.
 
 Workers also seek visible, reachable dropped log items resting on the ground inside their Totem’s logging range. They collect them into cargo and deliver them through the same storage system. Pickup delays, item ownership, height limits and cargo space are respected.
 
@@ -55,7 +55,7 @@ The Totem's **Show Work Area** button toggles a local terrain-following preview:
 
 Grass and flowers do not block movement. Workers can cut obstructing leaves near the target; solid terrain requires a reachable route. Chopping includes a continuous axe swing, target-facing head/body and progressive damage cracks. Workers move away from falling timber before it can overlap them.
 
-In Survival, breaking the base of an eligible natural tree with a stone-or-better axe fells its remaining logs. The base drops once through normal breaking; fallen sections remain available for ordinary timber processing. Creative breaks retain vanilla behavior. Player-placed logs do not trigger whole-tree player felling, but Lumbertons can harvest them individually.
+In Survival, breaking the base of an eligible natural tree with a stone-or-better axe fells its remaining logs. The base drops once through normal breaking. When the remaining tree lands, it becomes ordinary, horizontally oriented log blocks that can be mined normally. Leaf loot is released once at landing. If landing cells become obstructed or occupied, it waits safely. Creative breaks retain vanilla behavior. Player-placed logs do not trigger whole-tree player felling, but Lumbertons can harvest them individually.
 
 Default worker preparation/processing times: Stone **7/4 seconds**, Iron **5/3**, Diamond **3.5/2**, Netherite **3.25/1.75**. See the balance table for all materials, upgrades and timing rules.
 
@@ -82,3 +82,5 @@ Source: `src/main/java/dev/automatons`. Recipes/tags: `src/main/resources/data/a
 ## Build
 
 Set `JAVA_HOME` to Java 17. Run `gradlew.bat build`. For a fresh regression run, use `tools/test_release.ps1`; it preserves the preceding isolated test world before running `runGameTestServer build`. GameTests use `build/gametest-redesign` and never a player save. Run `python tools/validate_assets.py` to validate dimensions, model density and resource JSON. `gradlew.bat runClient -PwithJei` includes JEI in development; ordinary development/server runs have no JEI runtime dependency. `gradlew.bat runClient -PvisualSmoke` enables the opt-in `Automatons Lab` visual scenario; normal launches never run it.
+
+The full change history since the redesign is in [HISTORY-SINCE-REDESIGN.md](docs/HISTORY-SINCE-REDESIGN.md). Workers route around full fallen trunks, retry alternate approaches after stalls, and defer blocked jobs so other reachable logs can be harvested.

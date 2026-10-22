@@ -86,7 +86,7 @@ public final class MagicaHud {
     int x = mc.getWindow().getGuiScaledWidth() / 2 - 91,
         y = mc.getWindow().getGuiScaledHeight() - 31;
     bar(g, x, y, 182, ClientSetup.magica, 7, ClientSetup.magicaThirds);
-    String points = Magica.format(ClientSetup.magica, ClientSetup.magicaThirds);
+    String points = Integer.toString(ClientSetup.magica);
     g.drawString(mc.font, points, x + 185, y - 1, 0xffe5d2ff, false);
   }
 }

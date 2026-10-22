@@ -84,3 +84,21 @@ The final packaged client used the isolated `build/packaged-smoke/20261022-18064
 The obstructed worker fall used five distinct landing cells. The connected player’s stone axe broke the base once with one durability damage and produced one timber entity containing four remaining logs with distinct targets. The worker then entered Collecting logs, picked up that dropped base log, and processed the player’s timber. At the review cutoff, the chest held the first tree’s five logs and the worker carried eight items from the second job (normal cross-job cargo retention); exact dropped-log chest delivery is separately asserted by the dedicated server test. There was no manual multiplayer acceptance session.
 
 Installed **automatons-0.2.2.jar**, **354,864 bytes**, SHA-256 **7E425A2A0DB94F87814DF57201217E74CC576FD26B32C9076E9A9FC0EA96973C**. The previous release and changed stock-height configuration are preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-181131-692`. The installer verified the hash and changed only the old default pedestal height of 1.75 to 1.4; custom heights are retained. Release/source archives, updated editable assets and all final captures are mirrored in `F:\Minecraft\Automatons`.
+
+
+## 0.2.3 server verification — 22 October 2026
+
+All **67 required GameTests** passed in `revision-0.2.3-tests-6.log`, followed by a successful reobfuscated release build. This includes the earlier terrain, axe-tier, recipe, Magica and collection checks; connected rigid-fall geometry across obstacles; completed player felling into ordinary log blocks with exact total loot; save/reload and blocked-landing recovery without duplicate foliage loot; routing around a thirteen-block virtual timber barrier; deferring obstructed timber while harvesting another reachable log; and delivering cargo while a full area scan remains incomplete. Representative generated trees from all eight supported families passed.
+
+The new tests exposed incomplete outer-canopy discovery and base Entity loading resetting timber bounds to one block. Crown discovery now follows up to six leaf connections, and complete timber bounds are restored after loading. Route obstacle/reservation queries also include tree tips distant from their entity root. Path planning searches all suitable approach cells together, detects lack of physical movement, temporarily avoids stalled nodes and releases blocked job claims for retry while other work continues.
+
+Resource validation passed for 91 JSON assets, 33 texture dimensions, the 24-unit creature rig, and partial-block UV density. Client review and installation results follow below.
+
+
+## 0.2.3 final client and deployment
+
+The final packaged client used `build/packaged-smoke/20261022-190056` and exited normally with code 0. Both JEI output lookups found one recipe; infusion completed at 50/50 with zero remaining balance. The HUD displayed **9** after the mixed-size pickup while exact thirds remained stored internally. XP stayed at 420. Reviewed fall frames show a connected rotating trunk rather than separated moving sections, and the landing capture shows ordinary horizontal log blocks.
+
+The connected player's stone axe broke the base once with one durability damage. Four remaining sections had distinct targets, then became **four real log blocks with zero Timber entities**. The worker harvested those blocks and collected the dropped base log. By the final checkpoint the chest held **10 oak logs** from the two five-log trees and the worker's cargo was empty. The initial client check exposed cargo waiting for a long area scan; the final build unloads during that scan, and a new server test explicitly keeps discovery incomplete while requiring delivery.
+
+Installed **automatons-0.2.3.jar**, **364,081 bytes**, SHA-256 **13C5B0B20E5F91EFBF4E7A3BFFBD803FD16F14752F7C7E345A2B9BCD5B6DBF32**. Previous release preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-190611-720`. The installer verified the copied JAR. The source archive, updated assets, full history, release manifest, server logs and final captures are mirrored in `F:\Minecraft\Automatons`.

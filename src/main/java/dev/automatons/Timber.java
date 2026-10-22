@@ -41,7 +41,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   public UUID owner, worker;
   public Direction direction = Direction.NORTH;
   public int duration = 30;
-  public boolean paused, segmented;
+  public boolean paused, segmented, rigidFall, placeOnLanding;
   public int processingTicks;
   private long playerAction;
   private int abandonedTicks;
@@ -62,7 +62,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   }
 
   public static boolean reserves(ServerLevel level, BlockPos pos, Entity except) {
-    for (Timber t : level.getEntitiesOfClass(Timber.class, new AABB(pos).inflate(1))) {
+    for (Timber t : nearby(level, new AABB(pos))) {
       if (t == except || t.isRemoved()) continue;
       for (int i = 0; i < t.targets.size(); i++)
         if (!t.consumed(i) && t.targets.get(i).equals(pos)) return true;
@@ -99,12 +99,14 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     sweep.addAll(plan.sweep());
     direction = plan.direction();
     segmented = plan.segmented();
+    rigidFall = true;
     entityData.set(PROGRESS, 0);
     entityData.set(LAYOUT_READY, true);
     showProcessing(-1, 0, 1);
     CompoundTag layout = new CompoundTag();
     layout.putLongArray("Targets", targets.stream().mapToLong(BlockPos::asLong).toArray());
     layout.putBoolean("Segmented", segmented);
+    layout.putBoolean("RigidFall", rigidFall);
     layout.putInt("Direction", direction.get3DDataValue());
     entityData.set(LAYOUT, layout);
     refreshBounds();
@@ -119,6 +121,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         targets.clear();
         for (long pos : layout.getLongArray("Targets")) targets.add(BlockPos.of(pos));
         segmented = layout.getBoolean("Segmented");
+        rigidFall = layout.getBoolean("RigidFall");
         direction = Direction.from3DDataValue(layout.getInt("Direction"));
         if (!sources.isEmpty()) refreshBounds();
       }
@@ -146,10 +149,20 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     return false;
   }
 
+  /** Section lookup is anchored at the root, which can be far from a fallen tip. */
+  public static List<Timber> nearby(Level level, AABB box) {
+    return level.getEntitiesOfClass(Timber.class, box.inflate(64, 80, 64), t -> !t.finished());
+  }
+
   public static boolean blocksWorker(Level level, AABB box) {
-    return !level
-        .getEntitiesOfClass(Timber.class, box.inflate(1), t -> !t.finished() && t.dangerAt(box))
-        .isEmpty();
+    return nearby(level, box).stream().anyMatch(t -> t.dangerAt(box));
+  }
+
+  @Override
+  public void load(CompoundTag tag) {
+    super.load(tag);
+    // Entity.load restores position after reading our data, resetting the custom bounds.
+    refreshBounds();
   }
 
   public int progress() {
@@ -211,6 +224,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     Timber t = Automatons.TIMBER.get().create(l);
     if (t == null) return null;
     t.owner = owner;
+    t.rigidFall = true;
+    t.placeOnLanding = worker == null && actor instanceof net.minecraft.server.level.ServerPlayer;
     t.worker = worker;
     t.direction = landing.direction();
     t.segmented = landing.segmented();
@@ -253,15 +268,23 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
                 && !(l.getBlockState(p).is(net.minecraft.tags.BlockTags.LEAVES)
                     && !l.getBlockState(p).getValue(LeavesBlock.PERSISTENT)))) return false;
     }
+    boolean supported = false;
     for (int i = 0; i < targets.size(); i++)
       if (!consumed(i)) {
         BlockPos p = targets.get(i);
         if (!l.hasChunkAt(p)
             || WorldData.get(l).protectedAt(p)
-            || !TreeFinder.clearTimberSpace(l.getBlockState(p))
-            || !l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP)) return false;
+            || !TreeFinder.clearTimberSpace(l.getBlockState(p))) return false;
+        supported |= l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP);
       }
-    return true;
+    return (progress() >= duration && !placeOnLanding) || supported;
+  }
+
+  public int landingLift() {
+    return targets.isEmpty()
+        ? 0
+        : targets.get(0).getY()
+            - TreeFinder.fallenPosition(sources.get(0), blockPosition(), direction, 0).getY();
   }
 
   @Override
@@ -296,12 +319,51 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
           }
         if (!occupied) entityData.set(PROGRESS, progress() + 1);
       }
+      if (!paused && placeOnLanding && progress() >= duration) placeLandedLogs();
       if (finished()) discard();
     }
   }
 
+  /** Convert a player fall once; its sections are ordinary block states after landing. */
+  private void placeLandedLogs() {
+    ServerLevel l = (ServerLevel) level();
+    for (int i = 0; i < targets.size(); i++) {
+      if (consumed(i)) continue;
+      BlockPos at = targets.get(i);
+      if (reserves(l, at, this)
+          || !Permissions.allowed(l, at, owner, Permissions.Action.FALL)
+          || !l.getEntities(this, new AABB(at), e -> e instanceof LivingEntity).isEmpty()) return;
+    }
+    Map<BlockPos, BlockState> previous = new LinkedHashMap<>();
+    for (int i = 0; i < targets.size(); i++) {
+      if (consumed(i)) continue;
+      BlockPos at = targets.get(i);
+      previous.put(at, l.getBlockState(at));
+      if (!l.setBlock(at, TreeFinder.fallenState(wood.get(i), direction), 18)) {
+        previous.forEach((pos, state) -> l.setBlock(pos, state, 18));
+        return;
+      }
+    }
+    WorldData data = WorldData.get(l);
+    for (BlockPos from : sources) data.naturalLogs.remove(from.asLong());
+    for (int i = 0; i < targets.size(); i++) {
+      if (consumed(i)) continue;
+      BlockPos at = targets.get(i);
+      mark(i);
+      data.placedLogs.remove(at.asLong());
+      data.placedPlants.remove(at.asLong());
+      data.naturalLogs.add(at.asLong());
+      l.getBlockState(at).updateNeighbourShapes(l, at, 3);
+      l.updateNeighborsAt(at, l.getBlockState(at).getBlock());
+      WorldEvents.changedNear(l, at);
+    }
+    data.setDirty();
+    for (ItemStack loot : crownLoot) Block.popResource(l, blockPosition(), loot.copy());
+    crownLoot.clear();
+  }
+
   public boolean claim(Lumberton w) {
-    if (owner == null || !owner.equals(w.owner) || finished()) return false;
+    if (placeOnLanding || owner == null || !owner.equals(w.owner) || finished()) return false;
     if (worker != null && !worker.equals(w.getUUID())) return false;
     worker = w.getUUID();
     abandonedTicks = 0;
@@ -314,7 +376,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   }
 
   public boolean process(int index, Lumberton w, Station s) {
-    if (index < 0
+    if (placeOnLanding
+        || index < 0
         || index >= wood.size()
         || consumed(index)
         || progress() < duration
@@ -371,12 +434,12 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
 
   @Override
   public boolean isPickable() {
-    return true;
+    return !placeOnLanding;
   }
 
   @Override
   public InteractionResult interact(Player p, InteractionHand hand) {
-    if (!Inventories.axe(p.getItemInHand(hand))) return InteractionResult.PASS;
+    if (placeOnLanding || !Inventories.axe(p.getItemInHand(hand))) return InteractionResult.PASS;
     if (!level().isClientSide && progress() >= duration && level().getGameTime() >= playerAction) {
       for (int i = 0; i < targets.size(); i++)
         if (!consumed(i)
@@ -435,6 +498,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       n.putInt("PendingIndex", pendingIndex);
     }
     n.putBoolean("Segmented", segmented);
+    n.putBoolean("RigidFall", rigidFall);
+    n.putBoolean("PlaceOnLanding", placeOnLanding);
     n.putInt("ProcessingTicks", processingTicks);
     n.putInt("Direction", direction.get3DDataValue());
     n.putInt("Duration", duration);
@@ -466,6 +531,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       pendingIndex = n.getInt("PendingIndex");
     }
     segmented = n.getBoolean("Segmented");
+    rigidFall = n.getBoolean("RigidFall");
+    placeOnLanding = n.getBoolean("PlaceOnLanding");
     processingTicks = Math.max(0, n.getInt("ProcessingTicks"));
     direction = Direction.from3DDataValue(n.getInt("Direction"));
     duration = Math.max(20, n.getInt("Duration"));
@@ -485,7 +552,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     }
     sweep.clear();
     for (long p : n.getLongArray("Sweep")) sweep.add(BlockPos.of(p));
-    entityData.set(LAYOUT_READY, distinctTargets());
+    entityData.set(LAYOUT_READY, distinctTargets() && (rigidFall || progress() >= duration));
     refreshBounds();
   }
 

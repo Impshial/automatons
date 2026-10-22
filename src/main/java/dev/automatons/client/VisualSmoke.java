@@ -417,7 +417,22 @@ public final class VisualSmoke {
           });
     if (Boolean.getBoolean("automatons.fallReview")
         && (ticks == 2012 || ticks == 2018 || ticks == 2026)) image("fall-midpoint-" + ticks);
-    if (Boolean.getBoolean("automatons.fallReview") && ticks == 2040) image("19-player-felling");
+    if (Boolean.getBoolean("automatons.fallReview") && ticks == 2040) {
+      image("19-player-felling");
+      server(
+          p -> {
+            int blocks = 0;
+            for (BlockPos at : BlockPos.betweenClosed(5, 64, -13, 17, 72, 0))
+              if (p.serverLevel().getBlockState(at).is(Blocks.OAK_LOG)) blocks++;
+            System.out.println(
+                "AUTOMATONS_PLAYER_LANDED realLogs="
+                    + blocks
+                    + " timberEntities="
+                    + p.serverLevel()
+                        .getEntitiesOfClass(Timber.class, new AABB(5, 63, -13, 17, 75, 0))
+                        .size());
+          });
+    }
     if (ticks == 3010)
       server(
           p -> {

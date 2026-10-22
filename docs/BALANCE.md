@@ -1,4 +1,4 @@
-# Recipes and provisional balance — 0.2.2
+# Recipes and provisional balance — 0.2.3
 
 This is the single design reference for initial recipes and configurable values. Server configuration is `serverconfig/automatons-server.toml` inside each world. Recipes, source tags and species definitions live in the mod data pack. All values are provisional.
 
@@ -127,7 +127,7 @@ An Empty Magica Core holds 0–49 points; 50 converts it to the distinct complet
 | leaves | 0 | 1 |
 | grass | 0 | 1 |
 
-One inclusive uniform large-value roll per completed eligible player break. A small orb stores exactly one-third of that roll. Flowers/grass produce one small orb; crops produce one orb with a 10% large chance; logs produce two small orbs plus a 40% chance of one large orb. Fruit, berries, stems and leaves keep their earlier rewards. A zero roll produces no entities. Small orbs render at half the large diameter and merge only with matching size/value. Existing saved orbs stay large. Whole points plus a saved 0–2 thirds remainder preserve exact fractions across reloads; infusion still consumes 50 whole points. A reversed configured range is corrected by raising its maximum to its minimum, with a log entry. Ordinary XP and Mending are unaffected. Display levels use the vanilla XP level curve, but all costs and stored balances are exact independent points.
+One inclusive uniform large-value roll per completed eligible player break. A small orb stores exactly one-third of that roll. Flowers/grass produce one small orb; crops produce one orb with a 10% large chance; logs produce two small orbs plus a 40% chance of one large orb. Fruit, berries, stems and leaves keep their earlier rewards. A zero roll produces no entities. Small orbs render at half the large diameter and merge only with matching size/value. Existing saved orbs stay large. Whole points plus a saved 0–2 thirds remainder preserve exact fractions across reloads; infusion still consumes 50 whole points. Numeric bar labels show only whole points, without rounding fractions into spendable points. A reversed configured range is corrected by raising its maximum to its minimum, with a log entry. Ordinary XP and Mending are unaffected. Display levels use the vanilla XP level curve, but all costs and stored balances are exact independent points.
 
 ## Server settings
 
@@ -178,9 +178,11 @@ These defaults assume 20 TPS, no enchantments or upgrades, and exclude walking, 
 
 Discovery checks closer columns and all configured root heights before releasing farther jobs. A per-dimension standing-tree claim prevents overlapping totems felling the same wood. Standing claims rebuild on load; committed timber owns its own persistent consumed-section and pending-loot state. One active worker claims a timber job. Packing/recall releases it immediately; an unavailable prior claimant is released after 200 loaded timber ticks.
 
+A route search considers all valid work positions around a target together. Workers check actual movement every 20 ticks; after 40 stalled ticks they invalidate the route and avoid its next node for 80 ticks. Unsafe timber is deferred after 60 ticks; an unreachable timber approach is deferred after 100 ticks, with a 200-tick job cooldown. They can work on another reachable log during that interval. Idle workers can unload cargo while the area scan continues.
+
 Global navigation attempts are capped at 32 per tick, fall plans at two, and conversions at one. Deferred work stays neutral. Successful and unsuccessful approaches have short caches, with bounded retries and world-change invalidation. Chest scans inspect up to 64 cells per totem visit, finish a fresh pass before confirming missing/full storage, and recheck current handlers during every actual transfer. No chunks are force-loaded.
 
-Species JSON bounds normal trees by height/spread/log count. Associated foliage ownership checks preserve shared crowns. Full falls try four directions; the fallback fans logs into distinct grounded cells near the root. Planned cells cannot duplicate another section or an active timber job. If the complete layout cannot fit, no source blocks are transferred. Older stacked jobs pause and replan without losing their remaining ledger. Log grain switches to the horizontal fall axis at 50% progress. Dropped log stacks inside the work range use bounded nearest-first, line-of-sight and reachable-path searches every 40 ticks; collecting items requires no chopping time.
+Species JSON bounds normal trees by height/spread/log count. Associated foliage ownership checks preserve shared crowns. Connected falls try four directions at the lowest safe common resting height, up to eight blocks above or below the root. The tree keeps its original trunk and branch spacing; some sections can bridge gaps while other sections rest on solid terrain or obstacles. Planned cells cannot duplicate another section or an active timber job. If the complete layout cannot fit, no source blocks are transferred. Older stacked jobs pause and replan without losing their remaining ledger. The entire model rotates continuously into its final block orientation. Player-triggered falls turn into real blocks at landing; Lumberton-triggered falls retain their persistent processing ledger. Dropped log stacks inside the work range use bounded nearest-first, line-of-sight and reachable-path searches every 40 ticks; collecting items requires no chopping time.
 
 ## Survival dependency total
 

@@ -69,8 +69,8 @@ argfile=PROJECT/'build/instance-smoke.args'
 argfile.write_text('\n'.join('"'+a.replace('\\','/').replace('"','\\"')+'"' for a in jvm+[FORGE['mainClass']]+game),encoding='utf-8')
 if '--inspect' in sys.argv:
     print('Ready: '+str(len(classpath))+' installed libraries, Forge 47.4.10, offline smoke identity.');sys.exit(0)
-jar=PROJECT/'build/libs/automatons-0.2.2.jar';target=INSTANCE/'mods'/jar.name
-assert jar.is_file(), 'Build 0.2.2 first'
+jar=PROJECT/'build/libs/automatons-0.2.3.jar';target=INSTANCE/'mods'/jar.name
+assert jar.is_file(), 'Build 0.2.3 first'
 backup=INSTANCE/'.automatons-test-backups'/time.strftime('%Y%m%d-%H%M%S');backup.mkdir(parents=True)
 original_mods=list((INSTANCE/'mods').glob('automatons-*.jar'))
 # Finish every backup before changing the selected game directory.

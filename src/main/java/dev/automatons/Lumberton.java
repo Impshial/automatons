@@ -36,6 +36,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   private UUID looseLogItem;
   private long nextLogSearch, nextLogPath;
   private long nextEscapePath;
+  private UUID navigationEscape;
+  private int navigationTimberTick = Integer.MIN_VALUE;
+  private List<Timber> navigationTimber = List.of();
+  private Vec3 routeProgressPosition;
+  private int routeProgressTick;
+  private long timberBlockedSince = -1;
+  private final Map<Long, Long> avoidedNodes = new HashMap<>();
+  private final Map<UUID, Long> failedTimber = new HashMap<>();
   private BlockPos crackTarget;
 
   public BlockPos home, totem;
@@ -86,6 +94,68 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     super(type, l);
     setPersistenceRequired();
     setCanPickUpLoot(false);
+  }
+
+  @Override
+  protected net.minecraft.world.entity.ai.navigation.PathNavigation createNavigation(Level level) {
+    return new LumbertonNavigation(this, level);
+  }
+
+  public boolean navigationBlocked(BlockPos node) {
+    if (avoidedNodes != null
+        && avoidedNodes.getOrDefault(node.asLong(), 0L) > level().getGameTime()) return true;
+    AABB box = getDimensions(Pose.STANDING).makeBoundingBox(Vec3.atBottomCenterOf(node));
+    if (navigationTimberTick != tickCount) {
+      navigationTimber = Timber.nearby(level(), getBoundingBox().inflate(64));
+      navigationTimberTick = tickCount;
+    }
+    return navigationTimber.stream()
+        .anyMatch(
+            t ->
+                !t.isRemoved()
+                    && !t.finished()
+                    && !t.getUUID().equals(navigationEscape)
+                    && t.dangerAt(box));
+  }
+
+  private void recoverStalledNavigation() {
+    avoidedNodes.values().removeIf(until -> until <= level().getGameTime());
+    failedTimber.values().removeIf(until -> until <= level().getGameTime());
+    if (!navigation.isInProgress()
+        || routeProgressPosition == null
+        || position().distanceToSqr(routeProgressPosition) >= .0625) {
+      if (routeProgressPosition != null && position().distanceToSqr(routeProgressPosition) >= .0625)
+        blockedSince = -1;
+      routeProgressPosition = position();
+      routeProgressTick = tickCount;
+      return;
+    }
+    if (tickCount - routeProgressTick < 40) return;
+    Path path = navigation.getPath();
+    if (path != null && !path.isDone()) {
+      BlockPos blocked = path.getNextNodePos();
+      if (!blocked.equals(blockPosition()))
+        avoidedNodes.put(blocked.asLong(), level().getGameTime() + 80);
+    }
+    navigation.stop();
+    routes.clear();
+    pathTarget = null;
+    nextPath = nextLogPath = nextEscapePath = 0;
+    if (blockedSince < 0) blockedSince = level().getGameTime();
+    routeProgressTick = tickCount;
+  }
+
+  private void deferBlockedTimber() {
+    if (timberId != null) failedTimber.put(timberId, level().getGameTime() + 200);
+    clearChop();
+    suspendTimber();
+    navigation.stop();
+    routes.clear();
+    pathTarget = null;
+    nextPath = 0;
+    blockedSince = timberBlockedSince = -1;
+    wantsJob = true;
+    state("Seeking other reachable work");
   }
 
   public static AttributeSupplier.Builder attributes() {
@@ -347,6 +417,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (!level().isClientSide && chopTarget() != null) aimAt(chopTarget());
     if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0) {
       getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(Balance.WALK.get());
+      if (tickCount % 20 == 0) recoverStalledNavigation();
       brain();
       if (tickCount % 20 == 0) {
         if (job() == 1 && authorized) pickup();
@@ -502,12 +573,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     candidates.sort(
         Comparator.comparingDouble((BlockPos q) -> distanceToSqr(Vec3.atBottomCenterOf(q)))
             .thenComparingLong(BlockPos::asLong));
-    for (BlockPos q : candidates) {
+    if (!candidates.isEmpty()) {
       if (!WorldEvents.pathBudget()) {
         pathDeferred = true;
         return null;
       }
-      Path path = navigation.createPath(q, 0);
+      // Search all usable sides together; retrying the first side alone can starve alternatives.
+      Path path = navigation.createPath(new LinkedHashSet<>(candidates), 0);
       if (path != null && path.canReach()) {
         routes.put(p.asLong(), new Route(path, level().getGameTime() + 20));
         return path;
@@ -547,7 +619,6 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         return false;
       }
       navigation.moveTo(path, 1);
-      blockedSince = -1;
     }
     state(moving);
     return false;
@@ -772,6 +843,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     WorldData data = WorldData.get(l);
     boolean claimed = false, blocked = false;
     for (Timber t : s.timberJobs()) {
+      if (failedTimber.getOrDefault(t.getUUID(), 0L) > l.getGameTime()) {
+        blocked = true;
+        continue;
+      }
       if (t.worker != null && !getUUID().equals(t.worker)) {
         claimed = true;
         continue;
@@ -797,6 +872,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     for (TreeFinder.Tree tree : s.orderedTrees()) {
       if (!s.discoveredBefore(tree)) {
         state("Seeking tree");
+        if (!cargoEmpty() && tickCount >= serviceRetry) beginService("Unloading while searching");
         return;
       }
       if (tree.logs().stream()
@@ -847,6 +923,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     } else {
       alerts &= ~WOOD;
       state("Seeking tree");
+      if (!cargoEmpty() && tickCount >= serviceRetry) beginService("Unloading while searching");
       return;
     }
     if (tickCount >= serviceRetry) beginService(status());
@@ -922,13 +999,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
               && !Timber.blocksWorker(level(), box)) exits.add(q);
         }
     exits.sort(Comparator.comparingDouble(q -> distanceToSqr(Vec3.atBottomCenterOf(q))));
-    for (BlockPos q : exits) {
-      if (!WorldEvents.pathBudget()) break;
-      Path path = navigation.createPath(q, 0);
-      if (path != null && path.canReach()) {
-        navigation.moveTo(path, 1);
-        return true;
+    navigationEscape = escapeTimber.getUUID();
+    try {
+      if (!exits.isEmpty() && WorldEvents.pathBudget()) {
+        Path path = navigation.createPath(new LinkedHashSet<>(exits), 0);
+        if (path != null && path.canReach()) navigation.moveTo(path, 1);
       }
+    } finally {
+      navigationEscape = null;
     }
     return true;
   }
@@ -1061,10 +1139,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         return;
       }
       if (!timber.safe(s)) {
-        if (tickCount >= serviceRetry) beginService("Timber blocked");
-        state("Timber blocked");
+        clearChop();
+        if (timberBlockedSince < 0) timberBlockedSince = l.getGameTime();
+        if (l.getGameTime() - timberBlockedSince >= 60) deferBlockedTimber();
+        else state("Waiting for timber clearance");
         return;
       }
+      timberBlockedSince = -1;
       if (timber.progress() < timber.duration) {
         navigation.stop();
         state("Felling");
@@ -1073,8 +1154,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       int next = timber.next();
       BlockPos target = timber.targets.get(next);
       if (!travel(target, "Travelling", "Processing timber")) {
-        if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160)
-          beginService("Waiting for path");
+        if (blockedSince >= 0 && l.getGameTime() - blockedSince > 100) deferBlockedTimber();
         return;
       }
       lookControl.setLookAt(Vec3.atCenterOf(target));

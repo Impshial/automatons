@@ -241,8 +241,7 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
       g.drawString(font, "Magica", 187, 77, 0xffe8d7ff, false);
       g.drawString(
           font,
-          Magica.format(menu.snapshot.getInt("Magica"), menu.snapshot.getInt("MagicaThirds"))
-              + " points",
+          Integer.toString(menu.snapshot.getInt("Magica")) + " points",
           187,
           94,
           0xffeee8f6,

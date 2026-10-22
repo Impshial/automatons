@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.2.3
+
+- Magica HUD and pedestal readouts show whole points only, retaining exact fractional accounting.
+- Player-felled trees become real log blocks on landing, with normal block breaking, preserved wood type/orientation, and one-time foliage loot. Obstruction and reload checks preserve the pending tree.
+- Replaced scattered-log fallback and separate log motion with connected trunk/branch rotation. Falls preserve shape and can rest across uneven terrain or blocks, with distinct occupied coordinates.
+- Lumbertons plan around the full fallen tree, search multiple approach sides together, and replan after a movement stall. Blocked timber claims are released temporarily so reachable work can continue.
+- Workers unload collected cargo while area discovery is incomplete, avoiding idle waits during a long rescan.
+- Restored full timber bounds after save/load and included distant tree tips in collision/reservation searches. Expanded natural canopy recognition to the full six-leaf support distance.
+- Added a complete history since the full redesign prompt in `HISTORY-SINCE-REDESIGN.md`.
+
 ## 0.2.2
 
 - Lumbertons seek reachable dropped log items on the ground within their Totem’s range and collect them into cargo for storage.
