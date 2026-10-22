@@ -67,10 +67,15 @@ try:
     with (PROJECT/'instance-smoke.log').open('w',encoding='utf-8') as log:
         process=subprocess.Popen([str(JAVA),'@'+str(argfile)],cwd=INSTANCE,stdout=log,stderr=subprocess.STDOUT)
         print('Instance client PID',process.pid,flush=True)
-        result=process.wait(timeout=300)
+        try:
+            result=process.wait(timeout=300)
+        except subprocess.TimeoutExpired:
+            # Only terminate the test process started above, never another Minecraft session.
+            process.terminate()
+            process.wait(timeout=15)
+            result=124
+            print('Smoke client exceeded its five-minute limit; see instance-smoke.log.',flush=True)
         print('Instance client exit',result,flush=True)
 finally:
     if original is not None:options.write_bytes(original)
 sys.exit(result)
-
-
