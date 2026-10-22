@@ -1,79 +1,171 @@
-# Provisional design and balance
+# Recipes and provisional balance — 0.2.0
 
-These are testing defaults, not permanently approved balance decisions.
+This is the single design reference for initial recipes and configurable values. Server configuration is `serverconfig/automatons-server.toml` inside each world. Recipes, source tags and species definitions live in the mod data pack. All values are provisional.
 
-| Setting | Default | Location |
-|---|---|---|
-| Workers per totem | 1 | Assignment validation |
-| Storage range | 4 outward, 9 × 9 | `Balance.STORAGE` |
-| Storage height | ±4 | `Balance.HEIGHT` |
-| Lumber range | 16 outward, 33 × 33 | `Balance.LUMBER` |
-| Trunk-base search height | ±16 around totem | Station scanner |
-| Cargo | 9 slots | Separate from tools |
-| Tools | Exactly 3, one axe per slot | Job-filtered inventory |
-| Upgrade slots | 4, one item per family | Totem inventory |
-| Walking attribute | 0.215 | `Balance.WALK` |
-| Measured level-ground speed | 1.996 blocks/second | 40-tick navigation sample after acceleration |
-| Loaded movement | Same walking value | No weight penalty |
-| Iron-axe preparation | 80 ticks per rooted base log | `Balance.PREP` |
-| Iron-axe processing | 40 ticks per section | `Balance.PROCESS` |
-| Tipping animation | 30 ticks | `Balance.FALL` |
-| Protection curtain | 64 high, bottom at viewer Y − 8 | Display only; actual protection is full height |
-| Global scan budget | 512 work units per tick | Fair queue across dimensions |
-| Per-totem tree scan | Up to 32 cells per visit | Storage scans use another bounded 16 cells |
+## Survival recipes
 
-Forge writes editable server values to `<world>/serverconfig/automatons-server.toml`. A server can provide defaults through `defaultconfigs`. Existing config files retain their saved values. Movement and work durations are separate settings.
+Every recipe produces one item. `—` is an empty crafting-grid slot. All charged cores are consumed; partial cores cannot substitute. The Infusing Pedestal and empty core use only vanilla materials.
 
-Chopping duration is `max(10, round(baseTicks × 6 / effectiveToolSpeed × 0.8^workSpeedTier))`. Effective tool speed is the tool tier's speed plus `efficiency² + 1` when effective Efficiency is positive. Effective Efficiency is the **higher** of the axe's existing enchantment and the totem's granted level. The totem never writes an enchantment to the axe. Normal tool wear, including Unbreaking, uses the real stack.
+### Automaton
 
-Felling charges one wear per rooted base log when the standing wood is committed. Processing charges one wear per timber section when it yields drops. Rendered swings do not cause additional wear or yield. Crown loot is generated once with the felling tool and held by the timber job. Shared or decorative foliage is retained.
+At the Automaton Pedestal: Head above; Arm / Automaton Core / Arm across the middle; two Legs below. Take one Automaton result after inserting all six components. No extra Magica cost.
 
-## Upgrades
+### Automaton Arm
 
-| Family | Tier I | Tier II |
-|---|---|---|
-| Storage Range | +4 outward | +8 outward |
-| Lumber Range | +8 outward | +16 outward |
-| Work Speed | 20% shorter chopping | 36% shorter chopping |
-| Tool Enchantment | Effective Efficiency I | Effective Efficiency II |
+Shapeless: 1 × Overworld log / wood (including stripped), 1 × Iron Ingot.
 
-Tiers replace each other in the same family; they do not stack. Inventory insertion rejects a second item from the same family. Removing a range upgrade revalidates pending work and can leave timber waiting for a restored range or player recovery.
+### Automaton Core
 
-## Recipes
+| Left | Center | Right |
+| --- | --- | --- |
+| Iron Ingot | Magica Core | Iron Ingot |
+| Redstone | Redstone | Redstone |
+| Iron Ingot | Magica Core | Iron Ingot |
 
-All crafting recipes live in `src/main/resources/data/automatons/recipes`. The pedestal uses the custom datapack recipe type `automatons:creation`; it accepts four ordered ingredients with configurable wood and metal counts.
+### Automaton Head
 
-Pedestal:
+Shapeless: 2 × Overworld log / wood (including stripped), 2 × Iron Nugget, 1 × Redstone.
 
-```text
-stone brick    amethyst    stone brick
-iron ingot     gold ingot  iron ingot
-stone brick    stone brick stone brick
-```
+### Automaton Leg
 
-Totem:
+Shapeless: 1 × Overworld log / wood (including stripped), 1 × Overworld plank, 1 × Iron Ingot.
 
-```text
-empty       amethyst    empty
-iron ingot  oak log     iron ingot
-empty       stone brick empty
-```
+### Efficiency 1
 
-Wand:
+Shapeless: 1 × Upgrade Plate, 1 × Book, 2 × Lapis Lazuli, 1 × Amethyst Shard, 1 × Magica Core.
 
-```text
-empty  empty amethyst
-empty  stick empty
-stick  empty empty
-```
+### Efficiency 2
 
-Lumberton, in the pedestal: **6 oak-log-tag items, 4 iron ingots, 1 amethyst shard, 1 iron axe**. The exact recipe axe transfers to the entity. Spawn clearance is checked before any ingredient is consumed.
+Shapeless: 1 × Efficiency 1, 1 × Book, 2 × Lapis Lazuli, 2 × Amethyst Shard, 1 × Diamond, 2 × Magica Core.
 
-Each Tier I upgrade uses ` I /ACA/ I `: two iron ingots, two amethyst shards, and the following center ingredient:
+### Empty Magica Core
 
-- Storage: chest.
-- Lumber: oak sapling.
-- Speed: redstone dust.
-- Tool Enchantment: lapis lazuli.
+| Left | Center | Right |
+| --- | --- | --- |
+| — | Glass | — |
+| Glass | Amethyst Shard | Glass |
+| — | Glass | — |
 
-Tier II uses ` G /AUA/ G `: two gold ingots, two amethyst shards, and the corresponding Tier I upgrade. These are ordinary survival crafting recipes.
+### Infusing Pedestal
+
+| Left | Center | Right |
+| --- | --- | --- |
+| Iron Ingot | — | Iron Ingot |
+| Polished Diorite | Amethyst Shard | Polished Diorite |
+| Polished Deepslate | Polished Deepslate | Polished Deepslate |
+
+### Lumber 1
+
+Shapeless: 1 × Upgrade Plate, 1 × Compass, 4 × Overworld log / wood (including stripped), 1 × Magica Core.
+
+### Lumber 2
+
+Shapeless: 1 × Lumber 1, 1 × Compass, 2 × Iron Ingot, 2 × Amethyst Shard, 2 × Magica Core.
+
+### Pedestal
+
+| Left | Center | Right |
+| --- | --- | --- |
+| Stone Bricks | Magica Core | Stone Bricks |
+| Iron Ingot | Gold Ingot | Iron Ingot |
+| Stone Bricks | Magica Core | Stone Bricks |
+
+### Speed 1
+
+Shapeless: 1 × Upgrade Plate, 4 × Sugar, 2 × Redstone, 1 × Magica Core.
+
+### Speed 2
+
+Shapeless: 1 × Speed 1, 2 × Sugar, 2 × Redstone, 1 × Diamond, 2 × Magica Core.
+
+### Storage 1
+
+Shapeless: 1 × Upgrade Plate, 1 × Chest, 1 × Compass, 1 × Magica Core.
+
+### Storage 2
+
+Shapeless: 1 × Storage 1, 1 × Chest, 2 × Iron Ingot, 2 × Amethyst Shard, 2 × Magica Core.
+
+### Totem
+
+| Left | Center | Right |
+| --- | --- | --- |
+| — | Magica Core | — |
+| Iron Ingot | Overworld log / wood (including stripped) | Iron Ingot |
+| — | Stone Bricks | — |
+
+### Upgrade Plate
+
+Shapeless: 2 × Iron Ingot, 2 × Redstone, 1 × Amethyst Shard.
+
+### Wand
+
+| Left | Center | Right |
+| --- | --- | --- |
+| — | — | Magica Core |
+| — | Stick | — |
+| Stick | — | — |
+
+## World infusion
+
+An Empty Magica Core holds 0–49 points; 50 converts it to the distinct completed Magica Core item. Empty and completed cores stack; partial cores do not. One point transfers each four server ticks, within a four-block radius from the displayed core, with an online living donor in the same dimension. Fifty points require 200 active ticks at the default cadence. Partial progress persists; unloaded time grants no catch-up.
+
+## Magica yields
+
+| Category | Min | Max |
+| --- | ---: | ---: |
+| logs | 3 | 7 |
+| crops | 2 | 4 |
+| fruit | 2 | 4 |
+| berries | 1 | 3 |
+| flowers | 1 | 2 |
+| stems | 0 | 2 |
+| leaves | 0 | 1 |
+| grass | 0 | 1 |
+
+One inclusive uniform roll per completed eligible player break. A reversed configured range is corrected by raising its maximum to its minimum, with a log entry. Ordinary XP and Mending are unaffected. Display levels use the vanilla XP level curve, but all costs and stored balances are exact independent points.
+
+## Server settings
+
+| Key under `provisional` | Default | Meaning |
+| --- | --- | --- |
+| `storageRadius` | 4 | Outward horizontal distance; 9×9 base square |
+| `storageHeight` | 4 | Vertical chest allowance ±4 |
+| `lumberRadius` | 16 | Root-center square; 33×33 base footprint |
+| `rootHeight` | 16 | Separate root-height allowance ±16 |
+| `cargoSlots` | 9 | New worker cargo capacity, 1–27; existing larger inventories are retained |
+| `walkingAttribute` | .215 | Measured flat-ground default ≈1.996 blocks/second |
+| `ironAxePreparationTicksPerBaseLog` | 80 | Four seconds per root-base cut with an unenchanted iron axe |
+| `ironAxeProcessingTicks` | 40 | Two seconds per log section with an unenchanted iron axe |
+| `fallAnimationTicks` | 30 | 1.5-second visual fall, separate from work upgrades |
+| `serverScanBudgetPerTick` | 4096 | Shared scan/validation units |
+| `totemScanBudgetPerTick` | 256 | Incremental tree-search cells per visit |
+| `infusionTicksPerPoint` | 4 | Active ticks per exact transferred Magica point |
+| `infusionRange` | 4 | Donor radius in blocks |
+| `retainMagicaOnDeath` | true | Retain independent balance on death |
+| `logWorkTransitions` | false | Optional transition/skip diagnostics, at most one message/second/worker |
+| `displayTiltDegrees` | 30 | Permanent item-display lean |
+| `displayRotationSeconds` | 8 | One full Y rotation |
+| `displayScale` | .7 | Display item scale |
+| `displayBobAmplitude` | .04 | Gentle vertical bob |
+| `displayHeight` | 1.75 | Display center above pedestal origin |
+
+Magica minima/maxima live under `magicaYields.<category>.minimum/maximum`. Numeric ranges are validated by Forge. Old worlds preserve existing configured scan budgets rather than silently replacing user settings.
+
+## Upgrades and work formula
+
+Storage Range I/II adds 4/8 total blocks; default radii become 8/12 (17×17 and 25×25). Lumber Range I/II adds 8/16 total blocks; radii become 24/32 (49×49 and 65×65). Neither changes vertical allowances. One installed item per family affects every compatible assigned worker. Duplicate family slots are rejected.
+
+Work duration is `max(10, round(baseTicks × 6 / max(1, toolSpeed + efficiencyBonus) × (1 − 0.2 × speedTier)))`. `efficiencyBonus` is zero at Efficiency 0, otherwise `effectiveEfficiency² + 1`. Effective Efficiency is the larger of the actual enchantment and the totem tier, never their sum. No permanent enchantment is written to the axe. Speed I/II shortens work by 20%/40% total. Movement and visual fall are separate. One tool-durability action is charged per required base cut and one per completed timber section; Unbreaking remains normal.
+
+## Dispatch, recovery and safety budgets
+
+Discovery checks closer columns and all configured root heights before releasing farther jobs. A per-dimension standing-tree claim prevents overlapping totems felling the same wood. Standing claims rebuild on load; committed timber owns its own persistent consumed-section and pending-loot state. One active worker claims a timber job. Packing/recall releases it immediately; an unavailable prior claimant is released after 200 loaded timber ticks.
+
+Global navigation attempts are capped at 32 per tick, fall plans at two, and conversions at one. Deferred work stays neutral. Successful and unsuccessful approaches have short caches, with bounded retries and world-change invalidation. Chest scans inspect up to 64 cells per totem visit, finish a fresh pass before confirming missing/full storage, and recheck current handlers during every actual transfer. No chunks are force-loaded.
+
+Species JSON bounds normal trees by height/spread/log count. Associated foliage ownership checks preserve shared crowns. Full falls try four directions; compact fallback keeps all unconsumed sections in one persistent job and exposes grounded sections in order.
+
+## Survival dependency total
+
+Before optional upgrades, a first full setup needs six completed cores (300 Magica): two in the home pedestal, one in the Totem, one in the Wand, and two in the Automaton Core body component. Crafting axes is separate. All component and upgrade recipes fit the ordinary 3×3 grid except the explicitly documented six-part pedestal assembly.

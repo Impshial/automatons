@@ -1,11 +1,8 @@
 package dev.automatons;
 
 import net.minecraft.server.level.ServerLevel;
-import net.minecraft.tags.BlockTags;
-import net.minecraft.world.entity.player.Player;
 import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.entity.player.PlayerEvent;
-import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class WorldEvents {
@@ -16,6 +13,41 @@ public final class WorldEvents {
 
   private static long tick;
   private static int spent;
+  private static int paths, conversions, plans;
+  private static final java.util.Set<Station> loadedStations =
+      java.util.Collections.newSetFromMap(new java.util.WeakHashMap<>());
+
+  public static void stationLoaded(Station s) {
+    loadedStations.add(s);
+  }
+
+  public static void changedNear(ServerLevel level, net.minecraft.core.BlockPos pos) {
+    for (Station s : loadedStations)
+      if (!s.isRemoved() && s.getLevel() == level) {
+        if (Math.abs(pos.getX() - s.getBlockPos().getX()) <= s.lumberRange() + 12
+            && Math.abs(pos.getZ() - s.getBlockPos().getZ()) <= s.lumberRange() + 12)
+          s.invalidateTrees();
+        if (Storage.inRange(s, pos)) s.refreshStorage();
+      }
+  }
+
+  public static void protectionChanged(ServerLevel level) {
+    for (Station s : loadedStations)
+      if (s.getLevel() == level && !s.isRemoved()) s.invalidateTrees();
+  }
+
+  public static boolean pathBudget() {
+    return paths++ < 32;
+  }
+
+  public static boolean planBudget() {
+    return plans++ < 2;
+  }
+
+  public static boolean conversionBudget() {
+    return conversions++ < 1;
+  }
+
   private static final java.util.ArrayDeque<Station> scanners = new java.util.ArrayDeque<>();
   private static final java.util.Set<java.util.UUID> queued = new java.util.HashSet<>();
 
@@ -26,6 +58,7 @@ public final class WorldEvents {
   @SubscribeEvent
   public static void stopped(net.minecraftforge.event.server.ServerStoppedEvent e) {
     scanners.clear();
+    loadedStations.clear();
     queued.clear();
     spent = 0;
   }
@@ -41,6 +74,9 @@ public final class WorldEvents {
     if (e.phase == TickEvent.Phase.START) {
       tick++;
       spent = 0;
+      paths = 0;
+      conversions = 0;
+      plans = 0;
       return;
     }
     int count = scanners.size();
@@ -48,39 +84,62 @@ public final class WorldEvents {
       Station station = scanners.removeFirst();
       queued.remove(station.identity);
       if (!station.isRemoved()
-          && station.worker != null
+          && (!station.workers.isEmpty() || station.worker != null)
           && station.getLevel() instanceof ServerLevel l
           && l.hasChunkAt(station.getBlockPos())) station.scanWork(l);
     }
   }
 
   @SubscribeEvent
-  public static void placed(BlockEvent.EntityPlaceEvent e) {
-    if (e.getLevel() instanceof ServerLevel l
-        && e.getEntity() instanceof Player
-        && e.getPlacedBlock().is(BlockTags.LOGS)) {
-      WorldData.get(l).placedLogs.add(e.getPos().asLong());
-      WorldData.get(l).setDirty();
-    }
+  public static void grown(net.minecraftforge.event.level.SaplingGrowTreeEvent e) {
+    if (e.getLevel() instanceof ServerLevel l) changedNear(l, e.getPos());
   }
 
   @SubscribeEvent
-  public static void broken(BlockEvent.BreakEvent e) {
-    if (!e.isCanceled()
-        && e.getLevel() instanceof ServerLevel l
-        && !(e.getPlayer() instanceof net.minecraftforge.common.util.FakePlayer)) {
-      WorldData.get(l).placedLogs.remove(e.getPos().asLong());
-      WorldData.get(l).setDirty();
+  public static void join(net.minecraftforge.event.entity.EntityJoinLevelEvent e) {
+    if (!(e.getLevel() instanceof ServerLevel level) || !(e.getEntity() instanceof Lumberton w))
+      return;
+    for (ServerLevel other : level.getServer().getAllLevels()) {
+      var existing = other.getEntity(w.getUUID());
+      if (existing != null && existing != w && !existing.isRemoved()) {
+        e.setCanceled(true);
+        return;
+      }
     }
+    var record = Ledger.get(level.getServer()).workers.get(w.getUUID());
+    if (record != null
+        && !w.deploying
+        && record.getString("State").equals("Deployed")
+        && !record.hasUUID("TotemId")) {
+      w.totemId = null;
+      w.totem = null;
+      w.totemDimension = "";
+    }
+    if (record != null
+        && !w.deploying
+        && (record.getString("State").equals("Packed")
+            || record.getString("State").equals("Destroyed"))) e.setCanceled(true);
+  }
+
+  @SubscribeEvent
+  public static void leave(net.minecraftforge.event.entity.EntityLeaveLevelEvent e) {
+    if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w)
+      WorldData.get(l).release(w.getUUID());
   }
 
   @SubscribeEvent
   public static void login(PlayerEvent.PlayerLoggedInEvent e) {
-    if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) Network.protections(p);
+    if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) {
+      Network.protections(p);
+      Magica.sync(p);
+    }
   }
 
   @SubscribeEvent
   public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) {
-    if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) Network.protections(p);
+    if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) {
+      Network.protections(p);
+      Magica.sync(p);
+    }
   }
 }

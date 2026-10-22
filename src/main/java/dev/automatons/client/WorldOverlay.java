@@ -32,7 +32,7 @@ public final class WorldOverlay {
         || !mc.level.dimension().location().toString().equals(ClientSetup.protectionDimension))
       return;
     var wand = WandItem.held(mc.player);
-    if (wand.isEmpty() || WandItem.mode(wand) == 0) return;
+    if (wand.isEmpty() || (WandItem.mode(wand) != 1 && WandItem.mode(wand) != 2)) return;
     boolean green = WandItem.mode(wand) == 1;
     var cam = e.getCamera().getPosition();
     PoseStack pose = e.getPoseStack();

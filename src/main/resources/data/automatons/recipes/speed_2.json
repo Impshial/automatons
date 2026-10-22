@@ -1,21 +1,31 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " G ",
-    "AUA",
-    " G "
-  ],
-  "key": {
-    "G": {
-      "item": "minecraft:gold_ingot"
-    },
-    "A": {
-      "item": "minecraft:amethyst_shard"
-    },
-    "U": {
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
       "item": "automatons:speed_1"
+    },
+    {
+      "item": "minecraft:sugar"
+    },
+    {
+      "item": "minecraft:sugar"
+    },
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "item": "automatons:magica_core"
+    },
+    {
+      "item": "automatons:magica_core"
     }
-  },
+  ],
   "result": {
     "item": "automatons:speed_2"
   }

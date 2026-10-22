@@ -19,7 +19,7 @@ public class TimberRenderer extends EntityRenderer<Timber> {
       Timber t, float yaw, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
     float progress = Math.min(1, (t.progress() + partial) / t.duration);
     for (int i = 0; i < t.wood.size(); i++) {
-      if (t.consumed(i)) continue;
+      if (t.consumed(i) || t.segmented && progress > .9f && i != t.next()) continue;
       pose.pushPose();
       var from = t.sources.get(i);
       var to = t.targets.get(i);
@@ -29,7 +29,11 @@ public class TimberRenderer extends EntityRenderer<Timber> {
         if (state.hasProperty(RotatedPillarBlock.AXIS))
           state = state.setValue(RotatedPillarBlock.AXIS, t.direction.getAxis());
       } else {
-        var corner = TreeFinder.fallCorner(from, to, t.blockPosition(), t.direction, progress);
+        var corner =
+            t.segmented
+                ? net.minecraft.world.phys.Vec3.atLowerCornerOf(from)
+                    .lerp(net.minecraft.world.phys.Vec3.atLowerCornerOf(to), progress)
+                : TreeFinder.fallCorner(from, to, t.blockPosition(), t.direction, progress);
         pose.translate(corner.x - t.getX() + .5, corner.y - t.getY(), corner.z - t.getZ() + .5);
         if (progress > .85f && state.hasProperty(RotatedPillarBlock.AXIS))
           state = state.setValue(RotatedPillarBlock.AXIS, t.direction.getAxis());

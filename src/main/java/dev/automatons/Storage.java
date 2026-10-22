@@ -62,21 +62,29 @@ public final class Storage {
 
   public static BlockPos choose(Lumberton w, Station s, boolean supply) {
     ServerLevel l = (ServerLevel) w.level();
-    for (BlockPos p : s.chests) {
+    w.pathDeferred = false;
+    for (BlockPos p :
+        s.chests.stream()
+            .sorted(
+                Comparator.comparingDouble(
+                        (BlockPos p) ->
+                            w.distanceToSqr(net.minecraft.world.phys.Vec3.atCenterOf(p)))
+                    .thenComparingLong(BlockPos::asLong))
+            .toList()) {
       if ((s.flags(p) & (supply ? 2 : 1)) == 0) continue;
       IItemHandler h = handler(l, p, s);
       if (h == null) continue;
       boolean relevant = false;
       if (supply) {
         for (int i = 0; i < h.getSlots(); i++)
-          if (Inventories.axe(h.getStackInSlot(i))) relevant = true;
+          if (Inventories.axe(h.extractItem(i, 1, true))) relevant = true;
       } else {
         for (int i = 0; i < w.cargo.getSlots(); i++)
           if (!w.cargo.getStackInSlot(i).isEmpty() && accepts(h, w.cargo.getStackInSlot(i)))
             relevant = true;
-        if (w.cargoEmpty()) relevant = accepts(h, w.expectedOutput());
       }
       if (relevant && usable(w, p)) return p;
+      if (w.pathDeferred) return null;
     }
     return null;
   }
@@ -95,18 +103,14 @@ public final class Storage {
       if ((s.flags(p) & 1) == 0) continue;
       IItemHandler h = handler((ServerLevel) w.level(), p, s);
       if (h == null) continue;
-      if (w.cargoEmpty()) {
-        if (accepts(h, w.expectedOutput())) return true;
-      } else
-        for (int i = 0; i < w.cargo.getSlots(); i++)
-          if (!w.cargo.getStackInSlot(i).isEmpty() && accepts(h, w.cargo.getStackInSlot(i)))
-            return true;
+      // A bounded next output must be acceptable; unrelated partial stacks are not capacity.
+      if (accepts(h, w.expectedOutput())) return true;
     }
     return false;
   }
 
   public static void transfer(Lumberton w, Station s, BlockPos p) {
-    if (w.distanceToSqr(p.getX() + .5, p.getY() + .5, p.getZ() + .5) > 9) return;
+    if (!w.inReach(p)) return;
     IItemHandler h = handler((ServerLevel) w.level(), p, s);
     if (h == null) return;
     if ((s.flags(p) & 1) != 0) {
@@ -119,7 +123,7 @@ public final class Storage {
         w.cargo.setStackInSlot(i, rest);
       }
     }
-    if ((s.flags(p) & 2) != 0) {
+    if (w.job() == 1 && (s.flags(p) & 2) != 0) {
       for (int slot = 0; slot < 3; slot++)
         if (w.tools.getStackInSlot(slot).isEmpty())
           for (int i = 0; i < h.getSlots(); i++) {

@@ -141,3 +141,85 @@ write(RES/'data/minecraft/tags/blocks/mineable/pickaxe.json',{'replace':False,'v
 write(RES/'data/minecraft/tags/blocks/mineable/axe.json',{'replace':False,'values':['automatons:totem']})
 write(RES/'pack.mcmeta',{'pack':{'pack_format':15,'description':'Automatons resources'}})
 print('Authored 16x16 block/item textures, six 64x64 entity atlases, editable model, recipes, tags, loot, and language.')
+
+# Redesign 0.2: reproducible pixel art and the complete survival dependency chain.
+white=list(map(rgb,['46414f','77717f','b9b3c5','f3edff']))
+black=list(map(rgb,['17171d','26252e','353440','4c4958']))
+for name,palette in [('white_stone',white),('black_stone',black)]:
+    p=canvas()
+    for y in range(16):
+        for x in range(16):p[y][x]=palette[1+(x//3+y//4)%3]
+    png(RES/f'assets/automatons/textures/block/{name}.png',p)
+def sprite(name,p,title):
+    png(RES/f'assets/automatons/textures/item/{name}.png',p)
+    write(RES/f'assets/automatons/models/item/{name}.json',{'parent':'minecraft:item/generated','textures':{'layer0':f'automatons:item/{name}'}})
+    lang[f'item.automatons.{name}']=title
+for name,full in [('empty_magica_core',False),('magica_core',True)]:
+    p=canvas()
+    for y in range(2,14):
+        for x in range(2,14):
+            d=abs(x-7.5)+abs(y-7.5)
+            if d<=6:p[y][x]=white[2] if d>=5 else purple[0] if full else (90,70,120,75)
+            if full and d<=4:p[y][x]=purple[2 if (x+y)%3 else 1]
+            if full and d<=2:p[y][x]=white[3]
+    p[4][7]=white[3];p[5][6]=white[3];p[10][10]=purple[3]
+    sprite(name,p,'Magica Core' if full else 'Empty Magica Core')
+p=canvas();material(p,4,3,8,9,'plank');rect(p,3,2,10,1,metal[1]);rect(p,3,12,10,2,metal[2]);rect(p,6,6,1,2,gold[3]);rect(p,9,6,1,2,gold[3]);rect(p,7,10,2,1,wood[0]);sprite('automaton_head',p,'Automaton Head')
+p=canvas();material(p,3,3,10,10,'plank');rect(p,2,3,2,11,metal[2]);rect(p,12,3,2,11,metal[2]);rect(p,5,6,6,4,purple[0]);rect(p,6,6,1,4,white[3]);rect(p,9,6,1,4,white[3]);sprite('automaton_core',p,'Automaton Core')
+for name,title,length in [('automaton_arm','Automaton Arm',12),('automaton_leg','Automaton Leg',10)]:
+    p=canvas();material(p,5,2,6,length,'bark');rect(p,5,2,6,2,metal[2]);rect(p,5,length,6,2,metal[1]);rect(p,6,4,1,length-5,wood[5]);
+    if name.endswith('leg'):rect(p,4,12,8,2,metal[2])
+    sprite(name,p,title)
+p=canvas();rect(p,2,3,12,10,metal[0]);rect(p,3,4,10,8,metal[2]);rect(p,4,5,8,6,metal[3]);rect(p,6,6,4,4,purple[1]);p[6][6]=white[3];p[11][3]=gold[2];p[4][12]=gold[2];sprite('upgrade_plate',p,'Upgrade Plate')
+p=canvas();material(p,5,0,6,5,'plank');rect(p,6,2,1,1,gold[3]);rect(p,9,2,1,1,gold[3]);rect(p,7,4,2,1,wood[0]);material(p,5,6,6,5,'plank');rect(p,7,7,2,2,gold[2]);material(p,2,6,2,7,'bark');material(p,12,6,2,7,'bark');rect(p,2,6,2,1,metal[2]);rect(p,12,6,2,1,metal[2]);rect(p,2,11,2,1,metal[2]);rect(p,12,11,2,1,metal[2]);material(p,5,12,2,4,'bark');material(p,9,12,2,4,'bark');rect(p,5,15,2,1,metal[2]);rect(p,9,15,2,1,metal[2]);sprite('automaton',p,'Automaton')
+# Same item silhouette/UVs, a luminous monochrome material for its permanent display.
+hologram=[[(int(145+(r+g+b)/3*.42),int(110+(r+g+b)/3*.54),int(205+(r+g+b)/3*.19),a) for r,g,b,a in row] for row in p]
+png(RES/'assets/automatons/textures/item/automaton_display.png',hologram)
+# Black/white, half-block infuser with four short upward claws.
+itex={k:'automatons:block/'+k for k in ['white_stone','black_stone','iron']};itex['particle']=itex['black_stone']
+elements=[cube([2,0,2],[14,2,14],'black_stone'),cube([3,2,3],[13,3,13],'white_stone'),cube([5,3,5],[11,6,11],'black_stone')]
+for x,z in [(3,3),(11,3),(3,11),(11,11)]:elements += [cube([x,5,z],[x+2,7,z+2],'white_stone'),cube([x,7,z],[x+2,8,z+2],'iron')]
+write(RES/'assets/automatons/models/block/infusing_pedestal.json',{'parent':'minecraft:block/block','textures':itex,'elements':elements,'display':{'gui':{'rotation':[30,225,0],'translation':[0,0,0],'scale':[.85,.85,.85]}}})
+write(RES/'assets/automatons/models/item/infusing_pedestal.json',{'parent':'automatons:block/infusing_pedestal'})
+write(RES/'assets/automatons/blockstates/infusing_pedestal.json',{'variants':{'':{'model':'automatons:block/infusing_pedestal'}}})
+write(RES/'data/automatons/loot_tables/blocks/infusing_pedestal.json',{'type':'minecraft:block','pools':[{'rolls':1,'entries':[{'type':'minecraft:item','name':'automatons:infusing_pedestal'}],'conditions':[{'condition':'minecraft:survives_explosion'}]}]})
+lang['block.automatons.infusing_pedestal']='Infusing Pedestal';lang['entity.automatons.lumberton']='Automaton';lang['entity.automatons.magica_orb']='Magica';lang['item.automatons.lumberton_test_egg']='Automaton Test Egg (Development)'
+write(RES/'assets/automatons/lang/en_us.json',lang)
+woods=['oak','spruce','birch','jungle','acacia','dark_oak','mangrove','cherry']
+write(RES/'data/automatons/tags/items/overworld_logs.json',{'replace':False,'values':[f'minecraft:{prefix}{wood}_{form}' for wood in woods for prefix in ['', 'stripped_'] for form in ['log','wood']]})
+write(RES/'data/automatons/tags/items/overworld_planks.json',{'replace':False,'values':[f'minecraft:{w}_planks' for w in woods]})
+MC='minecraft:';MOD='automatons:'
+shaped('empty_magica_core',[' G ','GAG',' G '],{'G':MC+'glass','A':MC+'amethyst_shard'})
+shaped('infusing_pedestal',['I I','DAD','BBB'],{'I':MC+'iron_ingot','D':MC+'polished_diorite','A':MC+'amethyst_shard','B':MC+'polished_deepslate'})
+shaped('pedestal',['SCS','IGI','SCS'],{'S':MC+'stone_bricks','C':MOD+'magica_core','I':MC+'iron_ingot','G':MC+'gold_ingot'})
+shaped('totem',[' C ','ILI',' S '],{'C':MOD+'magica_core','I':MC+'iron_ingot','L':'#automatons:overworld_logs','S':MC+'stone_bricks'})
+shaped('wand',['  C',' S ','S  '],{'C':MOD+'magica_core','S':MC+'stick'})
+shaped('automaton_core',['ICI','RRR','ICI'],{'I':MC+'iron_ingot','C':MOD+'magica_core','R':MC+'redstone'})
+def shapeless(name,ingredients):
+    assert 1<=len(ingredients)<=9,(name,len(ingredients))
+    write(RES/f'data/automatons/recipes/{name}.json',{'type':'minecraft:crafting_shapeless','ingredients':[{'tag':v[1:]} if v.startswith('#') else {'item':v} for v in ingredients],'result':{'item':MOD+name}})
+shapeless('automaton_head',['#automatons:overworld_logs']*2+[MC+'iron_nugget']*2+[MC+'redstone'])
+shapeless('automaton_arm',['#automatons:overworld_logs',MC+'iron_ingot'])
+shapeless('automaton_leg',['#automatons:overworld_logs','#automatons:overworld_planks',MC+'iron_ingot'])
+shapeless('upgrade_plate',[MC+'iron_ingot']*2+[MC+'redstone']*2+[MC+'amethyst_shard'])
+upgrades={
+'storage_1':[MOD+'upgrade_plate',MC+'chest',MC+'compass',MOD+'magica_core'],
+'storage_2':[MOD+'storage_1',MC+'chest']+[MC+'iron_ingot']*2+[MC+'amethyst_shard']*2+[MOD+'magica_core']*2,
+'lumber_1':[MOD+'upgrade_plate',MC+'compass']+['#automatons:overworld_logs']*4+[MOD+'magica_core'],
+'lumber_2':[MOD+'lumber_1',MC+'compass']+[MC+'iron_ingot']*2+[MC+'amethyst_shard']*2+[MOD+'magica_core']*2,
+'speed_1':[MOD+'upgrade_plate']+[MC+'sugar']*4+[MC+'redstone']*2+[MOD+'magica_core'],
+'speed_2':[MOD+'speed_1']+[MC+'sugar']*2+[MC+'redstone']*2+[MC+'diamond']+[MOD+'magica_core']*2,
+'efficiency_1':[MOD+'upgrade_plate',MC+'book']+[MC+'lapis_lazuli']*2+[MC+'amethyst_shard',MOD+'magica_core'],
+'efficiency_2':[MOD+'efficiency_1',MC+'book']+[MC+'lapis_lazuli']*2+[MC+'amethyst_shard']*2+[MC+'diamond']+[MOD+'magica_core']*2}
+for name,ingredients in upgrades.items():shapeless(name,ingredients)
+# Retire only the known old four-slot recipe generated above.
+(RES/'data/automatons/recipes/lumberton.json').unlink(missing_ok=True)
+write(RES/'data/automatons/recipes/automaton.json',{'type':'automatons:creation','components':[{'item':MOD+n} for n in ['automaton_head','automaton_arm','automaton_core','automaton_arm','automaton_leg','automaton_leg']]})
+for path in (RES/'data/automatons/recipes').glob('*.json'):
+    data=json.loads(path.read_text(encoding='utf-8'))
+    if data['type'].startswith('minecraft:crafting_'):
+        write(RES/f'data/automatons/advancements/recipes/{path.stem}.json',{'parent':'minecraft:recipes/root','criteria':{'has_materials':{'trigger':'minecraft:inventory_changed','conditions':{'items':[{'items':['minecraft:amethyst_shard']}]}}},'rewards':{'recipes':[MOD+path.stem]}})
+reward_tags={'logs':[MC+w+'_log' for w in woods], 'crops':[MC+x for x in ['wheat','carrots','potatoes','beetroots','nether_wart']], 'fruit':[MC+'pumpkin',MC+'melon'],'berries':[MC+'sweet_berry_bush'],'flowers':['#minecraft:flowers'],'stems':[MC+x for x in ['sugar_cane','cactus','bamboo']], 'leaves':[MC+w+'_leaves' for w in woods], 'grass':[MC+x for x in ['grass','tall_grass','fern','large_fern']]}
+for category,values in reward_tags.items():write(RES/f'data/automatons/tags/blocks/magica/{category}.json',{'replace':False,'values':values})
+write(RES/'data/minecraft/tags/blocks/mineable/pickaxe.json',{'replace':False,'values':['automatons:pedestal','automatons:infusing_pedestal']})
+print('Authored redesign items, infuser, complete recipes, recipe-book unlocks and Magica source tags.')

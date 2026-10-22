@@ -18,11 +18,11 @@ public class WandItem extends Item {
   }
 
   public static int mode(ItemStack s) {
-    return Math.floorMod(s.getOrCreateTag().getInt("Mode"), 3);
+    return Math.floorMod(s.getOrCreateTag().getInt("Mode"), 4);
   }
 
   public static String name(int mode) {
-    return new String[] {"Assign", "Protect", "Revoke"}[Math.floorMod(mode, 3)];
+    return new String[] {"Assign", "Protect", "Revoke", "Wrench"}[Math.floorMod(mode, 4)];
   }
 
   public static ItemStack held(Player p) {
@@ -48,7 +48,23 @@ public class WandItem extends Item {
   @Override
   public InteractionResult interactLivingEntity(
       ItemStack s, Player p, LivingEntity target, InteractionHand hand) {
-    if (!(target instanceof Lumberton w) || mode(s) != 0) return InteractionResult.PASS;
+    if (!(target instanceof Lumberton w)) return InteractionResult.PASS;
+    if (mode(s) == 3) {
+      if (!p.level().isClientSide) {
+        if (p.isShiftKeyDown() && WorkerIdentity.pack(w, p))
+          p.displayClientMessage(
+              Component.literal("Automaton packed; tools and cargo dropped"), true);
+        else
+          p.displayClientMessage(
+              Component.literal(
+                  w.owns(p)
+                      ? "Shift-right-click to pack this Automaton"
+                      : "This Automaton belongs to someone else"),
+              true);
+      }
+      return InteractionResult.sidedSuccess(p.level().isClientSide);
+    }
+    if (mode(s) != 0) return InteractionResult.PASS;
     if (!p.level().isClientSide) {
       // Creative-mode Player.interactOn passes a disposable copy as s.
       // Keep selection on the actual wand in the hand used for this interaction.
@@ -62,10 +78,10 @@ public class WandItem extends Item {
       } else if (w.owns(p)) {
         select(wand, w, false);
         p.displayClientMessage(
-            Component.literal("Lumberton selected. Right-click your totem; sneak-click to cancel."),
+            Component.literal("Automaton selected. Right-click your totem; sneak-click to cancel."),
             true);
       } else
-        p.displayClientMessage(Component.literal("This Lumberton belongs to someone else"), true);
+        p.displayClientMessage(Component.literal("This Automaton belongs to someone else"), true);
     }
     return InteractionResult.sidedSuccess(p.level().isClientSide);
   }
@@ -87,7 +103,8 @@ public class WandItem extends Item {
     if (c.getLevel().isClientSide) return InteractionResult.SUCCESS;
     ItemStack wand = c.getItemInHand();
     int mode = mode(wand);
-    if (mode != 0) {
+    if (mode == 3) return InteractionResult.CONSUME;
+    if (mode == 1 || mode == 2) {
       Network.requestProtection((ServerPlayer) p, c.getClickedPos(), mode == 1);
       return InteractionResult.CONSUME;
     }
@@ -98,7 +115,7 @@ public class WandItem extends Item {
     }
     CompoundTag n = wand.getOrCreateTag();
     if (!n.hasUUID("Worker")) {
-      p.displayClientMessage(Component.literal("Select your Lumberton first"), true);
+      p.displayClientMessage(Component.literal("Select your Automaton first"), true);
       return InteractionResult.CONSUME;
     }
     ServerLevel l = (ServerLevel) c.getLevel();

@@ -13,7 +13,9 @@ public class WorldData extends SavedData {
   public final Map<Long, UUID> protection = new HashMap<>();
   public final Map<UUID, Home> homes = new HashMap<>();
   public final Map<Long, UUID> reservations = new HashMap<>();
-  public final Set<Long> placedLogs = new HashSet<>();
+  public final Set<Long> placedLogs = new HashSet<>(),
+      placedPlants = new HashSet<>(),
+      naturalLogs = new HashSet<>();
   public int protectionRevision;
 
   public static WorldData get(ServerLevel level) {
@@ -59,11 +61,11 @@ public class WorldData extends SavedData {
               c.getBoolean("Recall"),
               c.getBoolean("Exists")));
     }
-    for (Tag t : n.getList("Reservations", 10)) {
-      CompoundTag c = (CompoundTag) t;
-      d.reservations.put(c.getLong("Pos"), c.getUUID("Worker"));
-    }
+    // Standing-tree claims are leases rebuilt by resumed workers. World-owned timber persists its
+    // own identity.
     for (long p : n.getLongArray("PlacedLogs")) d.placedLogs.add(p);
+    for (long p : n.getLongArray("PlacedPlants")) d.placedPlants.add(p);
+    for (long p : n.getLongArray("NaturalLogs")) d.naturalLogs.add(p);
     return d;
   }
 
@@ -100,6 +102,9 @@ public class WorldData extends SavedData {
         });
     n.put("Reservations", r);
     n.putLongArray("PlacedLogs", placedLogs.stream().mapToLong(Long::longValue).toArray());
+    n.putLongArray("PlacedPlants", placedPlants.stream().mapToLong(Long::longValue).toArray());
+    n.putLongArray("NaturalLogs", naturalLogs.stream().mapToLong(Long::longValue).toArray());
+    n.putInt("Version", 2);
     return n;
   }
 }

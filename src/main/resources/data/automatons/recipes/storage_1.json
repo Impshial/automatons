@@ -1,21 +1,19 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " I ",
-    "ACA",
-    " I "
-  ],
-  "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "automatons:upgrade_plate"
     },
-    "A": {
-      "item": "minecraft:amethyst_shard"
-    },
-    "C": {
+    {
       "item": "minecraft:chest"
+    },
+    {
+      "item": "minecraft:compass"
+    },
+    {
+      "item": "automatons:magica_core"
     }
-  },
+  ],
   "result": {
     "item": "automatons:storage_1"
   }

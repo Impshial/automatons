@@ -31,14 +31,31 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.STRING);
   public UUID owner, homeId, totemId, timberId;
   public BlockPos home, totem;
-  public String homeDimension = "";
+  public String homeDimension = "", totemDimension = "";
+  public boolean authorized = true, packing, deploying;
+  private static final EntityDataAccessor<Integer> JOB =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   public int alerts;
   private int smileUntil, angryUntil, workTicks, returnRetry;
   private long nextPath;
+  private int nextDebugLog;
+  public boolean wantsJob, pathDeferred;
+  private boolean servicing, serviceArrived;
+  private int serviceRetry, storageCheckEpoch = -1;
+  private long storageRouteUntil;
+  private boolean storageRouteAvailable;
+  private String serviceReason = "Waiting for available work";
+  private long blockedSince = -1, landingBlockedSince = -1;
+  private final Map<Long, Route> routes = new HashMap<>();
+
+  private record Route(Path path, long until) {}
+
   private BlockPos pathTarget;
   private BlockPos resumeRoot;
   private TreeFinder.Tree pending;
   private TreeFinder.Landing pendingLanding;
+  private BlockPos pendingAction;
+  private int nextLanding;
   private final Map<Long, Long> failedTrees = new HashMap<>();
   public final Inventories.Tools tools =
       new Inventories.Tools(
@@ -47,9 +64,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
               selectTool();
               smile();
             }
-          });
+          },
+          () -> job() == 1);
   public final ItemStackHandler cargo =
-      new ItemStackHandler(9) {
+      new ItemStackHandler(Balance.CARGO.get()) {
         @Override
         public boolean isItemValid(int slot, ItemStack stack) {
           return !Inventories.axe(stack);
@@ -80,6 +98,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   protected void defineSynchedData() {
     super.defineSynchedData();
+    entityData.define(JOB, 1);
     entityData.define(FACE, 0);
     entityData.define(ACTIVE, 0);
     entityData.define(STATUS, "Unassigned");
@@ -91,7 +110,28 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public boolean owns(Player p) {
-    return owner != null && owner.equals(p.getUUID());
+    return owner != null && (owner.equals(p.getUUID()) || p.hasPermissions(2));
+  }
+
+  public int job() {
+    return entityData.get(JOB);
+  }
+
+  public void setJob(int job) {
+    entityData.set(JOB, job == 1 ? 1 : 0);
+    suspendWork();
+    alerts = 0;
+  }
+
+  public void suspendWork() {
+    wantsJob = false;
+    servicing = false;
+    clearPending();
+    navigation.stop();
+    Timber timber = timber();
+    if (timber != null && getUUID().equals(timber.worker)) timber.worker = null;
+    timberId = null;
+    timberAnchor = null;
   }
 
   public String status() {
@@ -107,7 +147,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public ItemStack activeTool() {
-    return tools == null
+    return tools == null || job() != 1
         ? ItemStack.EMPTY
         : tools.getStackInSlot(Math.min(2, Math.max(0, activeSlot())));
   }
@@ -143,17 +183,18 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   public ItemStack expectedOutput() {
     Timber t = timber();
+    if (t != null && t.pendingLoot != null && !t.pendingLoot.isEmpty())
+      return t.pendingLoot.get(0).copyWithCount(1);
     if (t != null && t.next() >= 0) return new ItemStack(t.wood.get(t.next()).getBlock());
     if (pending != null) return new ItemStack(level().getBlockState(pending.root()).getBlock());
     Station s = station();
     if (s != null && !s.trees.isEmpty())
-      return new ItemStack(
-          level().getBlockState(s.trees.values().iterator().next().root()).getBlock());
+      return new ItemStack(level().getBlockState(s.orderedTrees().get(0).root()).getBlock());
     return new ItemStack(Items.OAK_LOG);
   }
 
   public boolean cargoEmpty() {
-    for (int i = 0; i < 9; i++) if (!cargo.getStackInSlot(i).isEmpty()) return false;
+    for (int i = 0; i < cargo.getSlots(); i++) if (!cargo.getStackInSlot(i).isEmpty()) return false;
     return true;
   }
 
@@ -166,11 +207,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   public Station station() {
     return totem != null
+            && (totemDimension.isEmpty()
+                || totemDimension.equals(level().dimension().location().toString()))
             && level().hasChunkAt(totem)
             && level().getBlockEntity(totem) instanceof Station s
             && s.isTotem()
             && s.identity.equals(totemId)
-            && getUUID().equals(s.worker)
+            && (s.workers.contains(getUUID()) || getUUID().equals(s.worker))
         ? s
         : null;
   }
@@ -186,29 +229,38 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public void unassign() {
     Station old = station();
     if (old != null) {
-      old.worker = null;
-      old.workerHome = null;
-      old.alerts = 0;
+      old.workers.remove(getUUID());
+      if (getUUID().equals(old.worker)) {
+        old.worker = null;
+        old.workerHome = null;
+      }
       old.changed();
     }
     totem = null;
     totemId = null;
-    pending = null;
-    workTicks = 0;
+    totemDimension = "";
+    suspendWork();
+    servicing = false;
+    wantsJob = false;
     alerts = 0;
-    if (level() instanceof ServerLevel l) WorldData.get(l).release(getUUID());
+    if (level() instanceof ServerLevel l) {
+      WorldData.get(l).release(getUUID());
+      WorkerIdentity.update(this, "Deployed");
+    }
   }
 
   public String assign(Station target) {
     if (!target.isTotem() || owner == null || !owner.equals(target.owner))
       return "Choose your own totem";
-    if (target.worker != null && !target.worker.equals(getUUID()))
-      return "This totem already has a worker";
     unassign();
     totem = target.getBlockPos();
     totemId = target.identity;
-    target.worker = getUUID();
-    target.workerHome = homeId;
+    totemDimension = level().dimension().location().toString();
+    target.workers.add(getUUID());
+    authorized = true;
+    WorkerIdentity.update(this, "Deployed");
+    target.invalidateTrees();
+    target.refreshStorage();
     target.changed();
     smile();
     return "Lumberton assigned";
@@ -217,7 +269,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public String rebind(Station s) {
     if (s.isTotem() || owner == null || !owner.equals(s.owner)) return "Choose your own pedestal";
     WorldData.Home existing =
-        homeId == null ? null : WorldData.get((ServerLevel) level()).homes.get(homeId);
+        homeId == null || !homeDimension.equals(level().dimension().location().toString())
+            ? null
+            : WorldData.get((ServerLevel) level()).homes.get(homeId);
+    if (existing != null
+        && existing.exists()
+        && level().hasChunkAt(existing.pos())
+        && (!(level().getBlockEntity(existing.pos()) instanceof Station old)
+            || !old.identity.equals(homeId))) existing = null;
     if (existing != null && existing.exists()) return "Existing home is still present";
     home = s.getBlockPos();
     homeId = s.identity;
@@ -226,10 +285,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     s.registerHome();
     s.changed();
     Station job = station();
-    if (job != null) {
-      job.workerHome = homeId;
-      job.changed();
-    }
+    if (job != null) job.changed();
+    WorkerIdentity.update(this, "Deployed");
     return "Home rebound";
   }
 
@@ -243,7 +300,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     return super.finalizeSpawn(l, d, reason, data, n);
   }
 
+  private void debugWork(String message) {
+    if (!Balance.DEBUG_WORK.get() || tickCount < nextDebugLog) return;
+    nextDebugLog = tickCount + 20;
+    org.slf4j.LoggerFactory.getLogger("automatons.work")
+        .info("{} at {}: {} (flags {})", getUUID(), blockPosition(), message, alerts);
+  }
+
   private void state(String text) {
+    if (!text.equals(status())) debugWork(status() + " -> " + text);
     entityData.set(STATUS, text);
     int face = 0;
     if (tickCount < angryUntil) face = 5;
@@ -264,10 +329,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void tick() {
     super.tick();
-    if (!level().isClientSide && isAlive() && !isNoAi() && tickCount % 5 == 0) {
+    if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0) {
       getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(Balance.WALK.get());
       brain();
-      if (tickCount % 20 == 0) pickup();
+      if (tickCount % 20 == 0) {
+        if (job() == 1 && authorized) pickup();
+        WorkerIdentity.update(this, "Deployed");
+      }
     }
   }
 
@@ -291,7 +359,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
   }
 
-  private boolean inReach(BlockPos p) {
+  public boolean inReach(BlockPos p) {
     if (distanceToSqr(Vec3.atCenterOf(p)) > 7) return false;
     var hit =
         level()
@@ -305,50 +373,90 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     return hit.getType() == HitResult.Type.MISS || hit.getBlockPos().equals(p);
   }
 
+  private boolean reachesFrom(Vec3 feet, BlockPos p) {
+    if (feet.distanceToSqr(Vec3.atCenterOf(p)) > 4) return false;
+    var hit =
+        level()
+            .clip(
+                new net.minecraft.world.level.ClipContext(
+                    feet.add(0, getEyeHeight(), 0),
+                    Vec3.atCenterOf(p),
+                    net.minecraft.world.level.ClipContext.Block.COLLIDER,
+                    net.minecraft.world.level.ClipContext.Fluid.NONE,
+                    this));
+    return hit.getType() == HitResult.Type.MISS || hit.getBlockPos().equals(p);
+  }
+
   private Path pathTo(BlockPos p) {
-    List<BlockPos> candidates = new ArrayList<>();
-    for (Direction d : Direction.Plane.HORIZONTAL)
-      for (int dy = 1; dy >= -1; dy--) {
-        BlockPos q = p.relative(d).offset(0, dy, 0);
-        if (level().hasChunkAt(q)
-            && level().getBlockState(q).getCollisionShape(level(), q).isEmpty()
-            && level().getBlockState(q.above()).getCollisionShape(level(), q.above()).isEmpty()
-            && level().getBlockState(q.below()).isFaceSturdy(level(), q.below(), Direction.UP))
-          candidates.add(q);
-      }
-    candidates.sort(Comparator.comparingDouble(q -> distanceToSqr(Vec3.atCenterOf(q))));
-    for (BlockPos q : candidates) {
-      Path path = navigation.createPath(q, 0);
-      if (path != null && path.canReach()) return path;
+    pathDeferred = false;
+    if (!onGround() && !isInWaterOrBubble() && !isPassenger()) {
+      pathDeferred = true;
+      return null;
     }
+    Route cached = routes.get(p.asLong());
+    if (cached != null && cached.until() > level().getGameTime()) return cached.path();
+    List<BlockPos> candidates = new ArrayList<>();
+    for (int dx = -2; dx <= 2; dx++)
+      for (int dz = -2; dz <= 2; dz++)
+        for (int dy = -1; dy <= 1; dy++) {
+          if (dx == 0 && dz == 0) continue;
+          BlockPos q = p.offset(dx, dy, dz);
+          Vec3 feet = Vec3.atBottomCenterOf(q);
+          AABB box = getDimensions(Pose.STANDING).makeBoundingBox(feet);
+          if (!level().hasChunkAt(q) || !level().hasChunkAt(q.above()) || !reachesFrom(feet, p))
+            continue;
+          if (level().getBlockState(q.below()).isFaceSturdy(level(), q.below(), Direction.UP)
+              && level().noCollision(this, box)) candidates.add(q);
+        }
+    candidates.sort(
+        Comparator.comparingDouble((BlockPos q) -> distanceToSqr(Vec3.atBottomCenterOf(q)))
+            .thenComparingLong(BlockPos::asLong));
+    for (BlockPos q : candidates) {
+      if (!WorldEvents.pathBudget()) {
+        pathDeferred = true;
+        return null;
+      }
+      Path path = navigation.createPath(q, 0);
+      if (path != null && path.canReach()) {
+        routes.put(p.asLong(), new Route(path, level().getGameTime() + 20));
+        return path;
+      }
+    }
+    routes.put(p.asLong(), new Route(null, level().getGameTime() + 40));
     return null;
   }
 
   public boolean canReach(BlockPos p) {
+    pathDeferred = false;
     return inReach(p) || pathTo(p) != null;
   }
 
   private boolean travel(BlockPos p, String moving, String arrived) {
     if (inReach(p)) {
       navigation.stop();
+      blockedSince = -1;
       state(arrived);
       return true;
     }
-    if (tickCount >= nextPath || pathTarget == null || !pathTarget.equals(p)) {
-      pathTarget = p;
-      nextPath = tickCount + 60;
+    if (tickCount >= nextPath
+        || pathTarget == null
+        || !pathTarget.equals(p)
+        || navigation.isDone()) {
+      if (tickCount < nextPath && p.equals(pathTarget) && navigation.isDone()) {
+        state("Waiting for path");
+        return false;
+      }
       Path path = pathTo(p);
-      if (path == null || !path.canReach()) {
+      pathTarget = p;
+      nextPath = tickCount + (pathDeferred ? 5 : 40);
+      if (path == null) {
         navigation.stop();
-        state("Path blocked");
-        returnRetry = tickCount + 60;
+        if (!pathDeferred && blockedSince < 0) blockedSince = level().getGameTime();
+        state(pathDeferred ? "Replanning" : "Waiting for path");
         return false;
       }
       navigation.moveTo(path, 1);
-    }
-    if (tickCount < returnRetry) {
-      state("Path blocked");
-      return false;
+      blockedSince = -1;
     }
     state(moving);
     return false;
@@ -363,70 +471,349 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void clearPending() {
+    landingBlockedSince = -1;
     resumeRoot = null;
     pendingLanding = null;
+    pendingAction = null;
+    nextLanding = 0;
     pending = null;
     workTicks = 0;
     if (level() instanceof ServerLevel l) WorldData.get(l).release(getUUID());
   }
 
+  private void beginService(String reason) {
+    wantsJob = false;
+    serviceReason = reason;
+    if (!servicing) {
+      servicing = true;
+      serviceArrived = false;
+      serviceRetry = 0;
+    }
+  }
+
+  private boolean spareTool() {
+    for (int i = 0; i < 3; i++) if (tools.getStackInSlot(i).isEmpty()) return true;
+    return false;
+  }
+
+  /** A service visit empties every accepted stack before returning to the existing job. */
+  private void service(Station s) {
+    if (!serviceArrived) {
+      if (!travel(totem, "Returning totem", serviceReason)) return;
+      serviceArrived = true;
+    }
+    if (tickCount < serviceRetry) {
+      navigation.stop();
+      state(serviceReason);
+      return;
+    }
+    BlockPos target = !cargoEmpty() ? Storage.choose(this, s, false) : null;
+    if (target == null && pathDeferred) {
+      state("Replanning");
+      return;
+    }
+    if (target == null && spareTool()) target = Storage.choose(this, s, true);
+    if (target == null && pathDeferred) {
+      state("Replanning");
+      return;
+    }
+    if (target != null) {
+      String activity = cargoEmpty() ? "Restocking" : "Unloading";
+      if (travel(target, activity, activity)) Storage.transfer(this, s, target);
+      return;
+    }
+    // No accepted cargo remains at a reachable chest. Wait in place, not a repeated chest/totem
+    // loop.
+    servicing = false;
+    serviceArrived = false;
+    serviceRetry = tickCount + 40;
+    state(serviceReason);
+  }
+
+  private List<ItemStack> nextOutput() {
+    Timber t = timber();
+    return t != null && t.pendingLoot != null && !t.pendingLoot.isEmpty()
+        ? List.of(t.pendingLoot.get(0).copyWithCount(1))
+        : List.of(expectedOutput());
+  }
+
+  private void resourceAlerts(Station s) {
+    alerts = Inventories.axe(activeTool()) ? alerts & ~TOOLS : alerts | TOOLS;
+    alerts = Inventories.fits(cargo, nextOutput()) ? alerts & ~CARGO : alerts | CARGO;
+    boolean work =
+        pending != null || timber() != null || !s.trees.isEmpty() || !s.timberJobs().isEmpty();
+    if (work) alerts &= ~WOOD;
+    else if (s.scanComplete && !s.scanUnloaded) alerts |= WOOD;
+    else alerts &= ~WOOD;
+  }
+
+  private String storageCondition(Station s) {
+    ServerLevel l = (ServerLevel) level();
+    boolean exists = Storage.anyOutput(s, l),
+        open = Storage.anyOpenOutput(s, l),
+        space = Storage.anySpace(this, s);
+    if (exists && open && space) {
+      alerts &= ~STORAGE;
+      storageCheckEpoch = -1;
+      if (level().getGameTime() >= storageRouteUntil) {
+        storageRouteAvailable = false;
+        for (BlockPos p : s.chests) {
+          if ((s.flags(p) & 1) == 0) continue;
+          var handler = Storage.handler(l, p, s);
+          if (handler != null && Storage.accepts(handler, expectedOutput()) && canReach(p)) {
+            storageRouteAvailable = true;
+            break;
+          }
+          if (pathDeferred) return "Searching storage";
+        }
+        storageRouteUntil = level().getGameTime() + 40;
+      }
+      return storageRouteAvailable ? "Ready" : "Storage blocked";
+    }
+    if (storageCheckEpoch < 0) {
+      storageCheckEpoch = s.storageEpoch;
+      s.refreshStorage();
+      routes.clear();
+    }
+    if (s.storageEpoch <= storageCheckEpoch) {
+      alerts &= ~STORAGE;
+      return "Searching storage";
+    }
+    if (s.storageUnloaded) {
+      alerts &= ~STORAGE;
+      return "Dependency unloaded";
+    }
+    if (!exists) {
+      alerts &= ~STORAGE;
+      return "No storage";
+    }
+    if (open && !space) {
+      alerts |= STORAGE;
+      return "Storage full";
+    }
+    alerts &= ~STORAGE;
+    return "Storage blocked";
+  }
+
+  private boolean storageReady(Station s) {
+    String condition = storageCondition(s);
+    if (condition.equals("Ready")) return true;
+    if (condition.equals("No storage")) {
+      clearPending();
+      suspendTimber();
+      servicing = false;
+      goHome(condition);
+      return false;
+    }
+    if (condition.equals("Storage full") || condition.equals("Storage blocked")) {
+      if (tickCount >= serviceRetry) beginService(condition);
+      if (servicing) service(s);
+      else {
+        navigation.stop();
+        state(condition);
+      }
+    } else {
+      navigation.stop();
+      state(condition);
+    }
+    return false;
+  }
+
+  private void suspendTimber() {
+    Timber t = timber();
+    if (t != null && getUUID().equals(t.worker)) t.worker = null;
+    timberId = null;
+    timberAnchor = null;
+  }
+
+  private BlockPos approach(TreeFinder.Tree tree) {
+    if (canReach(tree.root())) return tree.root();
+    if (pathDeferred) return null;
+    // Mangroves carry their trunk above a natural root arch. A grounded root is an
+    // actionable base cut; the tree's ordering/range anchor stays at the trunk footprint.
+    List<BlockPos> roots =
+        tree.leaves().stream()
+            .filter(
+                p ->
+                    level()
+                            .getBlockState(p)
+                            .is(net.minecraft.world.level.block.Blocks.MANGROVE_ROOTS)
+                        || level()
+                            .getBlockState(p)
+                            .is(net.minecraft.world.level.block.Blocks.MUDDY_MANGROVE_ROOTS))
+            .sorted(
+                Comparator.comparingDouble((BlockPos p) -> distanceToSqr(Vec3.atCenterOf(p)))
+                    .thenComparingLong(BlockPos::asLong))
+            .limit(16)
+            .toList();
+    for (BlockPos p : roots) {
+      if (canReach(p)) return p;
+      if (pathDeferred) return null;
+    }
+    return null;
+  }
+
+  public void acceptNext(Station s) {
+    if (!wantsJob || station() != s || pending != null || timber() != null) return;
+    ServerLevel l = (ServerLevel) level();
+    WorldData data = WorldData.get(l);
+    boolean claimed = false, blocked = false;
+    for (Timber t : s.timberJobs()) {
+      if (t.worker != null && !getUUID().equals(t.worker)) {
+        claimed = true;
+        continue;
+      }
+      if (!t.safe(s)) {
+        blocked = true;
+        continue;
+      }
+      BlockPos at = t.targets.get(t.next());
+      if (!canReach(at)) {
+        if (pathDeferred) return;
+        blocked = true;
+        continue;
+      }
+      if (t.claim(this)) {
+        timberId = t.getUUID();
+        timberAnchor = t.blockPosition();
+        wantsJob = false;
+        alerts &= ~WOOD;
+        return;
+      }
+    }
+    for (TreeFinder.Tree tree : s.orderedTrees()) {
+      if (!s.discoveredBefore(tree)) {
+        state("Seeking tree");
+        return;
+      }
+      if (tree.logs().stream()
+          .anyMatch(
+              p ->
+                  data.reservations.containsKey(p.asLong())
+                      && !getUUID().equals(data.reservations.get(p.asLong())))) {
+        claimed = true;
+        continue;
+      }
+      if (failedTrees.getOrDefault(tree.root().asLong(), 0L) > l.getGameTime()) {
+        blocked = true;
+        continue;
+      }
+      if (!WorldEvents.budget(64)) return;
+      if (!TreeFinder.revalidate(l, tree, s, owner)) {
+        s.trees.remove(tree.root().asLong());
+        continue;
+      }
+      BlockPos action = approach(tree);
+      if (action == null) {
+        if (pathDeferred) return;
+        debugWork("No reachable cut for " + tree.root() + "; retry in 60 ticks");
+        failedTrees.put(tree.root().asLong(), l.getGameTime() + 60);
+        blocked = true;
+        continue;
+      }
+      if (data.reserve(tree.logs(), getUUID())) {
+        pending = tree;
+        pendingAction = action;
+        pendingLanding = null;
+        workTicks = 0;
+        wantsJob = false;
+        alerts &= ~WOOD;
+        return;
+      }
+      claimed = true;
+    }
+    if (claimed) {
+      alerts &= ~WOOD;
+      state("Waiting for available work");
+    } else if (blocked) {
+      alerts &= ~WOOD;
+      state("Waiting for reachable work");
+    } else if (s.scanComplete && !s.scanUnloaded) {
+      alerts |= WOOD;
+      state("No eligible wood");
+    } else {
+      alerts &= ~WOOD;
+      state("Seeking tree");
+      return;
+    }
+    if (tickCount >= serviceRetry) beginService(status());
+  }
+
+  private void impact(BlockPos pos, int progress, int duration) {
+    int cadence = Math.max(5, Math.min(20, duration / 4));
+    if (progress / cadence == (progress - 5) / cadence && progress != 5) return;
+    swing(InteractionHand.MAIN_HAND);
+    var sound = level().getBlockState(pos).getSoundType(level(), pos, this);
+    if (level().getBlockState(pos).isAir()) sound = net.minecraft.world.level.block.SoundType.WOOD;
+    level()
+        .playSound(
+            null,
+            pos,
+            sound.getHitSound(),
+            net.minecraft.sounds.SoundSource.NEUTRAL,
+            .55f,
+            .95f + random.nextFloat() * .1f);
+  }
+
   private void brain() {
     ServerLevel l = (ServerLevel) level();
+    wantsJob = false;
     selectTool();
-    Station s = station();
-    Timber timber = timber();
-    alerts = Inventories.axe(activeTool()) ? alerts & ~TOOLS : alerts | TOOLS;
-    if (Inventories.fits(
-        cargo,
-        timber != null && timber.pendingLoot != null
-            ? timber.pendingLoot
-            : List.of(expectedOutput()))) alerts &= ~CARGO;
-    else alerts |= CARGO;
     if (owner == null) {
+      alerts = 0;
       state("Unassigned test worker — use a wand to claim");
       return;
     }
-    var data = WorldData.get(l);
+    if (!homeDimension.isEmpty() && !homeDimension.equals(l.dimension().location().toString())) {
+      suspendWork();
+      state("Home in another dimension — rebind locally");
+      return;
+    }
+    WorldData data = WorldData.get(l);
     WorldData.Home h = homeId == null ? null : data.homes.get(homeId);
-    if (homeId == null || h == null || !h.exists()) {
-      navigation.stop();
-      clearPending();
+    if (homeId == null || home == null || h != null && !h.exists()) {
+      suspendWork();
       state("Home missing");
       return;
     }
-    if (!homeDimension.equals(l.dimension().location().toString())) {
-      navigation.stop();
-      state("Home in another dimension");
-      return;
+    if (authorized && job() == 1 && station() != null) {
+      resourceAlerts(station());
+      storageCondition(station());
     }
-    if (totem != null && l.hasChunkAt(totem) && s == null) {
-      unassign();
-      s = null;
-    }
-    if (s != null) {
-      boolean work = timber != null && !timber.finished() || !s.trees.isEmpty();
-      if (work) alerts &= ~WOOD;
-      else if (s.scanComplete && !s.scanUnloaded) alerts |= WOOD;
-      if (s.storageComplete && !s.storageUnloaded) {
-        if (Storage.anyOutput(s, l) && Storage.anyOpenOutput(s, l)) {
-          if (Storage.anySpace(this, s)) alerts &= ~STORAGE;
-          else alerts |= STORAGE;
-        } else alerts &= ~STORAGE;
-      }
-    }
-    if (h.recalled()) {
+    if (h != null && h.recalled()) {
       clearPending();
+      suspendTimber();
+      servicing = false;
       goHome("Recalled");
       return;
     }
     if (!l.hasChunkAt(home)) {
       navigation.stop();
-      state("Dependency unloaded");
+      state("Home unverified — chunk unloaded");
       return;
     }
     if (!(l.getBlockEntity(home) instanceof Station hs) || !hs.identity.equals(homeId)) {
       data.setHome(homeId, owner, home, false, false);
+      suspendWork();
       state("Home missing");
+      return;
+    }
+    hs.registerHome();
+    if (!authorized) {
+      alerts = 0;
+      navigation.stop();
+      state("Paused at placement — Start Work");
+      return;
+    }
+    if (job() != 1) {
+      alerts = 0;
+      navigation.stop();
+      state("Unassigned — choose a job");
+      return;
+    }
+    if (!totemDimension.isEmpty() && !totemDimension.equals(l.dimension().location().toString())) {
+      suspendWork();
+      state("Totem in another dimension — reassign");
       return;
     }
     if (totem == null) {
@@ -435,117 +822,73 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     if (!l.hasChunkAt(totem)) {
       navigation.stop();
-      state("Dependency unloaded");
+      state("Totem unverified — chunk unloaded");
       return;
     }
+    Station s = station();
     if (s == null) {
-      goHome("Unassigned");
+      unassign();
+      goHome("Totem missing");
       return;
     }
-    if (!s.storageComplete) {
-      state("Discovering storage");
+    resourceAlerts(s);
+    if (servicing) {
+      service(s);
       return;
     }
-    if (!Storage.anyOutput(s, l)) {
+    if (!storageReady(s)) return;
+    if ((alerts & (TOOLS | CARGO)) != 0) {
       clearPending();
-      if (s.storageUnloaded) {
-        state("Dependency unloaded");
+      if (tickCount >= serviceRetry)
+        beginService((alerts & TOOLS) != 0 ? "Needs tools" : "Cargo full");
+      if (servicing) service(s);
+      else {
         navigation.stop();
-      } else goHome("No storage");
-      return;
-    }
-    if (!Storage.anyOpenOutput(s, l)) {
-      clearPending();
-      travel(
-          totem, "Returning totem", s.storageUnloaded ? "Dependency unloaded" : "Storage blocked");
-      return;
-    }
-    boolean needTools = (alerts & TOOLS) != 0;
-    boolean spare = false;
-    for (int i = 0; i < 3; i++) spare |= tools.getStackInSlot(i).isEmpty();
-    boolean unloadDue =
-        !cargoEmpty() && (timber == null || timber.finished() || (alerts & (CARGO | STORAGE)) != 0);
-    if (unloadDue || needTools || (spare && cargoEmpty())) {
-      if (tickCount % 20 == 0 || pathTarget == null) {
-        BlockPos target = Storage.choose(this, s, needTools || !unloadDue);
-        if (target == null && unloadDue) target = Storage.choose(this, s, false);
-        if (target != null) {
-          if (travel(
-              target,
-              needTools ? "Restocking" : "Unloading",
-              needTools ? "Restocking" : "Unloading")) Storage.transfer(this, s, target);
-          return;
-        }
-      } else if (status().equals("Unloading") || status().equals("Restocking")) {
-        if (pathTarget != null && travel(pathTarget, status(), status()))
-          Storage.transfer(this, s, pathTarget);
-        return;
+        state((alerts & TOOLS) != 0 ? "Needs tools" : "Cargo full");
       }
-    }
-    if ((alerts & (TOOLS | STORAGE | CARGO)) != 0) {
-      clearPending();
-      travel(
-          totem,
-          "Returning totem",
-          (alerts & TOOLS) != 0
-              ? "Needs tools"
-              : (alerts & CARGO) != 0 ? "Cargo full" : "Storage full");
       return;
     }
-    // A chest may have room but be inaccessible; pause rather than start additional harvesting.
-    if (tickCount % 60 == 0 && Storage.choose(this, s, false) == null) {
-      clearPending();
-      travel(totem, "Returning totem", "Storage blocked");
-      returnRetry = tickCount + 60;
-      return;
-    }
-    if (status().equals("Storage blocked") && tickCount < returnRetry) return;
+    Timber timber = timber();
     if (timberId != null && timber == null) {
-      // Do not abandon an unloaded persisted job. Its anchor is saved alongside the id.
       if (timberAnchor != null && !l.hasChunkAt(timberAnchor)) {
-        state("Dependency unloaded");
+        state("Timber unverified — chunk unloaded");
         return;
       }
       timberId = null;
       timberAnchor = null;
     }
     if (timber != null) {
-      if (timber.finished()) {
+      if (timber.finished() || !timber.claim(this)) {
         timberId = null;
         timberAnchor = null;
-        clearPending();
         return;
       }
       if (!timber.safe(s)) {
-        state("Timber blocked: protection, range, or obstruction");
+        if (tickCount >= serviceRetry) beginService("Timber blocked");
+        state("Timber blocked");
         return;
       }
       if (timber.progress() < timber.duration) {
-        state("Felling");
         navigation.stop();
+        state("Felling");
         return;
       }
       int next = timber.next();
-      if (next < 0) return;
-      if (!Inventories.fits(
-          cargo,
-          timber.pendingLoot != null
-              ? timber.pendingLoot
-              : List.of(new ItemStack(timber.wood.get(next).getBlock())))) {
-        alerts |= CARGO;
-        travel(totem, "Returning totem", "Cargo full");
+      BlockPos target = timber.targets.get(next);
+      if (!travel(target, "Travelling", "Processing timber")) {
+        if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160)
+          beginService("Waiting for path");
         return;
       }
-      if (!travel(timber.targets.get(next), "Travelling", "Processing timber")) return;
-      lookControl.setLookAt(Vec3.atCenterOf(timber.targets.get(next)));
-      swing(InteractionHand.MAIN_HAND);
-      workTicks += 5;
-      if (workTicks
-          >= Inventories.duration(
-              activeTool(), Balance.PROCESS.get(), s.tier("speed"), s.tier("efficiency"))) {
-        timber.process(next, this, s);
-        workTicks = 0;
+      lookControl.setLookAt(Vec3.atCenterOf(target));
+      int duration =
+          Inventories.duration(
+              activeTool(), Balance.PROCESS.get(), s.tier("speed"), s.tier("efficiency"));
+      if (timber.processingTicks < duration) {
+        timber.processingTicks += 5;
+        impact(target, timber.processingTicks, duration);
       }
+      if (timber.processingTicks >= duration) timber.process(next, this, s);
       return;
     }
     if (pending == null && resumeRoot != null) {
@@ -553,105 +896,123 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         state("Dependency unloaded");
         return;
       }
+      if (!WorldEvents.budget(128)) return;
       var restored = TreeFinder.inspect(l, resumeRoot, s).tree();
       resumeRoot = null;
       if (restored != null && data.reserve(restored.logs(), getUUID())) pending = restored;
       else workTicks = 0;
     }
     if (pending == null) {
-      boolean reservedElsewhere = false;
-      for (TreeFinder.Tree t : new ArrayList<>(s.trees.values())) {
-        if (failedTrees.getOrDefault(t.root().asLong(), 0L) > l.getGameTime()) continue;
-        if (!TreeFinder.revalidate(l, t, s, owner)) {
-          s.trees.remove(t.root().asLong());
-          continue;
-        }
-        if (!canReach(t.root())) {
-          failedTrees.put(t.root().asLong(), l.getGameTime() + 200);
-          s.scanReason = "No reachable trees";
-          continue;
-        }
-        if (data.reserve(t.logs(), getUUID())) {
-          pending = t;
-          pendingLanding = null;
-          workTicks = 0;
-          break;
-        } else reservedElsewhere = true;
-      }
-      if (pending == null) {
-        if (reservedElsewhere) {
-          travel(totem, "Returning totem", "Waiting for reserved tree");
-          return;
-        }
-        if (s.scanComplete && !s.scanUnloaded && !s.trees.isEmpty()) alerts |= WOOD;
-        if ((alerts & WOOD) != 0)
-          travel(
-              totem,
-              "Returning totem",
-              s.scanReason.contains("Protected")
-                  ? "Protected trees"
-                  : s.scanReason.equals("No reachable trees")
-                      ? "No reachable trees"
-                      : s.scanReason.contains("landing")
-                          ? "No safe landing space"
-                          : "No eligible wood");
-        else {
-          travel(
-              totem, "Returning totem", s.trees.isEmpty() ? "Seeking tree" : "No reachable trees");
-        }
-        return;
-      }
+      wantsJob = true;
+      state((alerts & WOOD) != 0 ? "No eligible wood" : "Seeking tree");
+      return;
     }
+    if (!WorldEvents.budget(64)) return;
     if (!TreeFinder.revalidate(l, pending, s, owner)) {
       s.trees.remove(pending.root().asLong());
       clearPending();
       return;
     }
-    if (!travel(pending.root(), "Travelling", "Chopping")) return;
+    if (pendingAction == null) pendingAction = approach(pending);
+    if (pendingAction == null) {
+      state(pathDeferred ? "Replanning" : "Waiting for reachable work");
+      if (!pathDeferred) {
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 80);
+        clearPending();
+        beginService("Waiting for reachable work");
+      }
+      return;
+    }
+    if (!travel(pendingAction, "Travelling", "Chopping")) {
+      if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160) {
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 80);
+        clearPending();
+        beginService("Waiting for reachable work");
+      }
+      return;
+    }
     if (pendingLanding == null) {
-      if (!WorldEvents.budget(256)) {
-        state("Seeking tree");
+      if (tickCount < nextLanding) {
+        state("Waiting for safe landing");
         return;
       }
+      if (!WorldEvents.budget(256) || !WorldEvents.planBudget()) return;
+      nextLanding = tickCount + 20;
       pendingLanding = TreeFinder.landing(l, pending, s, owner, this);
     }
-    TreeFinder.Landing landing = pendingLanding;
-    if (landing == null) {
-      failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
-      s.scanReason = "No safe landing space";
-      clearPending();
-      state("Tree landing blocked");
+    if (pendingLanding == null) {
+      if (landingBlockedSince < 0) landingBlockedSince = l.getGameTime();
+      state("Waiting for safe landing");
+      if (l.getGameTime() - landingBlockedSince > 100) {
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 100);
+        clearPending();
+        beginService("No safe landing space");
+      }
       return;
     }
-    if (!WorldEvents.budget(64)) return;
-    if (!TreeFinder.landingStillSafe(l, pending, landing, s, owner, this)) {
-      failedTrees.put(pending.root().asLong(), l.getGameTime() + 100);
-      clearPending();
-      state("Tree landing blocked");
+    if (!TreeFinder.landingStillSafe(l, pending, pendingLanding, s, owner, this)) {
+      pendingLanding = null;
+      state("Replanning fall");
       return;
     }
-    lookControl.setLookAt(Vec3.atCenterOf(pending.root()));
-    swing(InteractionHand.MAIN_HAND);
-    workTicks += 5;
-    if (workTicks
-        >= Inventories.duration(
+    lookControl.setLookAt(Vec3.atCenterOf(pendingAction));
+    int duration =
+        Inventories.duration(
             activeTool(),
             Balance.PREP.get() * pending.baseCount(),
             s.tier("speed"),
-            s.tier("efficiency"))) {
-      Timber t = Timber.commit(l, pending, landing, this, s);
+            s.tier("efficiency"));
+    if (workTicks < duration) {
+      workTicks += 5;
+      impact(pendingAction, workTicks, duration);
+    }
+    if (workTicks >= duration && WorldEvents.conversionBudget()) {
+      Timber t = Timber.commit(l, pending, pendingLanding, this, s);
       if (t != null) {
         timberId = t.getUUID();
         timberAnchor = t.blockPosition();
         wear(pending.baseCount());
         s.trees.remove(pending.root().asLong());
+        level()
+            .playSound(
+                null,
+                pending.root(),
+                net.minecraft.sounds.SoundEvents.WOOD_BREAK,
+                net.minecraft.sounds.SoundSource.NEUTRAL,
+                .7f,
+                1);
+        clearPending();
+        state("Felling");
       } else {
-        failedTrees.put(pending.root().asLong(), l.getGameTime() + 200);
-        s.scanReason = "Crown cannot be safely separated";
+        pendingLanding = null;
+        state("Replanning fall");
       }
-      clearPending();
-      state(t != null ? "Felling" : "Tree landing blocked");
     }
+  }
+
+  public String diagnostic() {
+    Timber t = timber();
+    return status()
+        + " pending="
+        + (pending == null ? "none" : pending.root())
+        + " position="
+        + position()
+        + " pathTarget="
+        + pathTarget
+        + " nextPath="
+        + nextPath
+        + " ticks="
+        + tickCount
+        + " done="
+        + navigation.isDone()
+        + " path="
+        + (navigation.getPath() == null
+            ? "none"
+            : navigation.getPath().getNextNodeIndex() + "/" + navigation.getPath().getNodeCount())
+        + " timber="
+        + (t == null ? "none" : t.next() + ":" + t.targets + " progress=" + t.processingTicks)
+        + " servicing="
+        + servicing;
   }
 
   public BlockPos timberAnchor;
@@ -666,6 +1027,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
           b -> {
             b.writeBoolean(true);
             b.writeInt(getId());
+            b.writeVarInt(cargo.getSlots());
           });
     return InteractionResult.sidedSuccess(level().isClientSide);
   }
@@ -677,7 +1039,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   public Component getDisplayName() {
-    return hasCustomName() ? getCustomName() : Component.literal("Lumberton");
+    return hasCustomName() ? getCustomName() : Component.literal("Automaton");
   }
 
   @Override
@@ -692,11 +1054,12 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       spawnAtLocation(tools.getStackInSlot(i));
       tools.setStackInSlot(i, ItemStack.EMPTY);
     }
-    for (int i = 0; i < 9; i++) {
+    for (int i = 0; i < cargo.getSlots(); i++) {
       spawnAtLocation(cargo.getStackInSlot(i));
       cargo.setStackInSlot(i, ItemStack.EMPTY);
     }
     unassign();
+    WorkerIdentity.update(this, "Destroyed");
     if (home != null
         && level().hasChunkAt(home)
         && level().getBlockEntity(home) instanceof Station station
@@ -717,6 +1080,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (timberId != null) n.putUUID("Timber", timberId);
     if (timberAnchor != null) n.putLong("TimberAnchor", timberAnchor.asLong());
     n.putString("HomeDimension", homeDimension);
+    n.putString("TotemDimension", totemDimension);
+    n.putInt("Job", job());
+    n.putBoolean("Authorized", authorized);
+    n.putInt("DataVersion", 2);
     n.put("Tools", tools.serializeNBT());
     n.put("Cargo", cargo.serializeNBT());
     n.putInt("Active", activeSlot());
@@ -737,8 +1104,17 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     timberId = n.hasUUID("Timber") ? n.getUUID("Timber") : null;
     timberAnchor = n.contains("TimberAnchor") ? BlockPos.of(n.getLong("TimberAnchor")) : null;
     homeDimension = n.getString("HomeDimension");
+    totemDimension =
+        n.contains("TotemDimension")
+            ? n.getString("TotemDimension")
+            : level().dimension().location().toString();
+    entityData.set(JOB, n.contains("Job") ? n.getInt("Job") : 1);
+    authorized = !n.contains("Authorized") || n.getBoolean("Authorized");
     tools.deserializeNBT(n.getCompound("Tools"));
-    cargo.deserializeNBT(n.getCompound("Cargo"));
+    CompoundTag savedCargo = n.getCompound("Cargo").copy();
+    // Never truncate a legacy inventory when the configured capacity is reduced.
+    savedCargo.putInt("Size", Math.max(Balance.CARGO.get(), savedCargo.getInt("Size")));
+    cargo.deserializeNBT(savedCargo);
     entityData.set(ACTIVE, Math.min(2, Math.max(0, n.getInt("Active"))));
     alerts = n.getInt("Alerts");
     workTicks = Math.max(0, n.getInt("WorkTicks"));

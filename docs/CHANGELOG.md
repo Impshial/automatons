@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.2.0 — 22 October 2026
+
+- Added independent Magica collection, HUD, source eligibility and placement provenance; world infusion spends exactly 50 points per full core.
+- Added the complete survival recipe chain, six-component atomic output assembly, permanent item hologram, 16-pixel component art and a half-height black/white infuser with animated donor transfer.
+- Added generic Unassigned/Lumberton jobs, placement pause, generation-checked portable identities, health-preserving Wrench packing and authoritative saved-link reconciliation.
+- Replaced the single-worker totem with shared paginated rosters, independent homes/alerts and shared upgrades/storage. Preserved existing worker inventories, IDs and bindings.
+- Added nearest-to-totem fair dispatch, adjacent collision-aware routes, transient path deferral, all eight normal Overworld tree families, natural attachment cleanup and compact grounded felling fallback.
+- Kept cargo between trees while the next output fits. Required totem visits unload all accepted cargo across alternatives and restock empty axe slots; blockers recover independently.
+- Added persistent timber processing progress, released-job recovery, positional work impacts and the corrected 20%/40% speed formula.
+- Expanded server regression coverage to 46 tests, including generated-tree approach/felling, exact recipes, independent Magica, infusion transactions, assembly, shared dispatch, packing, migration, multi-chest recovery and waterlogged mangrove preservation.
+
 ## 0.1.1 - 22 October 2026
 
 - Fixed creative-mode wand selection being lost between clicking a Lumberton and clicking its totem. Minecraft supplies a disposable item-stack copy to the entity callback in creative mode; the mod now saves the selection on the actual wand in the interacting hand.

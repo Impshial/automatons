@@ -1,6 +1,7 @@
 {
   "replace": false,
   "values": [
-    "automatons:pedestal"
+    "automatons:pedestal",
+    "automatons:infusing_pedestal"
   ]
 }

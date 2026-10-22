@@ -3,9 +3,9 @@
   "block.automatons.pedestal": "Automaton Pedestal",
   "block.automatons.totem": "Automaton Totem",
   "item.automatons.wand": "Automaton Wand",
-  "entity.automatons.lumberton": "Lumberton",
+  "entity.automatons.lumberton": "Automaton",
   "entity.automatons.fallen_timber": "Fallen Timber",
-  "item.automatons.lumberton_test_egg": "Lumberton Test Egg (Development)",
+  "item.automatons.lumberton_test_egg": "Automaton Test Egg (Development)",
   "item.automatons.storage_1": "Storage Range I",
   "item.automatons.storage_2": "Storage Range II",
   "item.automatons.lumber_1": "Lumber Range I",
@@ -13,5 +13,15 @@
   "item.automatons.speed_1": "Work Speed I",
   "item.automatons.speed_2": "Work Speed II",
   "item.automatons.efficiency_1": "Tool Enchantment I",
-  "item.automatons.efficiency_2": "Tool Enchantment II"
+  "item.automatons.efficiency_2": "Tool Enchantment II",
+  "item.automatons.empty_magica_core": "Empty Magica Core",
+  "item.automatons.magica_core": "Magica Core",
+  "item.automatons.automaton_head": "Automaton Head",
+  "item.automatons.automaton_core": "Automaton Core",
+  "item.automatons.automaton_arm": "Automaton Arm",
+  "item.automatons.automaton_leg": "Automaton Leg",
+  "item.automatons.upgrade_plate": "Upgrade Plate",
+  "item.automatons.automaton": "Automaton",
+  "block.automatons.infusing_pedestal": "Infusing Pedestal",
+  "entity.automatons.magica_orb": "Magica"
 }

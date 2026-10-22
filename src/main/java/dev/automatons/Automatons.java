@@ -48,6 +48,36 @@ public final class Automatons {
       BLOCKS.register("pedestal", () -> new StationBlock(false));
   public static final RegistryObject<Block> TOTEM =
       BLOCKS.register("totem", () -> new StationBlock(true));
+  public static final RegistryObject<Block> INFUSER =
+      BLOCKS.register("infusing_pedestal", InfuserBlock::new);
+  public static final RegistryObject<BlockEntityType<Infuser>> INFUSER_BE =
+      BES.register(
+          "infuser", () -> BlockEntityType.Builder.of(Infuser::new, INFUSER.get()).build(null));
+  public static final RegistryObject<Item> AUTOMATON_ITEM =
+      ITEMS.register("automaton", AutomatonItem::new);
+  public static final RegistryObject<Item> EMPTY_CORE =
+      ITEMS.register("empty_magica_core", CoreItem::new);
+  public static final RegistryObject<Item> MAGICA_CORE =
+      ITEMS.register("magica_core", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> HEAD =
+      ITEMS.register("automaton_head", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> BODY =
+      ITEMS.register("automaton_core", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> ARM =
+      ITEMS.register("automaton_arm", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> LEG =
+      ITEMS.register("automaton_leg", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> PLATE =
+      ITEMS.register("upgrade_plate", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<EntityType<MagicaOrb>> MAGICA_ORB =
+      ENTITIES.register(
+          "magica_orb",
+          () ->
+              EntityType.Builder.<MagicaOrb>of(MagicaOrb::new, MobCategory.MISC)
+                  .sized(.5f, .5f)
+                  .clientTrackingRange(6)
+                  .updateInterval(20)
+                  .build("magica_orb"));
   public static final RegistryObject<Item> WAND = ITEMS.register("wand", WandItem::new);
   public static final Map<String, RegistryObject<Item>> UPGRADES = new LinkedHashMap<>();
   public static final RegistryObject<EntityType<Lumberton>> LUMBERTON =
@@ -86,6 +116,7 @@ public final class Automatons {
       SERIALIZERS.register("creation", CreationRecipe.Serializer::new);
 
   static {
+    ITEMS.register("infusing_pedestal", () -> new BlockItem(INFUSER.get(), new Item.Properties()));
     ITEMS.register("pedestal", () -> new BlockItem(PEDESTAL.get(), new Item.Properties()));
     ITEMS.register("totem", () -> new BlockItem(TOTEM.get(), new Item.Properties()));
     for (String family : List.of("storage", "lumber", "speed", "efficiency"))
@@ -123,6 +154,7 @@ public final class Automatons {
     bus.addListener(this::attributes);
     ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Balance.SPEC);
     MinecraftForge.EVENT_BUS.register(WorldEvents.class);
+    MinecraftForge.EVENT_BUS.register(MagicaHarvest.class);
     Network.init();
   }
 

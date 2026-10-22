@@ -5,9 +5,9 @@
   "leaves": [
     "minecraft:spruce_leaves"
   ],
-  "max_height": 31,
-  "max_spread": 7,
-  "max_logs": 128,
+  "max_height": 48,
+  "max_spread": 12,
+  "max_logs": 384,
   "large_trunk": true,
   "supported": true
 }

@@ -14,7 +14,14 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class Network {
   public static final SimpleChannel CHANNEL =
-      NetworkRegistry.newSimpleChannel(Automatons.id("main"), () -> "1", "1"::equals, "1"::equals);
+      NetworkRegistry.newSimpleChannel(Automatons.id("main"), () -> "2", "2"::equals, "2"::equals);
+
+  public static void pickup(MagicaOrb orb, net.minecraft.world.entity.player.Player player) {
+    CompoundTag n = new CompoundTag();
+    n.putInt("Orb", orb.getId());
+    n.putInt("Player", player.getId());
+    CHANNEL.send(PacketDistributor.TRACKING_ENTITY.with(() -> orb), new ClientData(4, 0, n));
+  }
 
   public record Mode(int delta) {}
 
@@ -66,8 +73,9 @@ public final class Network {
           if (p == null || !p.isShiftKeyDown() || Math.abs(m.delta) != 1) return;
           var s = WandItem.held(p);
           if (s.isEmpty()) return;
-          s.getOrCreateTag().putInt("Mode", Math.floorMod(WandItem.mode(s) + m.delta, 3));
+          s.getOrCreateTag().putInt("Mode", Math.floorMod(WandItem.mode(s) + m.delta, 4));
           WandItem.cancel(s);
+          pending.remove(p.getUUID());
           p.displayClientMessage(
               Component.literal("Wand: " + WandItem.name(WandItem.mode(s))), true);
         });
@@ -107,6 +115,7 @@ public final class Network {
             data.protection.remove(chunk);
           }
           data.protectionRevision++;
+          WorldEvents.protectionChanged(l);
           data.setDirty();
           p.displayClientMessage(
               Component.literal(req.protect ? "Chunk protected" : "Chunk protection revoked"),
@@ -127,6 +136,10 @@ public final class Network {
 
   private static void send(ServerPlayer p, ClientData data) {
     CHANNEL.send(PacketDistributor.PLAYER.with(() -> p), data);
+  }
+
+  public static void balance(ServerPlayer p, CompoundTag n) {
+    send(p, new ClientData(3, 0, n));
   }
 
   public static void snapshot(ServerPlayer p, int id, CompoundTag n) {

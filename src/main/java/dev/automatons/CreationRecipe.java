@@ -1,6 +1,7 @@
 package dev.automatons;
 
 import com.google.gson.*;
+import java.util.*;
 import net.minecraft.core.*;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
@@ -9,39 +10,35 @@ import net.minecraft.world.item.*;
 import net.minecraft.world.item.crafting.*;
 import net.minecraft.world.level.Level;
 
-public record CreationRecipe(
-    ResourceLocation id,
-    Ingredient wood,
-    int woodCount,
-    Ingredient metal,
-    int metalCount,
-    Ingredient core,
-    Ingredient tool)
+/** Six body positions; the displayed result has no identity until a player takes it. */
+public record CreationRecipe(ResourceLocation id, List<Ingredient> components)
     implements Recipe<SimpleContainer> {
+  public CreationRecipe {
+    if (components.size() != 6)
+      throw new IllegalArgumentException("Assembly requires exactly six components");
+    components = List.copyOf(components);
+  }
+
   @Override
   public boolean matches(SimpleContainer c, Level l) {
-    return wood.test(c.getItem(0))
-        && c.getItem(0).getCount() >= woodCount
-        && metal.test(c.getItem(1))
-        && c.getItem(1).getCount() >= metalCount
-        && core.test(c.getItem(2))
-        && tool.test(c.getItem(3))
-        && Inventories.axe(c.getItem(3));
+    if (c.getContainerSize() < 6) return false;
+    for (int i = 0; i < 6; i++) if (!components.get(i).test(c.getItem(i))) return false;
+    return true;
   }
 
   @Override
   public ItemStack assemble(SimpleContainer c, RegistryAccess a) {
-    return ItemStack.EMPTY;
+    return getResultItem(a);
   }
 
   @Override
   public boolean canCraftInDimensions(int w, int h) {
-    return w * h >= 4;
+    return w * h >= 6;
   }
 
   @Override
   public ItemStack getResultItem(RegistryAccess a) {
-    return ItemStack.EMPTY;
+    return new ItemStack(Automatons.AUTOMATON_ITEM.get());
   }
 
   @Override
@@ -59,36 +56,33 @@ public record CreationRecipe(
     return Automatons.CREATION.get();
   }
 
+  @Override
+  public boolean isSpecial() {
+    return true;
+  }
+
+  @Override
+  public NonNullList<Ingredient> getIngredients() {
+    NonNullList<Ingredient> out = NonNullList.create();
+    out.addAll(components);
+    return out;
+  }
+
   public static class Serializer implements RecipeSerializer<CreationRecipe> {
-    public CreationRecipe fromJson(ResourceLocation id, JsonObject j) {
-      return new CreationRecipe(
-          id,
-          Ingredient.fromJson(j.get("wood")),
-          j.get("wood_count").getAsInt(),
-          Ingredient.fromJson(j.get("metal")),
-          j.get("metal_count").getAsInt(),
-          Ingredient.fromJson(j.get("core")),
-          Ingredient.fromJson(j.get("tool")));
+    public CreationRecipe fromJson(ResourceLocation id, JsonObject n) {
+      List<Ingredient> items = new ArrayList<>();
+      for (JsonElement e : n.getAsJsonArray("components")) items.add(Ingredient.fromJson(e));
+      return new CreationRecipe(id, items);
     }
 
     public CreationRecipe fromNetwork(ResourceLocation id, FriendlyByteBuf b) {
-      return new CreationRecipe(
-          id,
-          Ingredient.fromNetwork(b),
-          b.readVarInt(),
-          Ingredient.fromNetwork(b),
-          b.readVarInt(),
-          Ingredient.fromNetwork(b),
-          Ingredient.fromNetwork(b));
+      List<Ingredient> items = new ArrayList<>();
+      for (int i = 0; i < 6; i++) items.add(Ingredient.fromNetwork(b));
+      return new CreationRecipe(id, items);
     }
 
     public void toNetwork(FriendlyByteBuf b, CreationRecipe r) {
-      r.wood.toNetwork(b);
-      b.writeVarInt(r.woodCount);
-      r.metal.toNetwork(b);
-      b.writeVarInt(r.metalCount);
-      r.core.toNetwork(b);
-      r.tool.toNetwork(b);
+      r.components.forEach(i -> i.toNetwork(b));
     }
   }
 }

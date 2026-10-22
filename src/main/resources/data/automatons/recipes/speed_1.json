@@ -1,21 +1,31 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " I ",
-    "ACA",
-    " I "
-  ],
-  "key": {
-    "I": {
-      "item": "minecraft:iron_ingot"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "automatons:upgrade_plate"
     },
-    "A": {
-      "item": "minecraft:amethyst_shard"
+    {
+      "item": "minecraft:sugar"
     },
-    "C": {
+    {
+      "item": "minecraft:sugar"
+    },
+    {
+      "item": "minecraft:sugar"
+    },
+    {
+      "item": "minecraft:sugar"
+    },
+    {
       "item": "minecraft:redstone"
+    },
+    {
+      "item": "minecraft:redstone"
+    },
+    {
+      "item": "automatons:magica_core"
     }
-  },
+  ],
   "result": {
     "item": "automatons:speed_1"
   }

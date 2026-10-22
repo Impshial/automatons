@@ -85,7 +85,7 @@ public final class WandGameTests {
           f.totem.getBlockPos().equals(f.worker.totem) && f.totem.identity.equals(f.worker.totemId),
           "Worker did not bind to the totem");
       h.assertTrue(
-          f.worker.getUUID().equals(f.totem.worker) && f.home.identity.equals(f.totem.workerHome),
+          f.totem.workers.contains(f.worker.getUUID()) && f.home.identity.equals(f.worker.homeId),
           "Totem did not retain worker/home identity");
       h.assertTrue(f.home.identity.equals(f.worker.homeId), "Assignment changed the home");
       h.assertTrue(
@@ -142,7 +142,7 @@ public final class WandGameTests {
           "Homed worker still requested a pedestal");
       click(h, f, InteractionHand.MAIN_HAND, f.totem);
       h.assertTrue(
-          f.worker.getUUID().equals(f.totem.worker), "Claimed worker did not bind to the totem");
+          f.totem.workers.contains(f.worker.getUUID()), "Claimed worker did not bind to the totem");
     } finally {
       // Completed tests must not keep consuming the shared totem scan budget.
       f.worker.unassign();

@@ -18,15 +18,21 @@ public final class Inventories {
 
   public static class Tools extends ItemStackHandler {
     private final Runnable changed;
+    private final java.util.function.BooleanSupplier enabled;
 
     public Tools(Runnable changed) {
+      this(changed, () -> true);
+    }
+
+    public Tools(Runnable changed, java.util.function.BooleanSupplier enabled) {
       super(3);
       this.changed = changed;
+      this.enabled = enabled;
     }
 
     @Override
     public boolean isItemValid(int slot, ItemStack s) {
-      return axe(s);
+      return enabled.getAsBoolean() && axe(s);
     }
 
     @Override
@@ -66,6 +72,6 @@ public final class Inventories {
                 (base
                     * 6.0
                     / Math.max(1, quality + (efficiency > 0 ? efficiency * efficiency + 1 : 0))
-                    * Math.pow(.8, speed))));
+                    * Math.max(.2, 1 - .2 * speed))));
   }
 }

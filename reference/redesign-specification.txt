@@ -1,0 +1,429 @@
+Implement the following complete specification for my Minecraft 1.20.1 mod, working title Automatons. Inspect and extend the existing project, preserve working features that match this specification, and deliver a functioning mod with a compiled JAR. This document is the current design. Implement the features, recipes, artwork, interactions, and reliability fixes together.
+
+The player flow is: harvest eligible vegetation and collect white-and-purple Magica; craft an Infusing Pedestal and Empty Magica Cores; infuse each core with 50 Magica through a visible transfer from the player; use charged cores to craft the Automaton Pedestal, wand, totems, body components, and upgrades; assemble a generic Automaton item in the Automaton Pedestal; place it in the world; select its job and provide appropriate tools in its GUI; then assign it to a totem. Multiple automatons share a totem and multiple nearby storage chests. Its original Automaton Pedestal remains its home.
+
+The initial job is Lumberton. A Lumberton must reliably chop a reachable, eligible tree when it has the necessary tools and storage. Diagnose and fix the observed behavior where it approaches ordinary trees and then ignores them or enters an error state too readily. Ordinary scanning, navigation retries, temporary competition for a chest, and another worker claiming a tree are recoverable conditions, not fatal errors.
+
+1. PROJECT TARGET AND SCOPE
+
+- Read repository instructions, build files, code, assets, and existing tests before editing. Preserve unrelated user work.
+- Target Minecraft 1.20.1. For a fresh project, use Forge 47.x and Java 17; retain an existing compatible configuration. Do not migrate Minecraft versions or loaders.
+- Use Automatons as the working mod name and automatons as its namespace unless the project already establishes another identity. Keep it independent of unrelated mods/projects.
+- Implement generic automatons with editable jobs. The fresh-project job choices are Unassigned and Lumberton. Preserve other complete jobs already present, but do not advertise unimplemented jobs as usable or implement unspecified professions.
+- Complete the actual entity, blocks, items, recipes, GUIs, animations, particles, sounds, and survival progression. Decorative mockups or a design document alone do not satisfy this task.
+- Prefer existing Minecraft/Forge facilities and mapped source. Add dependencies only when justified. Keep server code independent of client rendering classes.
+- Treat numeric balance values marked as defaults as configurable initial values, not fixed engine assumptions. Diagnose bugs from the actual code instead of presenting suggested causes as established facts.
+
+2. DEFINITIONS AND INITIAL BALANCE
+
+- Magica: the independent white-and-purple magical resource collected by players.
+- Empty Magica Core: a chargeable vessel holding from 0 to 49 Magica while empty or partly infused.
+- Magica Core: the completed crafting ingredient containing exactly 50 Magica.
+- Automaton Core: the torso component, crafted using two completed Magica Cores. It is a different item from a Magica Core.
+- Infusing Pedestal: the small, black-and-white, claw-topped block that fills Magica Cores without a GUI.
+- Automaton Pedestal: the full-size assembly block and home anchor, with a six-part GUI and a permanently visible rotating miniature Automaton display.
+- Automaton Totem: the shared work anchor, chest discovery center, job dispatcher, and holder of upgrades.
+- Each automaton has exactly three tool slots and, initially, nine separate cargo slots. An equipped tool occupies one of the three slots.
+- Multiple automatons can be assigned to one totem from the start. Do not introduce a one-worker limit, a capacity-unlock item, or a population upgrade. Bound processing costs with scheduling budgets rather than an artificial single-worker rule.
+- Default ranges are inclusive horizontal squares centered on the totem. Storage Range is 4 blocks outward, a 9 x 9 footprint, with chest positions within 4 blocks vertically. Lumber Range is 16 blocks outward, a 33 x 33 footprint, with rooted trunk bases within 16 blocks vertically. The storage area can also contain harvestable trees.
+- Range shape, numeric ranges, cargo size, speeds, recipe material counts, infusion speed/range, and upgrade strengths are centralized starting balance. Implement the concrete defaults in this prompt and document them for adjustment.
+- A completed Magica Core costs 50 Magica. The Automaton Core embeds two of these, so an automaton contains 100 Magica through its torso ingredients. Assembly does not deduct a second payment from the player.
+- There is no ongoing Magica fuel requirement for working, job changes, assignment, packing, or deployment.
+
+3. MAGICA PICKUPS AND PLAYER HUD
+
+- Use the spelling Magica consistently in item names, screens, messages, localization, and configuration.
+- Dropped Magica must look and act exactly like vanilla XP orbs apart from its white-and-purple palette and independent resource destination. Match the pixelated orb form, animation, value/size presentation, initial scatter, gravity, bounce, drag, collision, water behavior, attraction, pickup delay/cadence, merging behavior, and despawn behavior appropriate to Minecraft 1.20.1.
+- Inspect the mapped XP orb implementation. Reuse suitable presentation/motion logic while keeping Magica entity identity and resource accounting separate. A tinted ordinary XP entity that still awards XP is insufficient.
+- Pickup increases only the collecting player's Magica. It must not grant XP, change XP levels, trigger Mending, or satisfy vanilla enchanting costs. Ordinary XP never adds Magica. A source may independently award both as separate pickups.
+- Magica orbs merge only with compatible Magica orbs and conserve their values. Preserve value when splitting into multiple orb entities. Avoid creating one entity per point when aggregated values suffice.
+- Add an independent white-and-purple bar directly below the XP bar. Retain the normal XP bar and avoid overlaps with the hotbar, level numbers, health, armor, hunger, air, and mount displays at different GUI scales.
+- Persist a nonnegative integer point balance. Use the vanilla XP level/progress curve as the initial display model for the separate Magica bar. Spending is always in exact Magica points, not displayed levels.
+- Provide an unobtrusive balance tooltip/readout. Update the HUD as infusion transfers points. Persist balance through saving, reconnects, and dimension changes. Initially retain Magica on player death; keep that policy configurable and independent of XP.
+- Use server-authoritative spawning, collection, and spending. Reuse the XP pickup sound initially, with normal spatial/cadence behavior.
+
+4. RANDOM MAGICA YIELDS FROM NATURAL BLOCKS
+
+Roll one uniformly random integer in the inclusive configured range for each successful eligible player block break. A zero result spawns no Magica. Use these initial point ranges:
+
+| Eligible source | Minimum | Maximum |
+| --- | ---: | ---: |
+| Recognized natural or grown tree log | 3 | 7 |
+| Fully mature crop | 2 | 4 |
+| Naturally generated or grown pumpkin/melon | 2 | 4 |
+| Ripe berry bush | 1 | 3 |
+| Eligible natural flower | 1 | 2 |
+| Naturally generated or grown sugar cane, cactus, or bamboo | 0 | 2 |
+| Naturally generated or tree-grown leaves, manually broken | 0 | 1 |
+| Natural grass or fern | 0 | 1 |
+| Immature crop, unlisted source, or ineligible source | 0 | 0 |
+
+- Keep ranges configurable with tags and state predicates, documented precedence, and validation that minimum and maximum are nonnegative integers with minimum <= maximum. One block matching multiple categories receives one roll, not one reward per tag.
+- The roll is the total point reward, not the number of orbs. Fortune, the number of loot items, or several drop callbacks must not multiply it. Preserve ordinary block drops.
+- The initial trigger is an actual successful player block break. Evaluate the source's pre-break maturity/provenance. Cancelled breaks and client-side events award nothing. Deduplicate multi-block plants representing one logical harvest so a tall flower does not pay twice.
+- Breaking one supporting block does not award extra Magica for neighboring plant segments destroyed indirectly. A subsequent direct player break of another independently eligible block gets its own roll.
+- Player-planted crops and sapling-grown trees qualify after growth, including growth caused by bone meal. Naturally grown and bone-meal-grown versions use identical yield rules. Do not mark the entire generated tree as player-placed construction merely because its sapling was planted.
+- Distinguish growth from placing an already-harvestable block and breaking it again. Track direct placement of logs, leaves, flowers, pumpkins, and similar eligible blocks as needed to prevent simple place/break farming. New growth can qualify even when its originating plant was placed by a player.
+- Recognize existing trees through the same reliable structural/species rules used by Lumbertons. Document limits around old untracked placements instead of claiming perfect historical knowledge.
+- Ordinary building blocks, stone, ores, leaf decay, explosions, indirect environmental destruction, machines, and automaton harvesting do not generate Magica in this scope. Merely right-clicking a plant does not trigger the block-break reward.
+- Test inclusive boundaries, no duplicate rewards, source precedence, zero outcomes, and point conservation. Average yields are five per log and three per mature crop; approximately ten qualifying logs or seventeen mature crops fill one 50-point core on average, not as a guarantee.
+
+5. INFUSING PEDESTAL AND CORE LIFECYCLE
+
+- Create an Infusing Pedestal roughly half the height of the Automaton Pedestal, initially about 0.5 block tall. It has a black-and-white base and a claw-like top, using four short claws surrounding the floating core. Use Minecraft geometry and 16 x 16 block-face pixel density.
+- This block has no GUI. Its recipe and the Empty Magica Core recipe require only vanilla ingredients so the progression has a valid starting point.
+- Right-click an empty pedestal while holding an Empty Magica Core to insert exactly one. Support partially charged vessels as well. The actual stored stack floats and slowly rotates above the claws.
+- Insertion binds the infusion to the inserting player's UUID. While that player is alive, in the same dimension, within the default four-block range, and has Magica, transfer points from that player's balance into this core.
+- Default transfer rate: five points per second, one point every four normal game ticks. A zero-charge core takes ten seconds at normal tick rate when the player remains available and supplied.
+- Transfer is atomic on the server: deduct a point and add it to the stored charge once. Clamp to the core's remaining capacity. Never overdraw the player or overfill the core. Two pedestals drawing from the same balance must not spend the same points.
+- Leaving range, changing dimension, logging out, dying, or running out of Magica pauses infusion. Returning under valid conditions resumes it. Do not drain nearby bystanders or silently choose a new donor.
+- At exactly 50 points, replace the vessel with the completed Magica Core representation without losing its contents. Stop draining immediately, emit green completion particles, and play a brief completion chime once on the transition.
+- The finished core retains white-and-purple magical coloration; green particles are its readiness signal. Keep a restrained green effect active while it awaits collection. Do not replay the completion chime every tick or every reload.
+- Empty-hand right-click retrieves the stored core, including its exact partial charge if unfinished. Transfer it to the player's hand/inventory only if it fits; otherwise leave it on the pedestal. Initial permissions restrict retrieval of an occupied pedestal to its donor/owner or an operator.
+- A retrieved partial core can be reinserted and continues from its saved charge. The new legitimate inserter becomes the donor for the remaining points. Do not refund charge to a player and also preserve it in the item.
+- Completed cores are consumed as crafting ingredients. There is no additional resource withdrawal at the crafting table or Automaton Pedestal. Recipe matching accepts only fully infused Magica Cores, never partial vessels.
+- Empty zero-charge cores and completed cores may stack normally. Partially charged cores are non-stackable and show a concise charge value such as 23/50 Magica.
+- Breaking the pedestal drops its stored core exactly once with preserved charge plus the normal block drop. Unloading/reloading preserves core charge and donor identity without catch-up spending for unloaded time.
+- Validate both-hand interactions, rapid repeat clicks, multiple players, and block removal during a transfer. Only one core can be held at a time. Do not create a menu as a shortcut for this interaction.
+
+6. VISIBLE MAGICA TRANSFER FROM PLAYER TO CORE
+
+- While points are actually transferring, render a visible white-and-purple particle stream from the donor player's chest/upper torso to the floating core.
+- Particles follow gently curved paths and visibly converge into the core. Update the source as the player moves within range; keep the endpoint aligned with the floating core's actual render position.
+- Pulse the core as energy arrives and gradually increase its internal glow with charge. Use restrained lighting/emissive rendering appropriate to the game rather than requiring a lighting engine replacement.
+- Stop emitting transfer particles as soon as transfer stops, including insufficient balance, range exit, logout, core removal, or completion. Any particles already in flight may finish their brief visual lifetime; they carry no resource value.
+- Resume the stream with resumed transfer. Green particles begin on completion. Nearby players can see the floating core, incoming stream, charge appearance, and completion effect.
+- These are visual effects, not collectible Magica orb entities. They cannot award Magica, be picked up, collide as items, or cause extra spending. Keep the collection orbs and infusion effects separate.
+- Synchronize donor, charge, and transfer state efficiently from authoritative server data. Bound particle counts across many active pedestals, cull distant effects, and avoid full balance broadcasts every frame.
+
+7. AUTOMATON PEDESTAL, ASSEMBLY GUI, AND HOME COMMANDS
+
+- Name the main block Automaton Pedestal. This is the assembly station and home anchor; the Infusing Pedestal is a separate smaller block.
+- Arrange exactly six assembly input slots in the shape of a golem: Head at top center; Arm, Automaton Core, Arm across the middle; two Leg slots below with clear spacing. There are four component item types, with two identical arms and two identical legs used per automaton.
+- Include the player's inventory and a separate Automaton result slot on the RIGHT of the creation area. The six body slots do not include the result slot. No job tool is a body ingredient.
+- Keep the white-and-purple Magica bar in the right-hand panel alongside the output. It displays the viewing player's balance as information. Add concise component readiness feedback. The torso's infused cores already paid the magic cost, so a zero remaining player balance does not prevent assembly.
+- Creation occurs by taking the result. There is no separate deposit or crafting-action button. The pedestal holds no deposited Magica tank.
+- Show the result when all six proper components are present. Opening the GUI or showing a preview consumes nothing and creates no live worker identity. On a valid output pickup, revalidate all input slots, permissions, and destination capacity; consume the six components once and create one non-stackable Automaton item.
+- Support normal pickup and shift-click, initially one automaton per action. Failed output placement consumes nothing. Two simultaneous viewers cannot reuse the same inputs. A hopper cannot take a free result or fabricate a player identity; survival creation uses a validated player output action.
+- Generate a stable automaton identity only when the craft commits. Record the crafting player as owner and this pedestal's persistent identity, location, and dimension as home. The new item has the Unassigned job, empty tools/cargo, and no totem.
+- Assembly creates an item, not a world entity. Nearby entity-spawn clearance is irrelevant until deployment.
+- Keep Call All Home and Resume Work as separate home-management controls below the assembly area. They affect only automatons whose home is this pedestal, including workers sharing a totem with workers from other pedestals.
+- Recall is persistent: deployed workers stop starting new work, preserve their inventories/job/totem, return to their home, and wait. A committed fall must settle or pause safely. Resume Work releases recall but does not override placement pause or missing prerequisites.
+- Recall state survives packed workers, chunk unloads, saving, and later deployment. Do not force-load workers or edit arbitrary inventory stacks to deliver a recall; reconcile through persistent identities when they become active.
+- If the home pedestal is actually destroyed, retain worker data, show Home missing, and permit explicit owner-directed home rebinding through the worker GUI followed by a pedestal selection with the wand. Replacing a block at old coordinates does not automatically restore the old identity.
+- Breaking the pedestal drops real input stacks once. The result preview and floating display are not stored items and must not drop. Preserve any already-crafted item held by a player.
+
+8. PERMANENT TILTED ROTATING AUTOMATON DISPLAY
+
+- Always display a complete miniature Automaton ITEM above the Automaton Pedestal while the block is loaded and visible. Use the actual item's visual identity with a translucent white-and-purple holographic presentation.
+- Tilt it approximately 30 degrees from upright. Rotate it around a vertical axis through its own center while maintaining the lean, so the head and feet visibly sweep around during the turn. Rotating an upright standing model does not satisfy the intended presentation.
+- Default rotation is one revolution every eight seconds, with a slight slow vertical bob. Center it above the pedestal and leave enough clearance throughout the tilt, rotation, and bob cycle to avoid clipping.
+- The complete display remains present regardless of components, balance, crafting readiness, output, or recall. Its appearance is independent of the GUI's contents.
+- It is a render effect only: no inventory stack, entity AI, collision, interaction target, collectible item, or worker registration. It never drops when the block breaks and never previews a real worker UUID.
+- Use smooth frame interpolation and configurable tilt, speed, scale, bob amplitude, and height. Rendering must not require per-frame server packets or opening the GUI.
+
+9. COMPLETE SURVIVAL RECIPE SET
+
+Implement every recipe below. Unless stated otherwise, each produces one item. Shaped recipes use the three rows listed, with Empty meaning an unused slot. Shapeless quantities mean that many ingredient occurrences; every recipe fits within nine crafting slots. Use appropriate item tags for permitted wood choices. Allow mixed overworld wood species, including stripped equivalents where appropriate, without changing the resulting automaton's base appearance. Use dedicated tags where broad wood tags would unintentionally include unsupported materials.
+
+A. Empty Magica Core, shaped:
+Row 1: Empty | Glass block | Empty
+Row 2: Glass block | Amethyst shard | Glass block
+Row 3: Empty | Glass block | Empty
+Cost: four glass blocks and one amethyst shard. Output has zero charge.
+
+B. Infusing Pedestal, shaped:
+Row 1: Iron ingot | Empty | Iron ingot
+Row 2: Polished diorite | Amethyst shard | Polished diorite
+Row 3: Polished deepslate | Polished deepslate | Polished deepslate
+Cost: two iron ingots, two polished diorite, three polished deepslate, one amethyst shard.
+
+C. Magica Core, world infusion:
+One Empty Magica Core + 50 player Magica through the Infusing Pedestal. No ordinary crafting-table shortcut bypasses infusion. Partial progress requires only the remaining points.
+
+D. Automaton Pedestal, shaped:
+Row 1: Stone bricks | Magica Core | Stone bricks
+Row 2: Iron ingot | Gold ingot | Iron ingot
+Row 3: Stone bricks | Magica Core | Stone bricks
+Cost: four stone bricks, two completed Magica Cores, two iron ingots, one gold ingot.
+
+E. Automaton Totem, shaped:
+Row 1: Empty | Magica Core | Empty
+Row 2: Iron ingot | Log | Iron ingot
+Row 3: Empty | Stone bricks | Empty
+Cost: one completed Magica Core, two iron ingots, one log, one stone bricks block.
+
+F. Automaton Wand, shaped:
+Row 1: Empty | Empty | Magica Core
+Row 2: Empty | Stick | Empty
+Row 3: Stick | Empty | Empty
+Cost: one completed Magica Core and two sticks. The same wand provides all four modes.
+
+G. Automaton Head, shapeless:
+Two logs + two iron nuggets + one redstone dust.
+
+H. Automaton Core, shaped:
+Row 1: Iron ingot | Magica Core | Iron ingot
+Row 2: Redstone dust | Redstone dust | Redstone dust
+Row 3: Iron ingot | Magica Core | Iron ingot
+Cost: four iron ingots, three redstone dust, and two completed Magica Cores.
+
+I. Automaton Arm, shapeless:
+One log + one iron ingot. Output one arm; craft two for assembly.
+
+J. Automaton Leg, shapeless:
+One log + one plank + one iron ingot. Output one leg; craft two for assembly.
+
+K. Automaton, custom six-slot assembly:
+One Head + one Automaton Core + two Arms + two Legs, in their body positions at the Automaton Pedestal. Output one generic Automaton item. No additional Magica charge. Supply job tools separately after deployment.
+
+L. Upgrade Plate, shapeless:
+Two iron ingots + two redstone dust + one amethyst shard. Output one plate.
+
+M. Totem upgrades, shapeless, one output each:
+| Upgrade | Ingredients |
+| --- | --- |
+| Storage Range I | 1 Upgrade Plate + 1 chest + 1 compass + 1 Magica Core |
+| Storage Range II | 1 Storage Range I + 1 chest + 2 iron ingots + 2 amethyst shards + 2 Magica Cores |
+| Lumber Range I | 1 Upgrade Plate + 1 compass + 4 logs + 1 Magica Core |
+| Lumber Range II | 1 Lumber Range I + 1 compass + 2 iron ingots + 2 amethyst shards + 2 Magica Cores |
+| Work Speed I | 1 Upgrade Plate + 4 sugar + 2 redstone dust + 1 Magica Core |
+| Work Speed II | 1 Work Speed I + 2 sugar + 2 redstone dust + 1 diamond + 2 Magica Cores |
+| Tool Enchantment I | 1 Upgrade Plate + 1 book + 2 lapis lazuli + 1 amethyst shard + 1 Magica Core |
+| Tool Enchantment II | 1 Tool Enchantment I + 1 book + 2 lapis lazuli + 2 amethyst shards + 1 diamond + 2 Magica Cores |
+
+- All Magica Cores in recipes must be fully infused and are consumed. The lower-tier upgrade is consumed when crafting its higher tier. Do not duplicate or return it as a crafting remainder.
+- Every block, component, upgrade, and wand must be obtainable through the above survival chain. Use ordinary vanilla chests and axes rather than requiring custom storage or a special axe.
+- Implement data-driven recipes where practical, appropriate recipe-book unlocks, localization, and a creative tab. Document the custom pedestal/infusion steps in the usage guide. Development spawn aids must not replace survival crafting.
+- Validate the crafting dependency graph from vanilla ingredients through the first functioning worker. The first Infusing Pedestal and Empty Magica Core do not require charged cores. Numeric recipes are initial balance and must remain easy to adjust.
+
+10. AUTOMATON MODEL, TEXTURES, AND EXPRESSIONS
+
+- Model a generic passive golem approximately 1.5 blocks tall, with a matching collision box and eye height. Give it broad shoulders, long blocky arms, wooden construction, iron reinforcement, and a small square timber head.
+- Its flat face has two separate amber eyes and a small mouth, with a small amber chest marking. Preserve its identity and body when its job changes. The held tool and GUI job label reflect the current role.
+- New item sprites and block-face textures use a 16 x 16 base design. Model surfaces use approximately one texture pixel per 1/16 block at final size; the automaton is about 24 such units tall.
+- A larger entity atlas is allowed to fit model faces and expression frames, not to add finer texture detail per block. Use pixel-aligned geometry/UVs, crisp nearest-neighbor sampling, simple shading, and a restrained palette.
+- Create real art for the Automaton item, body parts, both core types, Upgrade Plate, all upgrade tiers, wand, totem, and both pedestals. Keep distinguishable silhouettes and consistent materials. The Automaton item resembles a miniature golem.
+- Animate idle, walking, looking, chopping, and returning/carrying behavior. Render the actual equipped axe in the Lumberton's hand; do not bake an axe into its model or display an imaginary tool.
+- Provide expressions driven by actual state: neutral idle; brief smile for assignment, unloading, or receiving tools; raised eyebrow while searching; focused chopping; frown for a sustained resource/storage problem; brief anger when hurt; calm/neutral while recalled.
+- Expressions do not make a Lumberton aggressive. Use coarse pixel changes and avoid flickering, face-layer overlap, or a temporary smile hiding a sustained problem. Synchronize meaningful state changes efficiently.
+- Keep editable model/texture sources and document dimensions, atlas layout, and pixel density.
+
+11. WORKER GUI, JOB CHANGES, TOOLS, AND CARGO
+
+- Ordinary right-click opens the automaton GUI. Show its name, selected job, three tool slots, active tool, durability, cargo, status, home, assigned totem, and Start Work control. Restrict edits to its owner or authorized operator.
+- A freshly deployed worker waits at its placement position until Start Work or a successful deliberate totem assignment authorizes work. A pedestal recall still takes priority.
+- Job choices include Unassigned and implemented jobs only. Changing job preserves identity, name, health, home, totem, tools, and cargo. Safely stop new actions of the prior job and refresh the totem's worker panel and compatible upgrades.
+- Retain incompatible existing tools for removal, clearly mark them inactive, and disallow their use or replenishment. New insertions must match the current job. Unassigned accepts no new job tools and generates no missing-tool/no-tree alert.
+- Exactly three tool slots, one item per slot. Lumbertons accept appropriate axes, including supported modded axes via explicit tags or capabilities. Apply the same filter to direct insertion, shift-click, dropped-item pickup, chest withdrawal, and automation access.
+- Never take picks, shovels, swords, hoes, fishing rods, or unrelated objects as Lumberton tools. The held tool is a real slot reference, not an additional copy.
+- Preserve each tool's durability, enchantments, custom name, and other stack data. Use normal tool wear and compatible effects. When one breaks, equip the next usable stored axe. Do not fabricate, repair, or duplicate tools.
+- Restock empty tool slots from eligible supply chests, using deterministic preferences and actual accepted quantities. Do not repeatedly swap usable tools for slightly better axes.
+- Cargo initially has nine slots separate from tools. Pick up legitimate job output and suitable tools, not every nearby dropped object. Respect applicable ownership restrictions.
+- Keep harvesting and collecting across multiple trees until the cargo inventory is full. Finishing a tree, passing a chest, a timer expiring, or reaching an arbitrary fill percentage must not trigger a dedicated unloading trip. However, whenever another condition already requires returning to the totem, unload carried job output as part of that visit, even with partial cargo. Tool-slot occupancy does not count toward cargo fullness.
+- Job change releases uncommitted tree claims, while committed timber remains a recoverable world job for a compatible Lumberton or player. It does not delete wood or grant remaining output early.
+- On actual automaton death, drop real inventories once. Do not also award a free packed Automaton item. Wrench packing is a separate controlled operation.
+
+12. SHARED TOTEMS AND WORKER MEMBERSHIP
+
+- The totem is a cylinder-like upright block with a glowing top, approximated with stepped/faceted Minecraft geometry. It is the work center, storage hub, dispatcher, and upgrade holder.
+- Multiple automatons may belong to one totem. Maintain a roster keyed by persistent worker identity rather than a single worker field. Assigning another worker adds it without replacing, evicting, or stopping existing workers.
+- Each worker has at most one current work totem. Reassignment removes only that worker from its previous roster and applies the new totem's compatible settings. Preserve its selected job, inventories, home, and personal data.
+- Workers retain individual home pedestals even when sharing a totem. A home recall affects its own workers only. A totem must not rewrite every worker to a common home.
+- Use consistent owner/access checks. Initially use the same-owner assignment policy, with operator access, rather than implicitly allowing a wand to take over another player's workers or totems.
+- The totem GUI lists assigned workers, their jobs, deployed/packed state, status, tool readiness, and home connections. Selecting a worker shows its details; job-specific panels show relevant shared queues and settings. Shared chest controls, ranges, upgrades, and alert summaries remain visible and understandable.
+- For Lumbertons show Storage Range, Lumber Range, chest list, queued/in-progress trees, next target distance from the totem, and per-worker blockers. An empty roster has a neutral usable GUI.
+- Packed workers remain roster entries marked Packed and do not receive work or emit alerts. They reserve no exclusive totem capacity. The owner can unbind an entry; redeploying an old saved item must reconcile that deliberate removal without restoring a stale membership.
+- Totem identity includes a persistent ID and dimension/location. Breaking and replacing a block at the same coordinates is a different totem.
+- Destroying a totem invalidates its binding for all members and sends deployed workers to their respective homes where reachable. Retain jobs/inventories, drop installed upgrade stacks once, and preserve recoverable committed timber. Unloaded workers reconcile later without forced loading.
+- One paused, recalled, packed, or resource-blocked worker must not stop healthy workers at the same totem.
+
+13. MULTIPLE CHESTS, CAPACITY CHECKS, AND UNLOADING
+
+- Automatically discover all eligible chests within Storage Range and the vertical allowance. Support multiple single and double chests; treat a double chest as one logical inventory. Use compatible item handlers where practical without treating every nearby machine as a storage chest.
+- Show discovered chests in the totem GUI with enable/disable controls and separate output/tool-supply toggles. Prefer reachable nearer storage in deterministic order, but search alternatives when a preferred chest is missing, full, filtered, unloaded, or blocked.
+- Reachability is evaluated for the individual worker. One worker's failed approach does not mark the chest unavailable to everyone. Try valid adjacent interaction positions instead of navigating into the chest block.
+- Determine capacity for the actual item type, stack data, stack limits, existing partial stacks, and applicable insertion filters. An inventory with no empty slots may still accept matching items. A chest with empty slots may reject a particular output.
+- Check relevant capacity before starting harvesting, before collecting/processing another bounded batch, when choosing an unload destination, and again during the transfer. Include existing cargo and nearby job output already awaiting collection. Do not require storage for an entire large tree before allowing any progress when safe incremental processing and unloading are possible.
+- These preventive chest checks are totem/server inventory checks and do not send a partly loaded worker back to inspect a chest. A dedicated routine unloading trip starts when cargo is full; every otherwise-required return to the totem also includes a drop-off of any cargo already carried.
+- Determine effective cargo fullness through actual insertion capacity, including compatible partial stacks. Occupying every slot does not mean full if the next collected output still fits an existing stack. Conversely, an incompatible new output may not fit despite free space in unrelated stacks. Use available capacity fully, preserve uncollected timber/output safely, and unload when the next actual required collection cannot fit; do not use a low percentage threshold or speculative whole-tree loot size to trigger early returns.
+- Treat insertion simulation as a hint, not a guarantee. Execute transfers on the server and remove only the amount actually accepted. Keep remainders in cargo. Another player or worker can change the chest between checks.
+- Shared storage must tolerate multiple workers depositing and withdrawing simultaneously. Avoid duplicate items, negative counts, lost remainders, and several workers treating the same simulated free space as permanently reserved. Any capacity reservation scheme must reconcile actual inventory changes and release stale reservations.
+- Before declaring Storage full or No storage, perform an extra bounded refresh of the chest list, recheck existing handlers, test relevant partial-stack space, inspect alternatives, and reconsider failed approach positions. A stale cache, one full chest, or one failed insertion is not enough to latch an alert.
+- If no suitable chest is found in the cache, complete a fresh loaded-area discovery pass before reporting the absence. Use Searching storage while that pass is pending. New/changed chests and freed space should prompt early rechecks, backed by periodic refreshes.
+- If one chest fills, route output to another with appropriate capacity. If a transfer is partial, continue with another chest as needed. A full stone-only chest is not the only storage just because it is closest to the totem.
+- Full worker cargo triggers the required return-to-totem and beacon state, followed by unloading into reachable eligible chests. Once the unloading trip has begun, deposit all accepted job cargo across available chests before resuming, rather than leaving after freeing only one slot. If some contents cannot be deposited, retain them and re-evaluate actual carrying/storage capacity. Clear resolved blockers and resume automatically when safe. This is recoverable inventory management, not a permanent error.
+- On EVERY return to the assigned totem, attempt to deposit all carried job output into its eligible reachable chests, even when cargo is only partly filled. This includes returns for no available trees, tool restocking, storage trouble, a sustained path/work blocker, or any other return-to-totem reason. Keep the three tool-slot contents for work; only unload job cargo. Perform restocking during the same visit when needed.
+- Complete the drop-off before entering the appropriate waiting or resumed-work state. Try alternate chests and preserve any quantity that no eligible chest accepts. If output remains blocked, keep it safely, show the actual storage reason, and recheck on inventory changes or bounded intervals without endless chest-to-totem walking. Empty cargo needs no chest visit.
+- A drop-off does not clear unrelated blockers: a worker with no trees still waits after unloading, and a worker without an axe still needs one. Explicit home recall and confirmed infrastructure loss keep their existing destination priority; returning directly to the home pedestal does not require a detour to a totem or chest. A destroyed or unavailable totem cannot service a drop-off.
+- When all relevant reachable output storage is confirmed full, stop further harvesting, return to the totem, and signal. Continue scanning/rechecking. Adding a chest or freeing capacity restores work without reassignment.
+- If one chest is destroyed and another remains usable, continue with the remaining chest. If all previously available storage is confirmed gone, return home while retaining the totem link and show No storage. A never-configured worker waits with clear setup feedback. Adding storage allows an authorized, non-recalled worker to resume.
+- A temporarily unloaded dependency is not a broken block or proof of no capacity. Preserve bindings and wait for a valid check. Distinguish unloaded, unreachable, missing, filtered, and full storage in status.
+- Actual unloading/restocking requires the worker to reach an appropriate chest interaction position. Do not teleport items across the work area. Ordinary chest access remains permitted inside protected chunks.
+
+14. RELIABLE TREE RECOGNITION
+
+- Harvest actual trees, including player-planted saplings grown naturally or with bone meal. A reachable bone-meal-grown tree must be recognized and harvested as reliably as world-generated growth.
+- Support ordinary Minecraft 1.20.1 Overworld oak, birch, spruce, jungle, dark oak, acacia, mangrove, and cherry forms, including normal branches, leaning forms, tall trees, and appropriate 2 x 2 trunks.
+- Use species-aware trunk/root and canopy evidence, tags, and explicit extensions. Do not require every tree to be a straight column, every lowest log to sit directly on plain dirt, or leaves to touch the exact log being chopped. Mangrove roots and branched species need their real shapes supported.
+- Distinguish individually placed construction logs from generated/grown tree wood. A flood fill that eventually reaches leaves is not sufficient permission to dismantle a wooden building. Do not absorb nearby houses or merge an entire forest through touching leaves.
+- Track direct log placements going forward as an additional safety signal. Mark sapling-generated logs as grown tree material; do not inherit the planted sapling's construction flag. Use reliable structural evidence for pre-existing untracked trees and document genuine ambiguity limits.
+- Bound discovery and tree traversal for performance, but ensure normal vanilla trees fit supported limits. Reaching a per-tick budget defers validation to later ticks; it must not classify an otherwise ordinary tree as permanently unsupported.
+- Initial work-range eligibility is based on the rooted trunk footprint center within Lumber Range and the configured base-height allowance. Validate the entire tree within bounded species limits. A canopy crossing the square work boundary alone does not disqualify a valid rooted tree.
+- Permit completing that bounded tree's associated canopy/branches outside the root-search boundary while enforcing protection and building safety on every affected block. Landing/processing positions should remain within the work area or the tree's bounded immediate footprint. Do not expand this exception to unrelated neighboring trees.
+- If a required destructive portion is protected, leave the tree intact and try another eligible tree. Do not bypass protection to meet harvest reliability.
+- Nether fungi, giant mushrooms, and unspecified modded plants are not silently classified as supported trees. Provide extension points without adding unrequested jobs or a new harvesting scope.
+
+15. TOTEM SCANNING, NEAREST-TREE ORDER, AND SHARED JOBS
+
+- Loaded totems maintain a continuously refreshed tree queue using bounded incremental scans, world-change invalidation, caches, and fair global/per-totem work budgets. Keep scanning while workers wait or alerts are active.
+- Select each worker's next job as the closest eligible, unclaimed tree to the TOTEM, not the worker, chest, pedestal, previous target, or scanner position. Use squared horizontal distance to the rooted trunk footprint center and stable coordinate tie-breaks.
+- Dispatch idle workers in a deterministic fair order. Each obtains the next closest available tree after existing claims. Workers already committed to a tree finish its remaining timber before selecting a new standing tree.
+- Maintain a shared dimension-level claim identity across both workers of the same totem and overlapping totems. Two workers must not independently fell or generate loot from the same tree.
+- Finish enough of the loaded-area discovery sweep, or use a current ordered cache, to justify nearest-tree selection. Do not dispatch a farther tree just because it was found first. Show Searching while initial discovery is incomplete.
+- New growth, changed range, released claims, protection changes, and removed obstacles invalidate affected queue entries. Refresh ordering before the next dispatch. A newly discovered closer tree does not interrupt a committed fall or partly processed tree.
+- All known trees being claimed by other workers means Waiting for available work, not No eligible wood. One worker should not raise a no-tree alert while its colleagues are harvesting the totem's trees.
+- Evaluate route candidates and genuine blockers in nearest order. Retry temporary failures with a bounded delay and recheck sooner on relevant changes. Never permanently blacklist an ordinary tree because one route or frame failed.
+- Release uncommitted claims on recall, removal, reassignment, packing, or job change. Preserve world-owned committed timber with resumable progress, and permit safe reassignment after the prior worker relinquishes it or becomes unavailable under a documented recovery policy.
+- Packed workers or stale claims must not indefinitely monopolize timber. A new claimant must reconcile the authoritative job progress before acting. Keep one active processor per tree job initially.
+- Distinguish no discovered wood after a complete valid scan, wood temporarily unavailable, unvalidated data, protected candidates, and truly inaccessible candidates. An unfinished scan or unloaded area is not proof that no trees exist.
+
+16. FIX APPROACH-AND-IGNORE AND EXCESSIVE ERROR STATES
+
+- Reproduce the reported failure and trace discovery, classification, claiming, destination selection, navigation, arrival, chopping reach, progress, felling, collection, and unloading. Identify the actual failed transitions in this project.
+- Inspect evidence for targets inside solid logs, inconsistent arrival/reach thresholds, eye/collision-height assumptions, stale self-conflicting reservations, navigation completion not starting work, AI goal conflicts, progress reset every tick, overly strict leaf/fall-space validation, wrong tool-slot checks, or stale storage state. These are leads, not a diagnosis to invent.
+- Plan reachable standing positions adjacent to an actionable trunk section, using the 1.5-block worker's actual collision box and chopping reach. Try alternative sides, valid elevations, and path endpoints. Navigation need not reach the center of a solid trunk.
+- Use coherent arrival and work thresholds. Once a worker reaches a valid action position with an appropriate axe and safe capacity, start visible chopping and advance persistent work progress. Do not oscillate between travel and work or reset the timer without a concrete interruption.
+- A failed path query gets a bounded replan, alternate approach check, and current-state revalidation. Separate a temporarily busy route from an intrinsically unreachable position. Worker collisions and a chest occupied by another worker must not become permanent blacklists.
+- Use transient states such as Searching, Replanning, Waiting for path, Waiting for available work, Unloading, and Restocking. Reserve player-facing error diagnostics for actual invalid state or a sustained concrete blocker, not normal work cycles.
+- Before abandoning a reachable tree, verify tools, current claim ownership, approach positions, actual reach, fresh storage capacity across all chests, source validity, and the safe felling fallback. If these are satisfied, harvest it.
+- Keep per-tree failure reasons and retry schedules without halting all workers. World changes invalidate outdated rejection reasons. Backoff bounds server cost while periodic retries prevent stale permanent failures.
+- Do not fix reliability by harvesting player construction, bypassing protection, discarding items, teleporting through obstacles, or disabling normal tree families. Diagnose, fix, and regression-check the real transition failures.
+- Add optional targeted debug information for skipped candidates and state transitions, with no per-tick log spam. Report what was reproduced and verified, distinguishing code inspection from in-game observation.
+
+17. CONTROLLED FELLING AND GROUNDED TIMBER
+
+- Preferred visible workflow: chop the tree base, animate the tree falling, then walk along grounded timber and chop its sections into collectible resources. Avoid permanent floating trunks, branches, and disconnected crowns.
+- Try multiple landing orientations and layouts before declaring the full-length fall unavailable. Validate affected source blocks, sweep, landing positions, loaded data, occupants, and protection. Never overwrite terrain, containers, crops, structures, or another tree merely to make room.
+- A lack of room for one long log line must not make an otherwise reachable ordinary tree unharvestable. Provide a controlled segmented lowering/felling fallback within the tree's safe footprint: settle manageable portions into compact grounded timber, process them, and continue. Preserve visible chopping, work time, wood counts, and tool costs. Avoid an unsupported floating remainder during staged work.
+- This fallback is an implementation choice to meet reliable harvesting in dense forests and on uneven ground. It must obey the same protection and no-overwrite rules as normal felling. A truly unsafe/protected conversion remains blocked with a specific reason.
+- Use deterministic controlled animation and dedicated persistent fallen-timber objects or an equally robust representation. General rigid-body physics is unnecessary. Preserve source wood types and counts.
+- Each source log has a single authoritative job identity as it moves from standing wood to settled timber to processed output. Conversion does not produce both ordinary block loot and a second timber reward.
+- Source/crown cleanup must avoid orphaned permanent floating structures without deleting neighboring tree leaves or player decoration. Handle leaf drops once using appropriate loot rules.
+- Apply an explicit trunk-cut tool cost and normal per-section processing wear. Do not accidentally charge the same action twice or make large trees free. Respect effective enchantments and report the formula.
+- Final log drops appear when a section is processed. Cargo/storage limits pause processing before overflow; grounded timber remains available for later. Recall, packing, missing tools, and unload/reload preserve committed work.
+- Let players process fallen timber using the same authoritative section-consumption rules. A player and worker cannot both claim its drops. Converted timber does not generate a second Magica reward.
+- A committed fall is world-owned and can settle safely after its worker is packed or unloaded. If new protection prevents completing it, pause safely without further prohibited mutations or rewards and retain recoverable state.
+- Persist unfinished conversion, settled sections, and progress. Reconcile normal save/reload and repeated events idempotently. State any unverified abnormal-crash limitation honestly.
+
+18. CHOPPING AUDIO AND WORK SPEED
+
+- Play a wood impact sound at actual axe contact during standing-trunk work and fallen-timber processing. Match the visible swing cadence and current work speed. Use appropriate vanilla/source wood hit sounds initially with restrained variation.
+- Broadcast positional sound from the struck wood once, with ordinary distance attenuation. Avoid double playback from both client and server paths. Sound events must not apply durability or produce drops.
+- Play coherent completion/break audio when the section is consumed. Stop impact audio when the worker stops chopping for travel, recall, a missing tool, packing, job change, capacity, or protection.
+- Default walking target: about two blocks per second on unobstructed level ground at normal server tick rate. Measure actual behavior instead of equating an attribute directly with blocks per second.
+- Default preparation with an unenchanted iron axe: about four seconds per required trunk-base cut. Default log-section processing: about two seconds per log. Default whole-tree visual fall: about 1.5 seconds, with sensible bounded adjustments for larger trees or segmented fallback.
+- These speed values remain provisional and configurable. Tool quality and effective enchantments affect work using a documented bounded formula and a minimum duration. Movement speed is separate from chopping speed.
+- Work Speed upgrades shorten chopping/processing time, not walking or the fall animation to unreadable durations. Cargo does not add a movement penalty initially. Unloading uses a short stop and bounded actual transfers without an arbitrary multi-second delay per item.
+- Progress is server-tick based and cannot generate extra output from client frames, sound callbacks, lag, or unloaded time.
+
+19. PER-WORKER ALERTS, AGGREGATE BEACON, AND RECOVERY
+
+- Maintain independent worker blockers for No usable tools, No eligible wood, Storage full, and Cargo full. Show all current reasons and the affected workers in the GUI.
+- For an authorized deployed worker, a confirmed one of these blockers sends it back to the totem and raises the beacon, unless home recall takes priority. Every such return includes dropping off any carried job output where storage accepts it. Full cargo can and should resolve through this unloading cycle.
+- Tools are unavailable only when the worker has no usable job tool. Restock from eligible supply chests and automatically recover when a valid axe is actually acquired. Search all permitted supply chests before concluding replenishment is unavailable.
+- No eligible wood is established only after sufficiently complete loaded-area discovery and claim/progress reconciliation. A temporarily empty queue, pending validation, or all jobs claimed by colleagues produces a waiting state instead. A genuinely inaccessible-work condition needs its own clear reason and retries.
+- Storage full requires the additional fresh capacity and alternate-chest checks in section 13. It does not mean one preferred chest rejected an item. Cargo full is separate and clears after enough actual room exists.
+- The totem's visible beacon is the aggregate of unresolved active worker alerts. One worker recovering, packing, leaving, or being removed clears only its own contribution. Other workers' alerts remain visible, and healthy workers continue independently.
+- Packed, Unassigned, and newly placed workers awaiting authorization contribute no work alerts. Recall preserves relevant outstanding resource reasons but prevents automatic work resumption until released.
+- Use a custom vertical beacon-like light without requiring a vanilla beacon block, pyramid, fuel, potion effects, or open sky. Initial color is amber/gold. Render efficiently from a loaded totem toward the dimension's upper extent, including indoor totems.
+- Keep scanning while waiting. Discovering a valid available tree or recoverable timber clears only the no-wood blocker. Freeing suitable chest space clears storage full; successful unloading clears cargo full; obtaining a usable axe clears tool shortage.
+- Resume automatically as soon as that worker's prerequisites are satisfied and it is neither recalled nor placement-paused. No manual reset or reassignment is required after an ordinary resource problem. The beacon disappears only when no contributing alert remains.
+- Missing/destroyed infrastructure, an unloaded dependency, an unreachable route, fullness, and a setup omission are different states. Do not erase bindings for unloaded chunks or make a temporary obstruction permanently fatal.
+- Behavior priority: valid world/protection checks; explicit home recall; confirmed infrastructure loss; recovery actions for tools/storage/cargo; then normal job dispatch. Recovery actions such as unloading remain allowed while harvesting is paused.
+
+20. SHARED TOTEM UPGRADES
+
+- Four upgrade slots, one installed upgrade per family. Tier II replaces Tier I in its family; totals do not stack by installing both or duplicates. Each slot holds one upgrade item.
+- Installed upgrades affect every compatible deployed automaton assigned to that totem, not arbitrary nearby mobs. Worker count does not require extra copies. Packing stores no copied bonus in the Automaton item.
+- Storage Range I: +4 blocks outward. Storage Range II: +8 total. Base 4 therefore becomes 8 or 12, with footprints 17 x 17 or 25 x 25. Keep the default vertical storage allowance unchanged initially.
+- Lumber Range I: +8 blocks outward. Lumber Range II: +16 total. Base 16 becomes 24 or 32, with footprints 49 x 49 or 65 x 65. Root-height allowance remains separately configured.
+- Work Speed I: 20 percent shorter chopping/processing duration. Work Speed II: 40 percent shorter total. Apply once with a safe minimum duration and the documented tool formula.
+- Tool Enchantment I/II grants effective Efficiency I/II to compatible work. Use the higher of the tool's existing Efficiency and the totem's level, not their sum. Never permanently write the enchantment onto supplied tools.
+- Job changes deactivate incompatible effects for that worker while preserving the installed items and benefits to other compatible workers. Display compatibility clearly.
+- Changes to upgrades, ranges, or membership revalidate pending tasks and shared storage discovery. A reduced range prevents new out-of-range assignments; preserve already-created timber for player recovery or later eligible processing rather than deleting it.
+- Upgrades stay in the totem on worker reassignment and drop once when the block is broken. Persist installed stacks and derive worker effects from the current valid binding.
+
+21. WAND MODES AND CHUNK PROTECTION
+
+- Hold Shift and scroll to cycle Assign, Protect, Revoke, and Wrench. Consume the scroll so it does not also change the hotbar. Give brief mode feedback and concise tooltips.
+- Assign: right-click an owned automaton, then a valid accessible totem. Add it to the roster, preserve job/tools/home, and authorize work subject to prerequisites and recall. Additional members are allowed. Validate selection and targets on the server.
+- Mode changes cancel unfinished selections/confirmations. Provide an explicit cancel path and handle either hand without processing an interaction twice.
+- Protect: right-click a block to select its chunk and show Yes/No confirmation. Revoke: select a protected chunk and confirm Yes/No. Closing or cancelling changes nothing. Confirm the original target, not a later cursor position.
+- Protect the entire 16 x 16 chunk footprint from the dimension's actual minimum build height through its legal maximum. Do not hardcode Overworld height values.
+- Apply protection by action: prohibit destructive automaton operations inside the chunk while permitting walking, return-home travel, unloading, inventory access, and other nondamaging work. Check every affected source/landing block, including cross-chunk trees and changes made after dispatch.
+- Initial ownership model: one shared protection map per dimension applying to this mod's automatons; record the creator and allow that creator or an operator to revoke. Respect available compatible external claims. This feature does not prevent ordinary player actions or replace unrelated claim systems.
+- Render protection only while holding the wand in Protect or Revoke. Protect displays translucent green; Revoke displays translucent red. Use main hand as the deterministic source if both hands hold wands.
+- Draw a filled band/curtain around protected chunk boundaries, not just a thin outline. Fade upward from translucent at the bottom to invisible over 64 blocks, equivalent to four chunk widths of display height. Protection itself still covers the entire legal vertical range.
+- Anchor the display near the viewing player's elevation as an initial implementation choice so it remains visible underground or on high ground. Merge adjacent protected edges and retain boundaries around unprotected holes. Cull distant geometry.
+- Wrench: Shift-right-click an owned worker to pack it under section 22. Ordinary non-wand right-click opens the worker GUI. Assignment, packing, and GUI interactions must have consistent priorities.
+
+22. DEPLOYMENT, WRENCH PACKING, AND SAVED LINKS
+
+- Both assembly and packing produce a non-stackable Automaton item with a stable worker identity. Place it on a valid surface to create the full 1.5-block entity. Validate loaded data, permissions, safe space, and build limits before consuming one item. Failed placement consumes nothing.
+- Placement can occur away from home/totem, including another dimension where normal placement is valid. Stored anchors do not move with the item. Cross-dimension links remain stored but inactive; show that they require reassignment or a local rebind rather than teleporting the worker.
+- Fresh assembly items deploy Unassigned with empty inventory. Packed items preserve owner, name, selected job/settings, health, home/totem IDs and locations, and relevant non-inventory lifecycle data. Start paused at the placement position until deliberately authorized, subject to persistent recall.
+- Wrench packing is a controlled operation, not death: drop the three actual tool-slot contents and all cargo at the worker's position, preserving exact stack data; drop one packed Automaton item; remove the deployed entity once.
+- The packed item has empty tool/cargo inventories because those contents were dropped. Never embed a second copy in hidden item data. Preserve health so pack/place is not a free heal.
+- Validate packing before committing and handle repeated packets, concurrent players, inventory extraction, item creation, state suspension, and entity removal without duplication. Suppress ordinary death loot for a successful pack.
+- Preserve the still-valid totem membership as Packed, suppress only this worker's dispatch and alert contribution, and leave colleagues working. Deliberate unbinding/reassignment reconciles through persistent IDs so stale saved item links cannot overwrite current state.
+- Release uncommitted tree claims on packing. Preserve committed world-owned timber and recoverable progress. Other eligible workers may safely reclaim it when the prior worker is no longer active; a later redeployment reconciles job ownership instead of processing an already-claimed section.
+- A committed fall must settle or pause safely without requiring the removed entity to tick. Moving an item does not move timber, storage, upgrades, the totem, or the home pedestal.
+- A temporarily unloaded anchor is Unverified, not destroyed. A loaded block with a mismatched persistent ID is invalid. Preserve player data while allowing explicit reassignment.
+- Prevent duplicate live entities with the same worker identity through repeated use or copied survival item data. Keep development/creative spawning separate from legitimate survival identities. Preserve coherent state through ordinary save/reload and repeated packing cycles.
+
+23. SERVER STATE, PERFORMANCE, MIGRATION, AND FEEDBACK
+
+- The server owns Magica balances, infusion transfers, item charges, crafting commits, inventories, worker membership, claims, protection, task progress, durability, world conversion, drops, and recall.
+- Validate network requests against the sender, ownership, active context/menu, dimension, distance, and actual target. Never trust client-supplied balances, outputs, or block lists.
+- Persist stable identities and version saved data. Migrate existing single-worker totem data into a roster and preserve current valid workers, inventories, home links, and installed items. Introduce new recipe/core data without deleting unrelated player content.
+- Separate authoritative work progress from disposable scan/path caches. Rebuild caches after load without duplicating committed wood or losing membership.
+- Mark changed persistent state appropriately and synchronize meaningful updates. Avoid broadcasting entire tree lists, full inventories, or balances to every viewer every tick.
+- Apply fair global and per-totem budgets to scanning, validation, navigation retries, and job mutations. Performance limits defer work fairly, not falsely report that a reachable tree is absent or invalid.
+- Do not force-load chunks by default. Wait on unavailable data and reconcile when it loads. Effects render only for loaded/relevant objects.
+- GUIs need working quick-move, slot filters, tooltips, concise statuses, and invalidation when their block/entity changes. Keep implementation diagnostics in optional logs, not ordinary player-facing tooltips.
+- Use concise names and behavior descriptions. Explain practical causes such as No axes, Searching storage, Waiting for an available tree, or Storage full instead of a generic unexplained Error.
+
+24. FOCUSED VERIFICATION AND ACCEPTANCE
+
+Build the mod and run appropriate focused automated checks. Use an in-game client and dedicated-server smoke check when available. Do not claim gameplay, rendering, sound, or multiplayer verification that was not performed. Verify these outcomes:
+
+- Every listed survival recipe is craftable and fits the correct grid. Partial cores cannot substitute for completed ones. Tier II consumes its predecessor and exact materials. The first infusion setup has no circular dependency.
+- Magica rolls respect inclusive ranges, source eligibility, zero outcomes, and precedence. Logs award 3-7 while flowers award 1-2. Generated/grown vegetation qualifies, direct placement/break loops do not, and duplicate notifications/Fortune do not multiply rewards.
+- XP and Magica remain independent. White/purple collection orbs have the intended XP motion, attraction, merging, and pickup feel. The HUD remains readable across supported scales and persists correctly.
+- Insert a zero-charge core with 50 points available: spend exactly 50, finish after the configured transfer duration, show green particles and one completion chime, and retrieve one full core. Test balances below 50, already partial cores, range exit/reentry, donor logout, competing infusers, repeated clicks, full player inventory, and pedestal break during transfer.
+- The infusion stream visibly travels from the correct moving player into the core, stops when spending stops, is visible to nearby players, and cannot be collected. The half-height black/white pedestal and claws have the required appearance.
+- The Automaton Pedestal always displays the complete tilted rotating item, including with empty slots or zero balance. It rotates with a maintained lean, clears the block, and creates no entity or collectible drop.
+- Six correctly placed body components produce one item on output pickup, with no extra Magica deduction. Previewing consumes nothing; simultaneous viewers and failed output moves cannot duplicate or lose ingredients. Verify the right-side output, informational Magica bar, home buttons, and slot arrangement.
+- Place an item, select Lumberton, supply axes, and assign a totem. Verify identity, home, dimensions, model pixel density, expressions, tools, and placement pause/authorization. Changing jobs preserves data and applies tool filters.
+- Assign at least three workers to one totem. They receive distinct closest-unclaimed trees in order, share chests, receive compatible installed upgrades, and continue if another worker is recalled, packed, missing a tool, or blocked. Recall by one pedestal does not recall workers belonging to another.
+- Test nearest-tree ordering independently of scan order and worker position, including ties, 2 x 2 roots, new closer growth, and overlapping totems. All trees claimed means neutral waiting, not a false no-wood alert.
+- Reproduce the approach-and-ignore bug, verify the fix on representative supported tree families, and test alternate approach sides, uneven ground, nearby leaves, dense forests, canopy boundaries, and bone-meal-grown trees. Valid reachable trees transition into chopping and complete.
+- Try felling orientations and the segmented fallback where a long landing line will not fit. Preserve buildings, neighbors, protection, original resource totals, and recoverable timber, with no permanent floating remainder or duplicated drops.
+- Verify actual chopping sound timing on trunks and timber, from a nearby listener, at base and upgraded speeds. Audio stops when chopping stops and plays once per intended impact.
+- With several single/double chests, fill the nearest chest, leave partial matching stacks elsewhere, add/remove chests, restrict an output type, block one approach, and change inventory contents between simulation and insertion. Workers find real alternatives and preserve all remainders.
+- Several workers unload/restock into the same chest without item loss or duplicate capacity use. Full cargo returns to the totem, signals, unloads, and resumes. Truly full storage signals only after fresh checks across eligible alternatives and recovers automatically when space appears.
+- Harvest several small trees with spare cargo capacity and confirm the worker proceeds to the next closest unclaimed tree without making a dedicated chest trip. Check compatible partial stacks, a new output type that cannot fit, and fullness during a tree. A fullness-triggered trip unloads all accepted cargo before work resumes. Then test a no-wood return, axe-restocking return, and blocked-work return with partial cargo: each drops off what storage accepts before waiting/resuming. Full chests retain rejected items safely, and unloading never clears a separate no-tree/tool blocker. Preventive capacity checks alone do not cause physical chest visits.
+- Exhaust all three axes, supply another, and observe recovery. Remove all trees and then grow one with bone meal. Test simultaneous tool, wood, and storage blockers: clearing one must not clear the others or another worker's beacon contribution.
+- Confirm protected chunks cover the dimension's full height and correct negative coordinates. Verify Yes/No cancellation, green/red fading bands, merged edges, invisible display in other modes, allowed chest access, and prohibited cross-boundary destruction.
+- Pack during ordinary work and a committed fall, check exact inventory drops and metadata, redeploy elsewhere, and reconcile updated memberships/claims. Prevent two active workers with one identity. Test unloaded versus truly destroyed anchors.
+- Save/reload during partial infusion, assembly viewing, chopping, felling, grounded processing, tool shortage, shared-totem operation, and recall. Preserve committed state without duplicate resource spending, loot, membership, or notifications.
+- Run several active totems within the processing budget without periodic large stalls. Confirm the packaged mod loads on a dedicated server without client-only class errors.
+
+25. DELIVERABLES
+
+- Deliver the implementation and compiled distributable JAR with its exact path and installation requirements.
+- Include a concise player guide covering Magica collection/ranges, core infusion, the visual transfer, full recipe chain, six-part assembly, deployment/job selection, shared totems/chests, upgrades, beacon recovery, protection, recall, and Wrench packing.
+- Include editable model/texture sources and a single easy-to-find configuration/design reference for recipes and provisional balance values.
+- Explain the actual causes and fixes for tree skipping/excessive errors, how storage checks and multi-worker dispatch now work, what tests ran, and concrete remaining limitations.
+- Continue through implementation and necessary fixes until the specified Lumberton workflow works. Do not silently omit infusion, recipes, felling, shared workers, real art, GUI interactions, or recovery behavior and call the task complete.

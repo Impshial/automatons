@@ -46,9 +46,9 @@ public final class TreeSpecies extends SimpleJsonResourceReloadListener {
                   new Definition(
                       logs,
                       leaves,
-                      Math.min(31, Math.max(3, j.get("max_height").getAsInt())),
-                      Math.min(7, Math.max(1, j.get("max_spread").getAsInt())),
-                      Math.min(128, Math.max(3, j.get("max_logs").getAsInt())),
+                      Math.min(64, Math.max(3, j.get("max_height").getAsInt())),
+                      Math.min(16, Math.max(1, j.get("max_spread").getAsInt())),
+                      Math.min(512, Math.max(3, j.get("max_logs").getAsInt())),
                       j.get("large_trunk").getAsBoolean(),
                       !j.has("supported") || j.get("supported").getAsBoolean());
               for (Block block : logs) next.put(block, d);

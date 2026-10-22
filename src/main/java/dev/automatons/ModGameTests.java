@@ -101,25 +101,32 @@ public final class ModGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 60)
-  public static void pedestal_transfers_real_axe_once(GameTestHelper h) {
+  public static void pedestal_commits_six_parts_once(GameTestHelper h) {
     floor(h);
     Station s = station(h, new BlockPos(3, 1, 3), false);
     ServerPlayer p = owner(h.getLevel(), s.getBlockPos());
-    s.inventory.setStackInSlot(0, new ItemStack(Items.OAK_LOG, 6));
-    s.inventory.setStackInSlot(1, new ItemStack(Items.IRON_INGOT, 4));
-    s.inventory.setStackInSlot(2, new ItemStack(Items.AMETHYST_SHARD));
-    ItemStack axe = new ItemStack(Items.IRON_AXE);
-    axe.setDamageValue(111);
-    axe.enchant(Enchantments.UNBREAKING, 2);
-    s.inventory.setStackInSlot(3, axe);
-    h.assertTrue(s.create(p), "Creation failed");
-    h.assertTrue(s.workers.size() == 1, "Wrong worker count");
-    Lumberton w = (Lumberton) h.getLevel().getEntity(s.workers.iterator().next());
-    h.assertTrue(w != null && w.activeTool().getDamageValue() == 111, "Actual axe not transferred");
-    h.assertTrue(w.homeId.equals(s.identity), "Home identity missing");
-    h.assertTrue(!s.create(p), "Recipe consumed twice");
-    for (int i = 0; i < 4; i++)
+    Item[] parts = {
+      Automatons.HEAD.get(),
+      Automatons.ARM.get(),
+      Automatons.BODY.get(),
+      Automatons.ARM.get(),
+      Automatons.LEG.get(),
+      Automatons.LEG.get()
+    };
+    for (int i = 0; i < 6; i++) s.inventory.setStackInSlot(i, new ItemStack(parts[i]));
+    int balance = Magica.balance(p);
+    WorkMenu menu = new WorkMenu(1, p.getInventory(), s, null);
+    h.assertTrue(menu.slots.get(6).getItem().is(Automatons.AUTOMATON_ITEM.get()), "No preview");
+    h.assertTrue(!menu.slots.get(6).getItem().hasTag(), "Preview allocated identity");
+    menu.clicked(6, 0, net.minecraft.world.inventory.ClickType.PICKUP, p);
+    ItemStack made = menu.getCarried();
+    h.assertTrue(made.is(Automatons.AUTOMATON_ITEM.get()), "Creation failed");
+    h.assertTrue(
+        s.workers.size() == 1 && Magica.balance(p) == balance,
+        "Identity count or extra Magica charge");
+    for (int i = 0; i < 6; i++)
       h.assertTrue(s.inventory.getStackInSlot(i).isEmpty(), "Ingredients remain");
+    h.assertTrue(s.assemble(p).isEmpty(), "Assembled twice");
     h.succeed();
   }
 
@@ -194,7 +201,7 @@ public final class ModGameTests {
               "Expected 5 logs in chest, got "
                   + count
                   + "; state="
-                  + w.status()
+                  + w.diagnostic()
                   + " cargo="
                   + w.cargo.serializeNBT()
                   + " pos="
@@ -336,6 +343,36 @@ public final class ModGameTests {
     h.runAfterDelay(
         80,
         () -> {
+          if (timber.progress() < timber.duration) {
+            System.out.println(
+                "FALL_DIAGNOSTIC progress="
+                    + timber.progress()
+                    + " safe="
+                    + timber.safe(null)
+                    + " targets="
+                    + timber.targets);
+            for (BlockPos at : timber.sweep) {
+              var state = h.getLevel().getBlockState(at);
+              if (!TreeFinder.clearTimberSpace(state)
+                  && !state.is(net.minecraft.tags.BlockTags.LEAVES))
+                System.out.println("FALL_OBSTRUCTION " + at + " " + state);
+              if (WorldData.get(h.getLevel()).protectedAt(at))
+                System.out.println("FALL_PROTECTED " + at);
+            }
+            System.out.println(
+                "FALL_OCCUPANTS "
+                    + h
+                        .getLevel()
+                        .getEntities(
+                            timber,
+                            timber.getBoundingBox(),
+                            e ->
+                                e instanceof net.minecraft.world.entity.LivingEntity
+                                    && !e.getUUID().equals(w.getUUID()))
+                        .stream()
+                        .map(e -> e.getType() + " at " + e.position())
+                        .toList());
+          }
           h.assertTrue(timber.progress() >= timber.duration, "Fall did not recover");
           BlockPos target = timber.targets.get(0);
           w.moveTo(target.getX() + .5, target.getY(), target.getZ() + 1.5, 0, 0);
@@ -411,7 +448,7 @@ public final class ModGameTests {
         30,
         () -> {
           h.assertTrue(
-              identity.equals(w.totemId) && w.status().equals("Dependency unloaded"),
+              identity.equals(w.totemId) && w.status().contains("unloaded"),
               "Unloaded dependency treated as destroyed");
           h.assertTrue(!h.getLevel().hasChunkAt(distant), "Worker force-loaded dependency");
           h.succeed();
@@ -484,7 +521,7 @@ public final class ModGameTests {
           int count = 0;
           for (int slot = 0; slot < 27; slot++)
             if (c.getItem(slot).is(Items.OAK_LOG)) count += c.getItem(slot).getCount();
-          h.assertTrue(count == 5, "Storage did not recover: " + w.status());
+          h.assertTrue(count == 5, "Storage did not recover: " + w.diagnostic());
         });
   }
 
@@ -523,7 +560,7 @@ public final class ModGameTests {
               for (int slot = 0; slot < 27; slot++)
                 if (c.getItem(slot).is(Items.OAK_LOG)) count += c.getItem(slot).getCount();
               h.assertTrue(
-                  count == 5, "New tree did not recover: " + w.status() + " scan=" + s.cursor);
+                  count == 5, "New tree did not recover: " + w.diagnostic() + " scan=" + s.cursor);
             })
         .thenSucceed();
   }
@@ -543,6 +580,7 @@ public final class ModGameTests {
           for (Station station : stations) {
             h.assertTrue(station.cursor > 0, "A loaded totem starved under the global scan budget");
             station.worker = null;
+            station.workers.clear();
           }
           System.out.println("AUTOMATONS_MEASURE scan_fairness_totems=50 all_progressed=true");
           h.succeed();

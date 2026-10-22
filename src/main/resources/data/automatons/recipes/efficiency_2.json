@@ -1,21 +1,34 @@
 {
-  "type": "minecraft:crafting_shaped",
-  "pattern": [
-    " G ",
-    "AUA",
-    " G "
-  ],
-  "key": {
-    "G": {
-      "item": "minecraft:gold_ingot"
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "automatons:efficiency_1"
     },
-    "A": {
+    {
+      "item": "minecraft:book"
+    },
+    {
+      "item": "minecraft:lapis_lazuli"
+    },
+    {
+      "item": "minecraft:lapis_lazuli"
+    },
+    {
       "item": "minecraft:amethyst_shard"
     },
-    "U": {
-      "item": "automatons:efficiency_1"
+    {
+      "item": "minecraft:amethyst_shard"
+    },
+    {
+      "item": "minecraft:diamond"
+    },
+    {
+      "item": "automatons:magica_core"
+    },
+    {
+      "item": "automatons:magica_core"
     }
-  },
+  ],
   "result": {
     "item": "automatons:efficiency_2"
   }

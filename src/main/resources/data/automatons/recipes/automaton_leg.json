@@ -1,0 +1,17 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "tag": "automatons:overworld_logs"
+    },
+    {
+      "tag": "automatons:overworld_planks"
+    },
+    {
+      "item": "minecraft:iron_ingot"
+    }
+  ],
+  "result": {
+    "item": "automatons:automaton_leg"
+  }
+}

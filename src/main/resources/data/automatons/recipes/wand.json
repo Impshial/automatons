@@ -1,13 +1,13 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    "  A",
+    "  C",
     " S ",
     "S  "
   ],
   "key": {
-    "A": {
-      "item": "minecraft:amethyst_shard"
+    "C": {
+      "item": "automatons:magica_core"
     },
     "S": {
       "item": "minecraft:stick"

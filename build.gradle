@@ -82,7 +82,7 @@ minecraft {
         }
 
         client {
-            if (project.hasProperty("visualSmoke")) { property "automatons.visualSmoke", "true"; args "--width", "1280", "--height", "800" }
+            if (project.hasProperty("visualSmoke")) { property "automatons.visualSmoke", "true"; args "--width", "1280", "--height", "960" }
             // Comma-separated list of namespaces to load gametests from. Empty = all namespaces.
             property 'forge.enabledGameTestNamespaces', mod_id
         }
@@ -96,6 +96,7 @@ minecraft {
         // By default, the server will crash when no gametests are provided.
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
+            workingDirectory project.file("build/gametest-redesign")
             property 'forge.enabledGameTestNamespaces', mod_id
         }
 
@@ -205,4 +206,18 @@ publishing {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8' // Use the UTF-8 charset for Java compilation
+}
+
+// GameTest fixtures run near minimum height. Normal terrain leaves an overhead cave roof
+// whose falling gravel can overwrite otherwise isolated tests after their setup.
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst {
+        def directory = file('build/gametest-redesign')
+        directory.mkdirs()
+        new File(directory, 'server.properties').text = '''level-type=minecraft:flat
+level-seed=4217
+generate-structures=false
+generator-settings={"biome":"minecraft:plains","layers":[{"block":"minecraft:bedrock","height":1},{"block":"minecraft:dirt","height":2},{"block":"minecraft:grass_block","height":1}],"features":false,"lakes":false}
+'''
+    }
 }

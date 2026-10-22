@@ -19,6 +19,7 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
     value = Dist.CLIENT)
 public final class ClientSetup {
   public static final Set<Long> protectedChunks = new HashSet<>();
+  public static int magica;
   public static String protectionDimension = "";
 
   @SubscribeEvent
@@ -28,6 +29,8 @@ public final class ClientSetup {
 
   @SubscribeEvent
   public static void renderers(EntityRenderersEvent.RegisterRenderers e) {
+    e.registerEntityRenderer(Automatons.MAGICA_ORB.get(), MagicaOrbRenderer::new);
+    e.registerBlockEntityRenderer(Automatons.INFUSER_BE.get(), InfuserRenderer::new);
     e.registerEntityRenderer(Automatons.LUMBERTON.get(), LumbertonRenderer::new);
     e.registerEntityRenderer(Automatons.TIMBER.get(), TimberRenderer::new);
     e.registerBlockEntityRenderer(Automatons.STATION.get(), TotemRenderer::new);
@@ -51,6 +54,15 @@ public final class ClientSetup {
       for (long chunk : n.getLongArray("Chunks")) protectedChunks.add(chunk);
       protectionDimension = n.getString("Dimension");
     }
+    if (message.kind() == 4 && mc.level != null) {
+      var orb = mc.level.getEntity(n.getInt("Orb"));
+      var player = mc.level.getEntity(n.getInt("Player"));
+      if (orb instanceof MagicaOrb && player instanceof net.minecraft.world.entity.player.Player)
+        mc.particleEngine.add(
+            new net.minecraft.client.particle.ItemPickupParticle(
+                mc.getEntityRenderDispatcher(), mc.renderBuffers(), mc.level, orb, player));
+    }
+    if (message.kind() == 3) magica = Math.max(0, n.getInt("Magica"));
     if (message.kind() == 2) {
       Screen previous = mc.screen;
       mc.setScreen(

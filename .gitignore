@@ -29,3 +29,6 @@ forge*changelog.txt
 forge-mdk.zip
 .tools/
 *.args
+
+# Python authoring/helper bytecode
+__pycache__/

@@ -15,7 +15,34 @@ public class TotemRenderer implements BlockEntityRenderer<Station> {
   @Override
   public void render(
       Station s, float partial, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-    if (!s.isTotem() || s.alerts == 0 || s.getLevel() == null) return;
+    if (s.getLevel() == null) return;
+    if (!s.isTotem()) {
+      double time = s.getLevel().getGameTime() + partial;
+      pose.pushPose();
+      pose.translate(
+          .5, Balance.DISPLAY_HEIGHT.get() + Math.sin(time / 32) * Balance.DISPLAY_BOB.get(), .5);
+      pose.mulPose(
+          com.mojang.math.Axis.YP.rotationDegrees(
+              (float) (time * 360 / (20 * Balance.DISPLAY_PERIOD.get()))));
+      pose.mulPose(
+          com.mojang.math.Axis.ZP.rotationDegrees(Balance.DISPLAY_TILT.get().floatValue()));
+      float scale = Balance.DISPLAY_SCALE.get().floatValue();
+      pose.scale(scale, scale, scale);
+      net.minecraft.client.Minecraft.getInstance()
+          .getItemRenderer()
+          .renderStatic(
+              new net.minecraft.world.item.ItemStack(Automatons.AUTOMATON_ITEM.get()),
+              net.minecraft.world.item.ItemDisplayContext.FIXED,
+              15728880,
+              net.minecraft.client.renderer.texture.OverlayTexture.NO_OVERLAY,
+              pose,
+              new HologramBuffer(buffers),
+              s.getLevel(),
+              0);
+      pose.popPose();
+      return;
+    }
+    if (s.alerts == 0) return;
     BeaconRenderer.renderBeaconBeam(
         pose,
         buffers,

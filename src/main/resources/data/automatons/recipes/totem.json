@@ -1,19 +1,19 @@
 {
   "type": "minecraft:crafting_shaped",
   "pattern": [
-    " A ",
+    " C ",
     "ILI",
     " S "
   ],
   "key": {
-    "A": {
-      "item": "minecraft:amethyst_shard"
+    "C": {
+      "item": "automatons:magica_core"
     },
     "I": {
       "item": "minecraft:iron_ingot"
     },
     "L": {
-      "item": "minecraft:oak_log"
+      "tag": "automatons:overworld_logs"
     },
     "S": {
       "item": "minecraft:stone_bricks"

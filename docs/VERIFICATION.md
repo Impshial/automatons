@@ -1,46 +1,65 @@
-# Verification — 22 October 2026
+# Verification — 0.2.0 redesign, 22 October 2026
 
-## 0.1.1 wand regression
+## Executed server checks
 
-- `gradlew.bat runGameTestServer build`: **all 22 required tests passed** in a fresh development GameTest world; the reobfuscated 0.1.1 release build succeeded.
-- Before the fix, all three new creative-mode tests reproduced `Held wand lost selection after entity click`. Both new survival tests passed. The tests invoke Minecraft's `Player.interactOn` and `ServerPlayerGameMode.useItemOn`, rather than calling the mod's selection or assignment helpers directly.
-- New coverage: creative/main hand, creative/off hand, survival/main hand, survival/off hand, and creative spawn-egg claim -> pedestal binding -> totem assignment. Both-hand tests also check that the other wand is unchanged and successful assignment clears the selection.
-- The reused development test world caused the existing no-wood test to exceed its scan deadline (the scan was still incomplete at tick 3400). Its sequence now waits for the actual no-wood condition within the existing timeout, then requires the exact five-log delivery. The full suite passed after preserving the old test world under `build/test-world-backups` and generating a fresh one. Production scan budgets and behavior were unchanged.
-- Evidence: `verification/wand-regression-before.log` and `verification/wand-regression-0.1.1.log` in the asset library. This patch was verified by server-side GameTests; the historical client smoke test below was for 0.1.0.
+The dedicated Forge GameTest server exercises server loading without client rendering classes. The redesign suite covers the original survival and creative wand regression, plus Magica, infusion, assembly, portable identities, shared dispatch, recovery and generated tree families. Final release results and hashes are recorded with the release artifacts.
 
-## 0.1.0 executed checks
+The 45-test milestone passed in `redesign-tests-10.log`. A waterlogged-root case was then added. The first expanded run passed that case but failed two older checks in a reused GameTest world: occupied dark-oak fall space and a crown-payout precondition. That world was preserved under `build/test-world-backups` and the expanded release suite rerun in a fresh world. The fresh run resolved both failures. Its two-tree workflow was still traversing the second timber at the original 1600-tick fixture deadline, so that test now allows 3400 ticks for two complete trees and shared-budget empty-area discovery; its no-intermediate-unload and exact ten-log assertions are unchanged. A subsequent fresh world exposed intermittent water/fall failures. Inspection of its saved region found gravel replacing expected water; level data and server.properties confirmed a normal noise world. These fixtures run at Y=-60 and only clear their template volume, leaving an overhead terrain roof. The test task now explicitly generates a deterministic superflat world. The diagnostic normal-world run passed all 46 tests; final results below also cover the controlled flat fixture. Failed logs are retained as evidence, not omitted.
 
-- `gradlew.bat runGameTestServer build`: **17 required game tests passed**, followed by a successful reobfuscated JAR build.
-- The game tests run in Forge's dedicated GameTest server. This exercises server-side loading without Minecraft client rendering classes.
-- `python tools/validate_assets.py`: **44 JSON assets**, **21 PNG textures**, the **24-unit model**, and proportional block-face UVs passed validation.
-- Walking was measured after acceleration over 40 ticks: **1.9956 blocks/second** at attribute **0.215**. Loaded movement uses the same value. Preparation, processing, and fall defaults are 80, 40, and 30 server ticks respectively; Efficiency and work-speed calculations remain separate from walking.
-- A fairness check started **50 loaded totems** under the shared scanning budget; every totem made progress. This is a scheduling check, not a claim of unlimited forestry throughput.
-- An actual Minecraft client was launched from the Forge development project. Screenshots revealed menu clipping at the default small window size; the menus were shortened to 234 scaled pixels and checked again. Tool rendering and totem coplanar surfaces were adjusted after inspection.
-- The reobfuscated mod was launched in **Rackworks Tester**, using its installed Forge 47.4.10 libraries and existing mod set (including Rackworks, Mekanism, AE2, Thermal, JEI, and the existing decoration mods). A separate **Automatons Lab** save and offline test identity were used. Launcher credentials were not read. The harness restored the instance's original `options.txt` after exit.
-- Actual instance captures and server state logs showed **Travelling → Chopping → Felling → Processing timber → Unloading → Seeking tree**. Menus and both curtain colors rendered. Final captures are stored with the assets. The client test is opt-in through `-Dautomatons.visualSmoke=true`; normal launches do not run it.
+Coverage includes:
 
-## Required game tests
+- Real `Player.interactOn` / `ServerPlayerGameMode.useItemOn` selection and assignment in creative/survival, either hand, including the prior creative held-stack bug.
+- Inclusive Magica reward ranges and zero outcomes, category precedence, completed-break deduplication, cancellation and fake-player exclusion. Magica orb collection leaves XP and Mending unchanged.
+- Exact 50-point infusion: 49 points after 199 active ticks, full at 200. Partial persistence, range pause, missing donor, competing infusers, off-hand priority, repeated insertion, owner retrieval, stacking and single break payout.
+- Six-component output previews and transactional pickup: full inventories and simultaneous viewers cannot spend twice or lose components. No second Magica payment. All ordinary recipes execute through the runtime recipe manager; partial cores are rejected, including Tier II's exact predecessor/core requirements.
+- Portable UUID/generation identity, unchanged health, exact tool/cargo drops, stale membership reconciliation, duplicate deployment rejection and placement pause yielding to persistent recall. Legacy single-worker roster/inventory migration.
+- Three workers taking distinct jobs; nearest-to-totem ordering independent of worker position/insertion; partial stacks and alternative chests; restocking; two trees before unloading; no-wood return delivering all ten logs.
+- Generated oak, birch, 2×2 spruce, 2×2 jungle, dark oak, acacia, mangrove and cherry. Every species check requires a real worker to approach and commit felling, with its recognized wood count preserved.
+- Compact fall with obstructed long layouts, protection during committed timber, one authoritative crown payout, save/load of staged payouts, tool exhaustion, independent alerts and automatic full-storage/no-wood recovery.
+- Natural waterlogged mangrove attachments retain their fluid, settle without water being treated as a solid obstruction, and emit no duplicate ordinary attachment drops.
+- Measured level-ground movement ranged from 1.68 to 2.00 blocks/second across normal-world runs; the final diagnostic run measured 1.9956. The target remains approximately two. Fifty loaded totems all make scan progress under the shared budget. This checks fairness, not unlimited throughput or a multiplayer performance certification.
 
-1. Exactly three filtered tool slots, separate cargo, upgrade conflicts, real held-stack identity, and inventory NBT.
-2. Pedestal consumption once, persistent home, and transfer of the actual worn/enchantable axe.
-3. Protection at negative chunk coordinates across the dimension height, plus recall/protection serialization.
-4. Natural tree acceptance, rejection of tracked player construction, and protected-tree rejection.
-5. Tree discovery, felling, grounded processing, and exact five-log delivery to storage.
-6. Independent tool/cargo/storage alerts; tool recovery preserves other alerts; recovery does not cancel recall.
-7. Overlapping reservations and identity replacement after a totem is destroyed.
-8. Partial chest insertion preserves cargo; tool withdrawal rejects a sword and preserves axe data.
-9. Protection added during an active fall pauses it; revocation recovers it; timber reload cannot pay a consumed section twice.
-10. Measured level-ground navigation speed.
-11. A replacement home is not silently adopted; explicit owner rebind works.
-12. An unloaded dependency retains its binding and is not force-loaded.
-13. Worn axes break and switch through all three slots; death drops tools/cargo exactly once.
-14. Full storage stops work and recovers automatically when emptied.
-15. A fully searched area with no wood signals; a new tree is later discovered and harvested without Resume.
-16. Fair progress across 50 competing totems.
-17. Silk Touch foliage loot moves to one staged payout, survives NBT, and cannot have two authoritative owners while cargo is full.
+## Actual diagnoses and changes
 
-## Evidence and remaining acceptance work
+Code inspection found the old root search also restricted canopy blocks to the work square, explicitly rejected mangroves, assumed dirt immediately below every trunk, accepted only a long whole-tree fall and unloaded partial cargo after every tree. The old totem held one worker UUID and dispatch used discovery insertion order.
 
-Build/test output is copied to `F:\Minecraft\Automatons\verification`. Actual client captures are in `screenshots`. The latest JAR hash is recorded in `releases/SHA256.txt`.
+Stronger gameplay regressions exposed additional failures: a path could finish within Minecraft's navigation tolerance but outside actual chopping reach; a native path query on an airborne tick could falsely skip the nearer tree; a mutable `BlockPos` supplied by iteration changed a stored canonical root; natural jungle vines and elevated mangrove root arches blocked otherwise valid approaches/falls. These are observed failing transitions, rather than speculative diagnoses.
 
-Desktop UI control approval timed out, so there was no claim of hand-operated UI testing. Visual inspection used screenshots produced by the running Minecraft client. Manual mouse/keyboard confirmation flows, multiplayer latency, every natural shape of the other enabled tree families, arbitrary modded chest implementations, and specific third-party claim mods remain unverified. Mangrove root shapes are deliberately unsupported. See `LIMITS.md`.
+The implementation now plans adjacent standing positions using the worker's actual box and reach, leaves deferred path work neutral, uses immutable canonical roots, recognizes bounded natural attachments and permits a grounded root cut for elevated mangroves. It tries four fall orientations followed by compact staged timber. Source/crown conversion suppresses intermediate ordinary neighbor drops, publishes updates after the group mutation and preserves water. Standing claims are transient leases; committed timber owns persistent sections and pending loot.
+
+Dispatch waits for sufficiently close discovery before choosing stable totem-distance order. Every worker gets its own claim, alerts and home. Capacity checks query actual relevant item stacks across eligible handlers and finish a fresh discovery pass before confirming fullness. Actual transfers recheck handlers and preserve remainders. Required totem visits unload all accepted cargo and restock before resuming; ordinary tree completion does not create a chest trip.
+
+Optional `logWorkTransitions` emits worker identity, position, state/flags and skipped approach reasons, limited to one message per second per worker.
+
+## Client evidence
+
+Two Forge development clients ran the opt-in scenario in the separate `Automatons Lab` save. The second completed normally (`redesign-client-2.log`). Screenshots came from the running Minecraft renderer, not mockups.
+
+- Worker, six-component assembly and shared-roster screens rendered. Assembly was inspected at 320×240 scaled GUI size. Review found and corrected worker buttons overlapping the inventory label.
+- The permanent item display was visible with empty inputs and zero Magica. Review corrected its initial brown appearance to the intended translucent white/purple palette while retaining the actual item's silhouette, tilt and rotation.
+- The half-height claw infuser rendered the moving-donor stream, pulsing core and green completion. Logged final charge was 50 with balance 0 from 50 available points.
+- HUD, 1.5-block model, equipped axes, work animations and green/red protection curtains rendered. Forestry logs reached travelling, chopping, felling and grounded processing; server end-to-end tests additionally assert actual delivery totals.
+- The second run received 37 positional work/completion sound events in the client sound system. No claim is made of human listening, stereo assessment or remote multiplayer listener testing.
+
+After the user closed Minecraft, the reobfuscated 0.2.0 JAR completed a full run in **Rackworks Tester**, with its actual installed mod set and Forge libraries. It used only the separate **Automatons Lab** save and an offline test identity. Launcher credentials and the user's gameplay save were not read. The helper restored the prior JAR and options after the smoke, before final installation.
+
+`redesign-instance-full.log` records a full core with balance 0, collection of 7 new Magica while XP stayed at 140, 37 work/completion sound events, and final **five oak logs in the chest with zero cargo items**. The flow reached chopping, felling, processing, unloading and no-wood waiting. The three-entry roster and actual-mod-set GUI screenshots were inspected. A final short packaged pass exited normally and verified the finished build's readable GUI text, full infusion, and independent collection after text-encoding cleanup. The optional `--isolated` helper mode can copy the mod/config set for future checks while the user's session remains open; it was not needed for this completed instance run.
+
+## Reproduction and practical limits
+
+Java 17, Minecraft 1.20.1 and Forge 47.4.10 are the tested target. Run `python tools/validate_assets.py` for JSON/PNG/model/UV checks. Run `tools/test_release.ps1` for a preserved prior test world, fresh dedicated-server regressions and release build. Use `gradlew.bat runClient -PvisualSmoke` for the opt-in development scenario, or `python tools/instance_smoke.py --isolated` for the packaged mod set. These harnesses reset only their separate Lab/test worlds.
+
+There was no hand-operated mouse/keyboard acceptance session, dedicated multiplayer latency test, every-seed tree-shape sweep, arbitrary claim-plugin certification or hard-crash transaction test. Native orb physics and pickup are server tested and the renderer is client exercised; subjective similarity of pickup feel is not certified. Ordinary serialization tests are not an operating-system crash guarantee. See `LIMITS.md` for bounded tree sizes, unloaded anchors, storage integration and extension points.
+
+The offline smoke identity can produce expected Mojang/Realms authentication messages. Those are not evidence of an Automatons failure. Existing third-party warnings are retained in the packaged-client log and assessed separately.
+
+## Release result
+
+- `redesign-tests-flat-final.log`: **all 46 required tests passed**, followed by successful reobfuscation/build in 1m29s. The controlled-flat run measured **1.99561677 blocks/second** and confirmed fair progress for all 50 totems.
+- `tools/validate_assets.py`: **91 JSON resources, 32 textures, the 24-unit rig and proportional block UVs passed**. The distributable's required classes, version, JSON, revised recipe set and UTF-8 strings were checked directly.
+- Full packaged instance run exited normally and delivered the five-log tree with empty cargo. The final short client check also exited 0; the verified JAR was installed in Rackworks Tester, with its prior release backed up outside mods.
+- Distributable: `automatons-0.2.0.jar`, **302,640 bytes**. SHA-256: `A85EFD46E5C76B250E8277146B62690890D35A5DB80741C56D662F3E696D0EA0`.
+
+Logs and actual screenshots are organized under `F:\Minecraft\Automatons\verification\0.2.0` and `screenshots/0.2.0`. The release folder holds the JAR, source archive, install helper and hash manifest.
+
+Installed path: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\mods\automatons-0.2.0.jar`. Previous JAR backup: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-161716-781`. Exactly one Automatons JAR is installed. The installed SHA-256 matches the distributable above.

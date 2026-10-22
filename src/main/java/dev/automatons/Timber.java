@@ -33,8 +33,10 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   public UUID owner, worker;
   public Direction direction = Direction.NORTH;
   public int duration = 30;
-  public boolean paused;
+  public boolean paused, segmented;
+  public int processingTicks;
   private long playerAction;
+  private int abandonedTicks;
 
   public Timber(EntityType<? extends Timber> type, Level l) {
     super(type, l);
@@ -85,6 +87,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     t.owner = w.owner;
     t.worker = w.getUUID();
     t.direction = landing.direction();
+    t.segmented = landing.segmented();
     t.duration = Balance.FALL.get();
     t.sources.addAll(tree.logs());
     t.targets.addAll(landing.targets());
@@ -96,21 +99,30 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     t.setPos(Vec3.atBottomCenterOf(tree.root()));
     t.refreshBounds();
     if (!l.addFreshEntity(t)) return null;
-    for (BlockPos p : tree.logs()) l.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
-    for (BlockPos p : crown) l.setBlock(p, Blocks.AIR.defaultBlockState(), 3);
+    // Suppress intermediate neighbor destruction: attached plants must not drop once through
+    // vanilla physics and a second time through the owned crown ledger.
+    for (BlockPos p : tree.logs()) l.setBlock(p, Blocks.AIR.defaultBlockState(), 18);
+    for (BlockPos p : crown) l.setBlock(p, l.getFluidState(p).createLegacyBlock(), 18);
+    Set<BlockPos> changed = new HashSet<>(tree.logs());
+    changed.addAll(crown);
+    for (BlockPos p : changed) {
+      l.getBlockState(p).updateNeighbourShapes(l, p, 3);
+      l.updateNeighborsAt(p, Blocks.AIR);
+    }
     // Shared canopy stays in the world. Owned foliage loot is held until a permitted timber
     // harvest.
     return t;
   }
 
   public boolean safe(Station s) {
-    if (!(level() instanceof ServerLevel l) || owner == null) return false;
+    if (!(level() instanceof ServerLevel l)
+        || owner == null
+        || (s != null && !TreeFinder.within(s, blockPosition()))) return false;
     if (progress() < duration) {
       for (BlockPos p : sweep)
         if (!l.hasChunkAt(p)
             || WorldData.get(l).protectedAt(p)
-            || (s != null && !TreeFinder.within(s, p))
-            || (!l.getBlockState(p).isAir()
+            || (!TreeFinder.clearTimberSpace(l.getBlockState(p))
                 && !(l.getBlockState(p).is(net.minecraft.tags.BlockTags.LEAVES)
                     && !l.getBlockState(p).getValue(LeavesBlock.PERSISTENT)))) return false;
     }
@@ -119,8 +131,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         BlockPos p = targets.get(i);
         if (!l.hasChunkAt(p)
             || WorldData.get(l).protectedAt(p)
-            || (s != null && !TreeFinder.within(s, p))
-            || !l.getBlockState(p).isAir()) return false;
+            || !TreeFinder.clearTimberSpace(l.getBlockState(p))
+            || !l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP)) return false;
       }
     return true;
   }
@@ -130,6 +142,18 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     super.tick();
     setDeltaMovement(Vec3.ZERO);
     if (!level().isClientSide) {
+      if (worker != null) {
+        var entity = ((ServerLevel) level()).getEntity(worker);
+        if (!(entity instanceof Lumberton w)
+            || !w.authorized
+            || w.job() != 1
+            || !getUUID().equals(w.timberId)) {
+          if (++abandonedTicks >= 200) {
+            worker = null;
+            abandonedTicks = 0;
+          }
+        } else abandonedTicks = 0;
+      }
       paused = !safe(null);
       if (!paused && progress() < duration) {
         boolean occupied = false;
@@ -147,6 +171,14 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     }
   }
 
+  public boolean claim(Lumberton w) {
+    if (owner == null || !owner.equals(w.owner) || finished()) return false;
+    if (worker != null && !worker.equals(w.getUUID())) return false;
+    worker = w.getUUID();
+    abandonedTicks = 0;
+    return true;
+  }
+
   public List<ItemStack> drops(int index, ItemStack tool, Entity actor) {
     return Block.getDrops(
         wood.get(index), (ServerLevel) level(), targets.get(index), null, actor, tool);
@@ -158,8 +190,9 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         || consumed(index)
         || progress() < duration
         || !safe(s)
+        || !w.getUUID().equals(worker)
         || !Inventories.axe(w.activeTool())
-        || w.distanceToSqr(Vec3.atCenterOf(targets.get(index))) > 10) return false;
+        || !w.inReach(targets.get(index))) return false;
     if (!Permissions.allowed(
         (ServerLevel) level(), targets.get(index), w.owner, Permissions.Action.PROCESS))
       return false;
@@ -169,21 +202,38 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       crownLoot.clear();
       pendingIndex = index;
     }
-    List<ItemStack> drops = pendingLoot;
-    if (!Inventories.fits(w.cargo, drops)) {
+    // Persist rejected remainders; a large crown cannot deadlock a smaller cargo inventory.
+    for (int i = 0; i < pendingLoot.size(); ) {
+      ItemStack rest = Inventories.insert(w.cargo, pendingLoot.get(i), false);
+      if (rest.isEmpty()) pendingLoot.remove(i);
+      else {
+        pendingLoot.set(i, rest);
+        i++;
+      }
+    }
+    if (!pendingLoot.isEmpty()) {
       w.alerts |= Lumberton.CARGO;
       return false;
     }
     mark(index);
-    for (ItemStack drop : drops) Inventories.insert(w.cargo, drop, false);
     pendingLoot = null;
     pendingIndex = -1;
     crownLoot.clear();
+    processingTicks = 0;
+    level()
+        .playSound(
+            null,
+            targets.get(index),
+            wood.get(index).getSoundType().getBreakSound(),
+            net.minecraft.sounds.SoundSource.BLOCKS,
+            .7f,
+            1);
     w.wear(1);
     return true;
   }
 
   private void mark(int index) {
+    processingTicks = 0;
     CompoundTag n = entityData.get(CONSUMED).copy();
     n.putBoolean("s" + index, true);
     entityData.set(CONSUMED, n);
@@ -254,6 +304,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       n.put("PendingLoot", loot);
       n.putInt("PendingIndex", pendingIndex);
     }
+    n.putBoolean("Segmented", segmented);
+    n.putInt("ProcessingTicks", processingTicks);
     n.putInt("Direction", direction.get3DDataValue());
     n.putInt("Duration", duration);
     n.putInt("Progress", progress());
@@ -283,6 +335,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       for (Tag tag : n.getList("PendingLoot", 10)) pendingLoot.add(ItemStack.of((CompoundTag) tag));
       pendingIndex = n.getInt("PendingIndex");
     }
+    segmented = n.getBoolean("Segmented");
+    processingTicks = Math.max(0, n.getInt("ProcessingTicks"));
     direction = Direction.from3DDataValue(n.getInt("Direction"));
     duration = Math.max(20, n.getInt("Duration"));
     entityData.set(PROGRESS, n.getInt("Progress"));

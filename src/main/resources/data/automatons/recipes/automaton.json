@@ -1,0 +1,23 @@
+{
+  "type": "automatons:creation",
+  "components": [
+    {
+      "item": "automatons:automaton_head"
+    },
+    {
+      "item": "automatons:automaton_arm"
+    },
+    {
+      "item": "automatons:automaton_core"
+    },
+    {
+      "item": "automatons:automaton_arm"
+    },
+    {
+      "item": "automatons:automaton_leg"
+    },
+    {
+      "item": "automatons:automaton_leg"
+    }
+  ]
+}

@@ -26,34 +26,35 @@ public class Station extends BlockEntity implements MenuProvider {
   public final List<BlockPos> chests = new ArrayList<>();
   public final LinkedHashMap<Long, TreeFinder.Tree> trees = new LinkedHashMap<>();
   public String scanReason = "Searching";
-  public int cursor, storageCursor;
+  public int cursor, storageCursor, storageEpoch;
+  private final LinkedHashSet<BlockPos> pendingRoots = new LinkedHashSet<>();
+  private List<BlockPos> scanColumns = List.of();
+  private boolean swept;
+  private double discoveredDistance;
+  private int dispatchTurn;
+  private long timberCacheAt = -1;
+  private List<Timber> timberCache = List.of();
   public boolean scanComplete, scanUnloaded, storageComplete, storageUnloaded;
   private boolean roundUnloaded, storageRoundUnloaded;
   private int scanRadius = -1, storageRadius = -1;
   public final ItemStackHandler inventory =
-      new ItemStackHandler(4) {
+      new ItemStackHandler(isTotem() ? 4 : 6) {
         @Override
         public boolean isItemValid(int slot, ItemStack s) {
-          if (!isTotem() && level != null) {
-            var recipes = level.getRecipeManager().getAllRecipesFor(Automatons.CREATION.get());
-            if (!recipes.isEmpty())
-              return recipes.stream()
-                  .anyMatch(
-                      r ->
-                          switch (slot) {
-                            case 0 -> r.wood().test(s);
-                            case 1 -> r.metal().test(s);
-                            case 2 -> r.core().test(s);
-                            default -> r.tool().test(s) && Inventories.axe(s);
-                          });
+          if (!isTotem()) {
+            if (level != null) {
+              var recipes = level.getRecipeManager().getAllRecipesFor(Automatons.CREATION.get());
+              if (!recipes.isEmpty())
+                return recipes.stream().anyMatch(r -> r.components().get(slot).test(s));
+            }
+            return s.is(
+                switch (slot) {
+                  case 0 -> Automatons.HEAD.get();
+                  case 1, 3 -> Automatons.ARM.get();
+                  case 2 -> Automatons.BODY.get();
+                  default -> Automatons.LEG.get();
+                });
           }
-          if (!isTotem())
-            return switch (slot) {
-              case 0 -> s.is(net.minecraft.tags.ItemTags.OAK_LOGS);
-              case 1 -> s.is(Items.IRON_INGOT);
-              case 2 -> s.is(Items.AMETHYST_SHARD);
-              default -> Inventories.axe(s);
-            };
           if (!(s.getItem() instanceof UpgradeItem u)) return false;
           for (int i = 0; i < 4; i++)
             if (i != slot
@@ -64,15 +65,14 @@ public class Station extends BlockEntity implements MenuProvider {
 
         @Override
         public int getSlotLimit(int slot) {
-          return isTotem() || slot == 3 ? 1 : 64;
+          return isTotem() ? 1 : 64;
         }
 
         @Override
         protected void onContentsChanged(int slot) {
           if (level != null && !level.isClientSide) {
-            trees.clear();
-            scanComplete = false;
-            cursor = 0;
+            invalidateTrees();
+            refreshStorage();
           }
           changed();
         }
@@ -102,7 +102,7 @@ public class Station extends BlockEntity implements MenuProvider {
   }
 
   public boolean owns(Player p) {
-    return owner != null && owner.equals(p.getUUID());
+    return owner != null && (owner.equals(p.getUUID()) || p.hasPermissions(2));
   }
 
   public void changed() {
@@ -120,14 +120,11 @@ public class Station extends BlockEntity implements MenuProvider {
   public void onLoad() {
     super.onLoad();
     registerHome();
+    if (level instanceof ServerLevel && isTotem()) WorldEvents.stationLoaded(this);
   }
 
   public Lumberton loadedWorker() {
-    return worker != null
-            && level instanceof ServerLevel l
-            && l.getEntity(worker) instanceof Lumberton w
-        ? w
-        : null;
+    return loadedWorkers().stream().findFirst().orElse(null);
   }
 
   public void recall(boolean value) {
@@ -137,61 +134,55 @@ public class Station extends BlockEntity implements MenuProvider {
     changed();
   }
 
-  public boolean create(ServerPlayer player) {
-    if (!owns(player) || isTotem() || !(level instanceof ServerLevel l)) return false;
-    var c =
-        new SimpleContainer(
-            inventory.getStackInSlot(0),
-            inventory.getStackInSlot(1),
-            inventory.getStackInSlot(2),
-            inventory.getStackInSlot(3));
-    var recipe = l.getRecipeManager().getRecipeFor(Automatons.CREATION.get(), c, l);
-    if (recipe.isEmpty()) {
-      player.displayClientMessage(
-          Component.literal("Recipe incomplete: check the four ingredient slots"), true);
-      return false;
-    }
-    Lumberton w = Automatons.LUMBERTON.get().create(l);
-    if (w == null) return false;
-    BlockPos spawn = null;
-    search:
-    for (int radius = 1; radius <= 3; radius++)
-      for (int dx = -radius; dx <= radius; dx++)
-        for (int dz = -radius; dz <= radius; dz++)
-          for (int dy = 0; dy >= -1; dy--) {
-            BlockPos p = worldPosition.offset(dx, dy, dz);
-            if (!l.hasChunkAt(p)) continue;
-            w.moveTo(p.getX() + .5, p.getY(), p.getZ() + .5, player.getYRot(), 0);
-            if (l.getBlockState(p.below()).isFaceSturdy(l, p.below(), Direction.UP)
-                && l.getFluidState(p).isEmpty()
-                && l.noCollision(w)
-                && l.getEntities(w, w.getBoundingBox()).isEmpty()) {
-              spawn = p;
-              break search;
-            }
-          }
-    if (spawn == null) {
-      player.displayClientMessage(
-          Component.literal("Clear a safe space beside the pedestal"), true);
-      return false;
-    }
-    CreationRecipe r = recipe.get();
-    w.owner = owner;
-    w.home = worldPosition;
-    w.homeId = identity;
-    w.homeDimension = l.dimension().location().toString();
-    w.tools.setStackInSlot(0, inventory.getStackInSlot(3).copyWithCount(1));
-    w.selectTool();
-    w.smile();
-    if (!l.addFreshEntity(w)) return false;
-    inventory.extractItem(0, r.woodCount(), false);
-    inventory.extractItem(1, r.metalCount(), false);
-    inventory.extractItem(2, 1, false);
-    inventory.extractItem(3, 1, false);
-    workers.add(w.getUUID());
-    registerHome();
+  public SimpleContainer components() {
+    SimpleContainer c = new SimpleContainer(6);
+    for (int i = 0; i < Math.min(6, inventory.getSlots()); i++)
+      c.setItem(i, inventory.getStackInSlot(i));
+    return c;
+  }
+
+  public boolean ready() {
+    return !isTotem()
+        && level != null
+        && level
+            .getRecipeManager()
+            .getRecipeFor(Automatons.CREATION.get(), components(), level)
+            .isPresent();
+  }
+
+  public ItemStack assemble(ServerPlayer player) {
+    if (!owns(player) || !ready() || isRemoved()) return ItemStack.EMPTY;
+    ItemStack output = WorkerIdentity.assemble(player, this);
+    for (int i = 0; i < 6; i++) inventory.extractItem(i, 1, false);
     changed();
-    return true;
+    return output;
+  }
+
+  /** Retained only for old development harnesses; normal creation is the result slot. */
+  @Deprecated
+  public boolean create(ServerPlayer player) {
+    return false;
+  }
+
+  public java.util.List<Lumberton> loadedWorkers() {
+    if (!(level instanceof ServerLevel l)) return java.util.List.of();
+    return workers.stream()
+        .map(l::getEntity)
+        .filter(e -> e instanceof Lumberton)
+        .map(e -> (Lumberton) e)
+        .filter(w -> identity.equals(w.totemId) && !w.isRemoved())
+        .sorted(java.util.Comparator.comparing(Lumberton::getUUID))
+        .toList();
+  }
+
+  public void removeMember(UUID id) {
+    workers.remove(id);
+    if (id.equals(worker)) {
+      worker = null;
+      workerHome = null;
+    }
+    if (level instanceof ServerLevel l) WorkerIdentity.unbind(l, id, identity);
+    changed();
   }
 
   public void destroyed() {
@@ -199,22 +190,29 @@ public class Station extends BlockEntity implements MenuProvider {
     if (!isTotem() && owner != null)
       WorldData.get(l).setHome(identity, owner, worldPosition, recalled, false);
     if (isTotem()) {
-      Lumberton w = loadedWorker();
-      if (w != null) w.unassign();
+      for (UUID id : new java.util.ArrayList<>(workers)) WorkerIdentity.unbind(l, id, identity);
+      workers.clear();
+      worker = null;
+      workerHome = null;
       alerts = 0;
     }
   }
 
   public static void tick(Level level, BlockPos pos, BlockState state, Station s) {
-    if (!s.isTotem() || s.worker == null) return;
-    WorldEvents.requestScan(s);
+    if (!s.isTotem()) return;
+    if (s.worker != null) {
+      s.workers.add(s.worker);
+      s.worker = null;
+      s.workerHome = null;
+      s.changed();
+    }
+    if (!s.workers.isEmpty()) WorldEvents.requestScan(s);
     if (level.getGameTime() % 20 == 0) {
-      Lumberton w = s.loadedWorker();
-      if (w != null && s.identity.equals(w.totemId)) {
-        if (s.alerts != w.alerts) {
-          s.alerts = w.alerts;
-          s.changed();
-        }
+      int flags = 0;
+      for (Lumberton w : s.loadedWorkers()) if (w.authorized && w.job() == 1) flags |= w.alerts;
+      if (flags != s.alerts) {
+        s.alerts = flags;
+        s.changed();
       }
     }
   }
@@ -223,27 +221,106 @@ public class Station extends BlockEntity implements MenuProvider {
     return layer == 0 ? 0 : (layer % 2 == 1 ? (layer + 1) / 2 : -layer / 2);
   }
 
-  public void scanWork(ServerLevel l) {
-    int r = lumberRange(), side = 2 * r + 1, total = side * side * 33;
-    if (scanRadius != r) {
-      scanRadius = r;
-      cursor = 0;
-      trees.clear();
-      scanComplete = false;
+  public void invalidateTrees() {
+    trees.clear();
+    pendingRoots.clear();
+    scanComplete = false;
+    swept = false;
+    cursor = 0;
+    discoveredDistance = 0;
+  }
+
+  public void refreshStorage() {
+    if (storageComplete) {
+      storageCursor = 0;
+      storageComplete = false;
+      storageRoundUnloaded = false;
     }
+  }
+
+  public List<TreeFinder.Tree> orderedTrees() {
+    return trees.values().stream()
+        .sorted(
+            Comparator.comparingDouble((TreeFinder.Tree t) -> t.distanceFrom(this))
+                .thenComparingInt(t -> t.root().getX())
+                .thenComparingInt(t -> t.root().getZ())
+                .thenComparingInt(t -> t.root().getY()))
+        .toList();
+  }
+
+  public boolean discoveredBefore(TreeFinder.Tree tree) {
+    return pendingRoots.isEmpty()
+        && (scanComplete || tree.distanceFrom(this) <= discoveredDistance);
+  }
+
+  public List<Timber> timberJobs() {
+    if (!(level instanceof ServerLevel l)) return List.of();
+    if (timberCacheAt != l.getGameTime() / 20) {
+      timberCacheAt = l.getGameTime() / 20;
+      timberCache =
+          l.getEntitiesOfClass(
+              Timber.class,
+              new AABB(worldPosition).inflate(lumberRange() + 32, 80, lumberRange() + 32),
+              t ->
+                  !t.finished()
+                      && Objects.equals(owner, t.owner)
+                      && TreeFinder.within(this, t.blockPosition()));
+    }
+    return timberCache.stream()
+        .filter(t -> !t.isRemoved() && !t.finished())
+        .sorted(
+            Comparator.comparingDouble((Timber t) -> t.blockPosition().distSqr(worldPosition))
+                .thenComparing(Timber::getUUID))
+        .toList();
+  }
+
+  public void dispatch() {
+    List<Lumberton> active = loadedWorkers();
+    if (active.isEmpty()) return;
+    int start = Math.floorMod(dispatchTurn++, active.size());
+    for (int i = 0; i < active.size(); i++) {
+      Lumberton w = active.get((start + i) % active.size());
+      if (w.wantsJob) w.acceptNext(this);
+    }
+  }
+
+  public void scanWork(ServerLevel l) {
+    int range = lumberRange(), height = Balance.ROOT_HEIGHT.get() * 2 + 1;
+    if (scanRadius != range || scanColumns.isEmpty()) {
+      scanRadius = range;
+      invalidateTrees();
+      List<BlockPos> offsets = new ArrayList<>();
+      for (int x = -range; x <= range; x++)
+        for (int z = -range; z <= range; z++) offsets.add(new BlockPos(x, 0, z));
+      offsets.sort(
+          Comparator.comparingDouble((BlockPos p) -> p.getX() * p.getX() + p.getZ() * p.getZ())
+              .thenComparingInt(BlockPos::getX)
+              .thenComparingInt(BlockPos::getZ));
+      scanColumns = List.copyOf(offsets);
+    }
+    int total = scanColumns.size() * height;
     for (int i = 0; i < Balance.TOTEM_BUDGET.get() && WorldEvents.budget(1); i++) {
-      int v = cursor++;
-      BlockPos p =
-          worldPosition.offset(v % side - r, vertical(v / (side * side)), (v / side) % side - r);
-      if (!l.hasChunkAt(p)) roundUnloaded = true;
-      else if (TreeFinder.isRoot(l, p) && trees.size() < 32 && WorldEvents.budget(64)) {
-        TreeFinder.Result result = TreeFinder.inspect(l, p, this);
-        if (result.tree() != null) trees.put(p.asLong(), result.tree());
-        else scanReason = result.reason();
+      int value = cursor++;
+      BlockPos column = scanColumns.get(value / height),
+          pos = worldPosition.offset(column.getX(), vertical(value % height), column.getZ());
+      if (!l.hasChunkAt(pos)) roundUnloaded = true;
+      else if (TreeFinder.isRoot(l, pos)) {
+        if (pendingRoots.size() >= 256) {
+          cursor--;
+          break;
+        }
+        if (trees.values().stream().noneMatch(t -> t.logs().contains(pos)))
+          pendingRoots.add(pos.immutable());
+      }
+      if (cursor % height == 0) {
+        double radius =
+            Math.max(
+                0, Math.sqrt(column.getX() * column.getX() + column.getZ() * column.getZ()) - 1);
+        discoveredDistance = Math.max(discoveredDistance, radius * radius);
       }
       if (cursor >= total) {
         cursor = 0;
-        scanComplete = true;
+        swept = true;
         scanUnloaded = roundUnloaded;
         roundUnloaded = false;
         trees
@@ -255,34 +332,57 @@ public class Station extends BlockEntity implements MenuProvider {
         break;
       }
     }
-    int sr = storageRange(), ss = sr * 2 + 1, sh = Balance.HEIGHT.get() * 2 + 1, st = ss * ss * sh;
+    for (int i = 0; i < 2 && !pendingRoots.isEmpty() && WorldEvents.budget(128); i++) {
+      BlockPos root = pendingRoots.iterator().next();
+      pendingRoots.remove(root);
+      var result = TreeFinder.inspect(l, root, this);
+      if (result.tree() != null) {
+        TreeFinder.Tree tree = result.tree();
+        trees.put(tree.root().asLong(), tree);
+        pendingRoots.removeIf(tree.logs()::contains);
+        if (trees.size() > 512) {
+          var ordered = orderedTrees();
+          trees.remove(ordered.get(ordered.size() - 1).root().asLong());
+        }
+      } else scanReason = result.reason();
+    }
+    if (swept && pendingRoots.isEmpty()) scanComplete = true;
+    int sr = storageRange(),
+        side = sr * 2 + 1,
+        layers = Balance.HEIGHT.get() * 2 + 1,
+        storageTotal = side * side * layers;
     if (storageRadius != sr) {
       storageRadius = sr;
       storageCursor = 0;
       chests.clear();
       storageComplete = false;
     }
-    for (int i = 0; i < 16 && WorldEvents.budget(1); i++) {
-      int v = storageCursor++;
-      BlockPos p =
+    for (int i = 0; i < 64 && WorldEvents.budget(1); i++) {
+      int value = storageCursor++;
+      BlockPos pos =
           worldPosition.offset(
-              v % ss - sr, v / (ss * ss) - Balance.HEIGHT.get(), (v / ss) % ss - sr);
-      if (!l.hasChunkAt(p)) storageRoundUnloaded = true;
-      else if (Storage.isChest(l, p) && Storage.canonical(l, p).equals(p) && !chests.contains(p))
-        chests.add(p);
-      if (storageCursor >= st) {
+              value % side - sr,
+              value / (side * side) - Balance.HEIGHT.get(),
+              (value / side) % side - sr);
+      if (!l.hasChunkAt(pos)) storageRoundUnloaded = true;
+      else if (Storage.isChest(l, pos)
+          && Storage.canonical(l, pos).equals(pos)
+          && !chests.contains(pos)) chests.add(pos);
+      if (storageCursor >= storageTotal) {
         storageCursor = 0;
         storageComplete = true;
+        storageEpoch++;
         storageUnloaded = storageRoundUnloaded;
         storageRoundUnloaded = false;
         chests.removeIf(
-            p2 -> !Storage.inRange(this, p2) || (l.hasChunkAt(p2) && !Storage.isChest(l, p2)));
+            p -> !Storage.inRange(this, p) || l.hasChunkAt(p) && !Storage.isChest(l, p));
         chests.sort(
-            Comparator.comparingDouble((BlockPos p2) -> p2.distSqr(worldPosition))
+            Comparator.comparingDouble((BlockPos p) -> p.distSqr(worldPosition))
                 .thenComparingLong(BlockPos::asLong));
         break;
       }
     }
+    dispatch();
   }
 
   public int flags(BlockPos p) {
@@ -293,6 +393,7 @@ public class Station extends BlockEntity implements MenuProvider {
     if (index >= 0 && index < chests.size()) {
       BlockPos p = chests.get(index);
       chestFlags.put(p.asLong(), flags(p) ^ bit);
+      refreshStorage();
       changed();
     }
   }
@@ -310,6 +411,7 @@ public class Station extends BlockEntity implements MenuProvider {
   @Override
   protected void saveAdditional(CompoundTag n) {
     super.saveAdditional(n);
+    n.putInt("DataVersion", 2);
     n.putUUID("Identity", identity);
     if (owner != null) n.putUUID("Owner", owner);
     if (worker != null) n.putUUID("Worker", worker);
@@ -344,9 +446,12 @@ public class Station extends BlockEntity implements MenuProvider {
     workerHome = n.hasUUID("WorkerHome") ? n.getUUID("WorkerHome") : null;
     recalled = n.getBoolean("Recall");
     alerts = n.getInt("Alerts");
-    inventory.deserializeNBT(n.getCompound("Inventory"));
+    CompoundTag slots = n.getCompound("Inventory").copy();
+    if (!isTotem() && slots.getInt("Size") < 6) slots.putInt("Size", 6);
+    inventory.deserializeNBT(slots);
     workers.clear();
     for (Tag t : n.getList("Workers", 10)) workers.add(((CompoundTag) t).getUUID("Id"));
+    if (isTotem() && worker != null) workers.add(worker);
     chestFlags.clear();
     for (Tag t : n.getList("ChestFlags", 10)) {
       CompoundTag c = (CompoundTag) t;
@@ -366,6 +471,7 @@ public class Station extends BlockEntity implements MenuProvider {
 
   @Override
   public AABB getRenderBoundingBox() {
+    if (!isTotem()) return new AABB(worldPosition).inflate(.5).expandTowards(0, 3, 0);
     return new AABB(worldPosition)
         .expandTowards(
             0, level == null ? 320 : level.getMaxBuildHeight() - worldPosition.getY(), 0);

@@ -1,11 +1,21 @@
 """Launch the user-designated Forge instance for an isolated visual smoke test.
 Uses installed game libraries and an offline test identity, never reads launcher credentials.
-Restores options.txt when the test process exits. The smoke harness only opens Automatons Lab.
+Restores options.txt and Automatons JARs on exit. The harness only opens Automatons Lab.
+--isolated copies the designated mod set/config into a fresh build folder; it never changes the live instance.
 """
 from pathlib import Path
 import json,re,subprocess,zipfile,shutil,sys,time
 PROJECT=Path(__file__).resolve().parents[1]
-INSTANCE=Path(r'C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester')
+SOURCE_INSTANCE=Path(r'C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester')
+INSTANCE=SOURCE_INSTANCE
+if '--isolated' in sys.argv:
+    INSTANCE=PROJECT/'build/packaged-smoke'/time.strftime('%Y%m%d-%H%M%S')
+    INSTANCE.mkdir(parents=True,exist_ok=False)
+    for folder in ['mods','config','defaultconfigs']:
+        source=SOURCE_INSTANCE/folder
+        if source.exists():shutil.copytree(source,INSTANCE/folder)
+    if (SOURCE_INSTANCE/'options.txt').exists():shutil.copy2(SOURCE_INSTANCE/'options.txt',INSTANCE/'options.txt')
+    print('Isolated game directory:',INSTANCE,flush=True)
 INSTALL=Path(r'C:\Users\impsh\curseforge\minecraft\Install')
 JAVA=Path(r'C:\Program Files\Eclipse Adoptium\jdk-17.0.12.7-hotspot\bin\java.exe')
 BASE=json.loads((INSTALL/'versions/1.20.1/1.20.1.json').read_text())
@@ -49,33 +59,44 @@ def args(entries):
         elif allowed(entry):result.extend(expand(v) for v in (entry['value'] if isinstance(entry['value'],list) else [entry['value']]))
     return result
 jvm=['-Xmx4G','-Dautomatons.visualSmoke=true']+args(BASE['arguments']['jvm'])+args(FORGE['arguments']['jvm'])
+if '--quick' in sys.argv:jvm.append('-Dautomatons.smokeTicks=570')
 jvm=[a+',1.20.1.jar' if a.startswith('-DignoreList=') else a for a in jvm]
-game=args(BASE['arguments']['game'])+args(FORGE['arguments']['game'])+['--width','1280','--height','800']
+game=args(BASE['arguments']['game'])+args(FORGE['arguments']['game'])+['--width','1280','--height','960']
 argfile=PROJECT/'build/instance-smoke.args'
 argfile.write_text('\n'.join('"'+a.replace('\\','/').replace('"','\\"')+'"' for a in jvm+[FORGE['mainClass']]+game),encoding='utf-8')
 if '--inspect' in sys.argv:
     print('Ready: '+str(len(classpath))+' installed libraries, Forge 47.4.10, offline smoke identity.');sys.exit(0)
-jar=PROJECT/'build/libs/automatons-0.1.1.jar';target=INSTANCE/'mods'/jar.name
+jar=PROJECT/'build/libs/automatons-0.2.0.jar';target=INSTANCE/'mods'/jar.name
+assert jar.is_file(), 'Build 0.2.0 first'
 backup=INSTANCE/'.automatons-test-backups'/time.strftime('%Y%m%d-%H%M%S');backup.mkdir(parents=True)
-if target.exists():shutil.copy2(target,backup/target.name)
-shutil.copy2(jar,target)
-lab=INSTANCE/'saves/Automatons Lab'
-if not lab.exists():shutil.copytree(PROJECT/'run/saves/Automatons Lab',lab)
+original_mods=list((INSTANCE/'mods').glob('automatons-*.jar'))
+# Finish every backup before changing the selected game directory.
+for old in original_mods:
+    assert old.resolve().parent==(INSTANCE/'mods').resolve()
+    shutil.copy2(old,backup/old.name)
 options=INSTANCE/'options.txt';original=options.read_bytes() if options.exists() else None
 if original is not None:shutil.copy2(options,backup/'options.txt')
 try:
+    for old in original_mods:old.unlink()
+    shutil.copy2(jar,target)
+    lab=INSTANCE/'saves/Automatons Lab'
+    if not lab.exists():shutil.copytree(PROJECT/'run/saves/Automatons Lab',lab)
     with (PROJECT/'instance-smoke.log').open('w',encoding='utf-8') as log:
         process=subprocess.Popen([str(JAVA),'@'+str(argfile)],cwd=INSTANCE,stdout=log,stderr=subprocess.STDOUT)
         print('Instance client PID',process.pid,flush=True)
         try:
-            result=process.wait(timeout=300)
+            result=process.wait(timeout=360)
         except subprocess.TimeoutExpired:
             # Only terminate the test process started above, never another Minecraft session.
             process.terminate()
             process.wait(timeout=15)
             result=124
-            print('Smoke client exceeded its five-minute limit; see instance-smoke.log.',flush=True)
+            print('Smoke client exceeded its six-minute limit; see instance-smoke.log.',flush=True)
         print('Instance client exit',result,flush=True)
 finally:
     if original is not None:options.write_bytes(original)
+    elif options.exists():options.unlink()
+    # The smoke is temporary. Final deployment occurs only after reviewing its results.
+    if target.exists():target.unlink()
+    for old in original_mods:shutil.copy2(backup/old.name,old)
 sys.exit(result)
