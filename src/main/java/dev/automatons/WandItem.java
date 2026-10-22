@@ -50,14 +50,17 @@ public class WandItem extends Item {
       ItemStack s, Player p, LivingEntity target, InteractionHand hand) {
     if (!(target instanceof Lumberton w) || mode(s) != 0) return InteractionResult.PASS;
     if (!p.level().isClientSide) {
+      // Creative-mode Player.interactOn passes a disposable copy as s.
+      // Keep selection on the actual wand in the hand used for this interaction.
+      ItemStack wand = p.getItemInHand(hand);
       if (w.owner == null) {
         w.owner = p.getUUID();
-        select(s, w, true);
+        select(wand, w, true);
         p.displayClientMessage(
             Component.literal("Test worker claimed. Choose your pedestal to give it a home."),
             true);
       } else if (w.owns(p)) {
-        select(s, w, false);
+        select(wand, w, false);
         p.displayClientMessage(
             Component.literal("Lumberton selected. Right-click your totem; sneak-click to cancel."),
             true);

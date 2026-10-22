@@ -499,21 +499,33 @@ public final class ModGameTests {
     Lumberton w = worker(h, home, new BlockPos(10, 1, 12));
     w.tools.setStackInSlot(0, new ItemStack(Items.IRON_AXE));
     w.assign(s);
-    h.runAfterDelay(
-        1450,
-        () -> {
-          h.assertTrue(
-              (w.alerts & Lumberton.WOOD) != 0,
-              "No-work condition was not established after complete scan: " + w.status());
-          tree(h, new BlockPos(13, 1, 12));
-        });
-    h.succeedWhen(
-        () -> {
-          int count = 0;
-          for (int slot = 0; slot < 27; slot++)
-            if (c.getItem(slot).is(Items.OAK_LOG)) count += c.getItem(slot).getCount();
-          h.assertTrue(count == 5, "New tree did not recover: " + w.status() + " scan=" + s.cursor);
-        });
+    // Scanning shares a fair server budget with the other tests. Wait for the
+    // actual empty-area result rather than assuming a fixed number of ticks.
+    h.startSequence()
+        .thenWaitUntil(
+            () ->
+                h.assertTrue(
+                    (w.alerts & Lumberton.WOOD) != 0,
+                    "No-work condition not established: "
+                        + w.status()
+                        + " scan="
+                        + s.cursor
+                        + " complete="
+                        + s.scanComplete
+                        + " unloaded="
+                        + s.scanUnloaded
+                        + " trees="
+                        + s.trees.size()))
+        .thenExecute(() -> tree(h, new BlockPos(13, 1, 12)))
+        .thenWaitUntil(
+            () -> {
+              int count = 0;
+              for (int slot = 0; slot < 27; slot++)
+                if (c.getItem(slot).is(Items.OAK_LOG)) count += c.getItem(slot).getCount();
+              h.assertTrue(
+                  count == 5, "New tree did not recover: " + w.status() + " scan=" + s.cursor);
+            })
+        .thenSucceed();
   }
 
   @GameTest(template = "empty", timeoutTicks = 140)

@@ -1,6 +1,14 @@
 # Verification — 22 October 2026
 
-## Executed
+## 0.1.1 wand regression
+
+- `gradlew.bat runGameTestServer build`: **all 22 required tests passed** in a fresh development GameTest world; the reobfuscated 0.1.1 release build succeeded.
+- Before the fix, all three new creative-mode tests reproduced `Held wand lost selection after entity click`. Both new survival tests passed. The tests invoke Minecraft's `Player.interactOn` and `ServerPlayerGameMode.useItemOn`, rather than calling the mod's selection or assignment helpers directly.
+- New coverage: creative/main hand, creative/off hand, survival/main hand, survival/off hand, and creative spawn-egg claim -> pedestal binding -> totem assignment. Both-hand tests also check that the other wand is unchanged and successful assignment clears the selection.
+- The reused development test world caused the existing no-wood test to exceed its scan deadline (the scan was still incomplete at tick 3400). Its sequence now waits for the actual no-wood condition within the existing timeout, then requires the exact five-log delivery. The full suite passed after preserving the old test world under `build/test-world-backups` and generating a fresh one. Production scan budgets and behavior were unchanged.
+- Evidence: `verification/wand-regression-before.log` and `verification/wand-regression-0.1.1.log` in the asset library. This patch was verified by server-side GameTests; the historical client smoke test below was for 0.1.0.
+
+## 0.1.0 executed checks
 
 - `gradlew.bat runGameTestServer build`: **17 required game tests passed**, followed by a successful reobfuscated JAR build.
 - The game tests run in Forge's dedicated GameTest server. This exercises server-side loading without Minecraft client rendering classes.

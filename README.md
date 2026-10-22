@@ -40,11 +40,12 @@ $env:JAVA_HOME = 'C:\Program Files\Eclipse Adoptium\jdk-17.0.12.7-hotspot'
 python tools/validate_assets.py
 ```
 
-Output: `build/libs/automatons-0.1.0.jar`. Install the same JAR on a multiplayer server and its clients. The creative test egg has no survival recipe; survival creation uses the pedestal.
+Output: `build/libs/automatons-0.1.1.jar`. Install the same JAR on a multiplayer server and its clients. The creative test egg has no survival recipe; survival creation uses the pedestal.
 
 - [Balance and recipes](docs/BALANCE.md)
 - [Model and texture sources](docs/ART.md)
 - [Validation evidence](docs/VERIFICATION.md)
+- [Release changes](docs/CHANGELOG.md)
 - [Concrete limits and extension points](docs/LIMITS.md)
 
 The supplied specification is retained in `reference/original-specification.txt`. The direct request overrides the reference image: the torso uses ordinary horizontal planks, with no brick pattern.

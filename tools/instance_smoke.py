@@ -55,7 +55,7 @@ argfile=PROJECT/'build/instance-smoke.args'
 argfile.write_text('\n'.join('"'+a.replace('\\','/').replace('"','\\"')+'"' for a in jvm+[FORGE['mainClass']]+game),encoding='utf-8')
 if '--inspect' in sys.argv:
     print('Ready: '+str(len(classpath))+' installed libraries, Forge 47.4.10, offline smoke identity.');sys.exit(0)
-jar=PROJECT/'build/libs/automatons-0.1.0.jar';target=INSTANCE/'mods'/jar.name
+jar=PROJECT/'build/libs/automatons-0.1.1.jar';target=INSTANCE/'mods'/jar.name
 backup=INSTANCE/'.automatons-test-backups'/time.strftime('%Y%m%d-%H%M%S');backup.mkdir(parents=True)
 if target.exists():shutil.copy2(target,backup/target.name)
 shutil.copy2(jar,target)
