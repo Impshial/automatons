@@ -18,8 +18,8 @@ if '--isolated' in sys.argv:
     print('Isolated game directory:',INSTANCE,flush=True)
 INSTALL=Path(r'C:\Users\impsh\curseforge\minecraft\Install')
 JAVA=Path(r'C:\Program Files\Eclipse Adoptium\jdk-17.0.12.7-hotspot\bin\java.exe')
-BASE=json.loads((INSTALL/'versions/1.20.1/1.20.1.json').read_text())
-FORGE=json.loads((INSTALL/'versions/forge-47.4.10/forge-47.4.10.json').read_text())
+BASE=json.loads((INSTALL/'versions/1.20.1/1.20.1.json').read_text(encoding='utf-8'))
+FORGE=json.loads((INSTALL/'versions/forge-47.4.10/forge-47.4.10.json').read_text(encoding='utf-8'))
 assert FORGE['mainClass']=='cpw.mods.bootstraplauncher.BootstrapLauncher'
 NATIVES=PROJECT/'build/smoke-natives';NATIVES.mkdir(parents=True,exist_ok=True)
 def allowed(entry):
@@ -59,15 +59,17 @@ def args(entries):
         elif allowed(entry):result.extend(expand(v) for v in (entry['value'] if isinstance(entry['value'],list) else [entry['value']]))
     return result
 jvm=['-Xmx4G','-Dautomatons.visualSmoke=true']+args(BASE['arguments']['jvm'])+args(FORGE['arguments']['jvm'])
-if '--quick' in sys.argv:jvm.append('-Dautomatons.smokeTicks=570')
+if '--quick' in sys.argv:jvm.append('-Dautomatons.smokeTicks='+('640' if '--jei-review' in sys.argv else '570'))
+if '--jei-review' in sys.argv:jvm.append('-Dautomatons.jeiReview=true')
+if '--infusion-review' in sys.argv:jvm.append('-Dautomatons.infusionReview=true')
 jvm=[a+',1.20.1.jar' if a.startswith('-DignoreList=') else a for a in jvm]
 game=args(BASE['arguments']['game'])+args(FORGE['arguments']['game'])+['--width','1280','--height','960']
 argfile=PROJECT/'build/instance-smoke.args'
 argfile.write_text('\n'.join('"'+a.replace('\\','/').replace('"','\\"')+'"' for a in jvm+[FORGE['mainClass']]+game),encoding='utf-8')
 if '--inspect' in sys.argv:
     print('Ready: '+str(len(classpath))+' installed libraries, Forge 47.4.10, offline smoke identity.');sys.exit(0)
-jar=PROJECT/'build/libs/automatons-0.2.0.jar';target=INSTANCE/'mods'/jar.name
-assert jar.is_file(), 'Build 0.2.0 first'
+jar=PROJECT/'build/libs/automatons-0.2.1.jar';target=INSTANCE/'mods'/jar.name
+assert jar.is_file(), 'Build 0.2.1 first'
 backup=INSTANCE/'.automatons-test-backups'/time.strftime('%Y%m%d-%H%M%S');backup.mkdir(parents=True)
 original_mods=list((INSTANCE/'mods').glob('automatons-*.jar'))
 # Finish every backup before changing the selected game directory.

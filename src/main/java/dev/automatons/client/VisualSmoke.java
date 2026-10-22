@@ -234,6 +234,21 @@ public final class VisualSmoke {
             inf.donor = p.getUUID();
             inf.changed();
           });
+    if (Boolean.getBoolean("automatons.infusionReview")) {
+      if (ticks == 355) {
+        var observer = net.minecraft.world.entity.EntityType.ARMOR_STAND.create(mc.level);
+        observer.moveTo(-7.5, 64.3, 8, -114, 10);
+        observer.setYHeadRot(-114);
+        observer.yHeadRotO = -114;
+        observer.yRotO = -114;
+        observer.xRotO = 10;
+        mc.setCameraEntity(observer);
+      }
+      if (ticks == 365) image("13-chest-bursts-a");
+      if (ticks == 380) image("14-chest-bursts-b");
+      if (ticks == 395) image("15-chest-bursts-c");
+      if (ticks == 410) mc.setCameraEntity(mc.player);
+    }
     if (ticks == 370) image("07-infusion-stream");
     if (ticks == 430) server(p -> p.teleportTo(p.serverLevel(), -3.3, 64, 7.5, 180, 20));
     if (ticks == 450) image("08-moving-donor-stream");
@@ -337,6 +352,26 @@ public final class VisualSmoke {
                       + p.totalExperience);
             }
           });
+    if (Boolean.getBoolean("automatons.jeiReview")) {
+      if (ticks == 574)
+        server(
+            p -> {
+              p.teleportTo(p.serverLevel(), HOME.getX() + .5, 64, HOME.getZ() + 3.5, 180, 8);
+              menu(p, (Station) p.serverLevel().getBlockEntity(HOME));
+            });
+      if (ticks == 580 || ticks == 610) {
+        try {
+          Class.forName("dev.automatons.compat.jei.AutomatonsJeiPlugin")
+              .getMethod("review", boolean.class)
+              .invoke(null, ticks == 610);
+        } catch (ReflectiveOperationException failure) {
+          throw new IllegalStateException("JEI review failed", failure);
+        }
+      }
+      if (ticks == 595) image("16-jei-assembly");
+      if (ticks == 625) image("17-jei-infusion");
+      if (ticks == 636) mc.player.closeContainer();
+    }
     if (ticks == Integer.getInteger("automatons.smokeTicks", 3030)) {
       System.out.println("AUTOMATONS_SOUND_EVENTS " + sounds);
       mc.stop();

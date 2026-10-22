@@ -1,4 +1,4 @@
-# Verification — 0.2.0 redesign, 22 October 2026
+# Verification — 0.2.0 redesign and 0.2.1 update, 22 October 2026
 
 ## Executed server checks
 
@@ -53,7 +53,7 @@ There was no hand-operated mouse/keyboard acceptance session, dedicated multipla
 
 The offline smoke identity can produce expected Mojang/Realms authentication messages. Those are not evidence of an Automatons failure. Existing third-party warnings are retained in the packaged-client log and assessed separately.
 
-## Release result
+## 0.2.0 release result (superseded by 0.2.1 below)
 
 - `redesign-tests-flat-final.log`: **all 46 required tests passed**, followed by successful reobfuscation/build in 1m29s. The controlled-flat run measured **1.99561677 blocks/second** and confirmed fair progress for all 50 totems.
 - `tools/validate_assets.py`: **91 JSON resources, 32 textures, the 24-unit rig and proportional block UVs passed**. The distributable's required classes, version, JSON, revised recipe set and UTF-8 strings were checked directly.
@@ -62,4 +62,24 @@ The offline smoke identity can produce expected Mojang/Realms authentication mes
 
 Logs and actual screenshots are organized under `F:\Minecraft\Automatons\verification\0.2.0` and `screenshots/0.2.0`. The release folder holds the JAR, source archive, install helper and hash manifest.
 
-Installed path: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\mods\automatons-0.2.0.jar`. Previous JAR backup: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-161716-781`. Exactly one Automatons JAR is installed. The installed SHA-256 matches the distributable above.
+At the 0.2.0 release, installed path: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\mods\automatons-0.2.0.jar`. Previous JAR backup: `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-161716-781`. Exactly one Automatons JAR is installed. The installed SHA-256 matches the distributable above.
+
+## 0.2.1 particle and JEI update
+
+The user requested simultaneous chest emissions with varied sizes, speeds and arrival angles, then requested JEI recipe GUI integration. The particle renderer now emits 2–4 motes per burst across the upper chest/shoulders, with independent cubic curves, lifetimes, acceleration and sizes. Existing server accounting is unchanged.
+
+The JEI plugin compiles against the public common/Forge 15.56.0.205 APIs and is discovered only by JEI. It registers assembly recipes from the synchronized server recipe manager, plus the world-infusion display, input/output slots, pedestal catalysts and a conditional Recipes link in the assembly screen. Worker/totem screens do not receive that link. No JEI implementation classes or runtime JAR are bundled. The optional client dependency declares the tested API floor and the 15.x major version. Setup follows the [official JEI ForgeGradle documentation](https://github.com/mezz/JustEnoughItems/wiki/Getting-Started-%5BMinecraft-1.18.2-to-1.20.1%5D).
+
+Executed checks:
+
+- `jei-infusion-0.2.1-build.log`: packaged build succeeded. The final optional-dependency metadata was then included in the dedicated-server build below.
+- `jei-infusion-0.2.1-server-tests.log`: a fresh superflat dedicated server **without JEI** loaded successfully; **all 46 required tests passed**, and the final build succeeded in 1m41s.
+- `instance-smoke.log`: the actual Rackworks Tester mod set, including JEI 15.56.0.205, completed the opt-in Lab scenario and exited **0**. API output lookups found one assembly recipe and one infusion recipe. The pedestal click-area handler opened the assembly page; an output-item focus opened infusion. Both actual JEI screens, the pedestal Recipes label and three side-view chest-particle captures were visually inspected. The first observer attempt faced away from the scene; its camera heading was corrected before these captures.
+- The same client run completed a 50-point core with balance 0, then collected 7 Magica while XP remained 560. Particle checks included a donor position change. Screenshots show the visual spread and size variation; there was no hand-operated acceptance session or remote multiplayer check.
+- Asset validation still passed 91 JSON resources, 32 textures, the 24-unit rig and proportional UVs. The release JAR was inspected for the new plugin/renderer classes, version, optional JEI metadata and translations, and verified to contain no bundled `mezz/jei` classes.
+
+The reported apparent crash matched the automated test's scheduled shutdown: its process exited 0, the log recorded orderly saves, and the designated instance had no crash-report directory. The test helper restores its temporary JAR/options after exit. This conclusion applies to the observed test window and logs.
+
+Reproduce the packaged visual checks with `python tools/instance_smoke.py --quick --infusion-review --jei-review` while the designated instance is closed; it opens only Automatons Lab and exits automatically. The optional camera exists only in the client review and is not added to the world. Use `-PwithJei` for a development client with JEI; ordinary server runs retain no JEI runtime dependency.
+
+Final release: **automatons-0.2.1.jar**, **318,358 bytes**, SHA-256 **1087C00189AC0864604D14EF63A510C22047B73CCFD063629D0BF50F3DFFB337**. Installed in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\mods`, with 0.2.0 backed up in `.automatons-release-backups/20261022-163429-237`. Exactly one Automatons JAR is installed. Evidence and captures are mirrored under `verification/0.2.1` and `screenshots/0.2.1` in the asset library; the release manifest records the matching source commit.

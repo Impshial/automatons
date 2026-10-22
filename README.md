@@ -1,6 +1,6 @@
 # Automatons — Minecraft 1.20.1 / Forge
 
-A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.0 adds independent Magica, core infusion, six-part assembly, portable workers and shared work totems.
+A wooden 1.5-block Automaton with a Lumberton forestry job. Version 0.2.1 includes independent Magica, core infusion, six-part assembly, portable workers, shared work totems, varied chest-to-core particles and optional JEI recipe pages.
 
 ## Install
 
@@ -10,11 +10,15 @@ Use Java 17 and Forge 47.4.10 for Minecraft 1.20.1. Put exactly one Automatons J
 
 1. Craft an **Infusing Pedestal** and **Empty Magica Cores** from vanilla ingredients. Neither requires a charged core.
 2. Collect white/purple **Magica** orbs from successful player breaks of eligible vegetation. Magica has its own balance and bar below XP; it never grants XP or repairs Mending tools.
-3. Right-click the infuser with an empty or partially filled core. Stay within four blocks with Magica available. The visible stream transfers one point every four ticks. Fifty points make one completed **Magica Core** in ten seconds at 20 TPS. A green effect and one chime signal completion. Use an empty hand to retrieve it. Walking away, logging out or running out of points pauses safely. Only the donor or an operator can retrieve the inserted core; breaking the pedestal drops it once.
+3. Right-click the infuser with an empty or partially filled core. Stay within four blocks with Magica available. Overlapping particles leave different points across the upper chest, vary in size and speed, and curve into the core from different angles. Infusion transfers one point every four ticks. Fifty points make one completed **Magica Core** in ten seconds at 20 TPS. A green effect and one chime signal completion. Use an empty hand to retrieve it. Walking away, logging out or running out of points pauses safely. Only the donor or an operator can retrieve the inserted core; breaking the pedestal drops it once.
 4. Craft an **Automaton Pedestal**, **Totem**, **Wand**, one **Head**, one **Automaton Core**, two **Arms** and two **Legs**. The first complete setup consumes six charged cores, or 300 Magica, excluding optional upgrades.
 5. Open the Automaton Pedestal and place the six components in the body-shaped slots. Take the result on the right to assemble one Automaton item. Shift-click works when inventory space exists. The display is a preview; assembly has no additional Magica fee. This pedestal becomes the worker's home.
 6. Place the item on clear, solid ground. It starts paused and Unassigned. Open its GUI, select **Lumberton**, and insert up to three ordinary axes. It preserves the exact supplied tools and switches when one breaks.
 7. Put ordinary single or double chests near the Totem. Use the wand in **Assign** mode to select the worker and then right-click your Totem. Assignment authorizes work. **Start Work** resumes a freshly placed worker with an existing valid link.
+
+## JEI recipes
+
+With JEI 15.56.0.205 or newer 15.x installed, press **R** over the Automaton item to see its six body parts, or **U** over the Automaton Pedestal to browse assembly recipes. Click **Recipes** in the pedestal screen for the same page. Press **R** over a Magica Core, or **U** over the Infusing Pedestal, for the 50-Magica world-infusion recipe. Normal crafting recipes remain in JEI's crafting category. The assembly page follows the server's recipe data, including data packs. Place the ingredients in the pedestal manually; this release adds recipe viewing, not automatic ingredient transfer. JEI is optional and is not bundled.
 
 ## Magica sources
 
@@ -67,4 +71,4 @@ Source: `src/main/java/dev/automatons`. Recipes/tags: `src/main/resources/data/a
 
 ## Build
 
-Set `JAVA_HOME` to Java 17. Run `gradlew.bat build`. For a fresh regression run, use `tools/test_release.ps1`; it preserves the preceding isolated test world before running `runGameTestServer build`. GameTests use `build/gametest-redesign` and never a player save. Run `python tools/validate_assets.py` to validate dimensions, model density and resource JSON. `gradlew.bat runClient -PvisualSmoke` enables the opt-in `Automatons Lab` visual scenario; normal launches never run it.
+Set `JAVA_HOME` to Java 17. Run `gradlew.bat build`. For a fresh regression run, use `tools/test_release.ps1`; it preserves the preceding isolated test world before running `runGameTestServer build`. GameTests use `build/gametest-redesign` and never a player save. Run `python tools/validate_assets.py` to validate dimensions, model density and resource JSON. `gradlew.bat runClient -PwithJei` includes JEI in development; ordinary development/server runs have no JEI runtime dependency. `gradlew.bat runClient -PvisualSmoke` enables the opt-in `Automatons Lab` visual scenario; normal launches never run it.

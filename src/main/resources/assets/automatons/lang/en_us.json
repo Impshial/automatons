@@ -23,5 +23,11 @@
   "item.automatons.upgrade_plate": "Upgrade Plate",
   "item.automatons.automaton": "Automaton",
   "block.automatons.infusing_pedestal": "Infusing Pedestal",
-  "entity.automatons.magica_orb": "Magica"
+  "entity.automatons.magica_orb": "Magica",
+  "jei.automatons.assembly": "Automaton Assembly",
+  "jei.automatons.infusion": "Magica Infusion",
+  "jei.automatons.recipes": "Recipes",
+  "jei.automatons.assembly.help": "Take the result at your pedestal. No extra Magica cost.",
+  "jei.automatons.infusion.cost": "%s Magica",
+  "jei.automatons.infusion.help": "Place an empty core on the infuser. Stay within %s blocks while it charges."
 }

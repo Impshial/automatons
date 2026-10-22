@@ -58,3 +58,9 @@ All 46 assertions passed in the diagnostic server run. Intermittent failures in 
 ## Final deployment
 
 The final short packaged run exited 0 and its worker GUI text was inspected. Version 0.2.0 was installed in Rackworks Tester after the user closed Minecraft; the installed hash matches the verified release. The old JAR is preserved in `.automatons-release-backups/20261022-161716-781` within the instance. Only the separate Lab save was used for smoke testing. Editable assets, recipes, the player guide, complete design reference, evidence and release/source archives are mirrored in `F:\Minecraft\Automatons`.
+
+## Particle and JEI follow-up — 0.2.1
+
+Completed the requested upper-chest particle bursts with random sizes, speeds, acceleration and curved approach angles. Added optional public-API JEI assembly and infusion categories, synchronized assembly recipe inputs, both pedestal catalysts and an assembly-screen Recipes link. The actual installed-mod-set Lab client verified both JEI output lookups and rendered pages, high chest emissions, moving donor and full core completion, then exited 0. The apparent crash was the harness's scheduled normal shutdown; no crash report was found. The side camera initially faced away and was corrected before the final screenshots.
+
+The dedicated server loaded without JEI and all 46 regression tests passed. Version 0.2.1 was built, inspected and installed, replacing only the prior Automatons JAR after preserving it in `.automatons-release-backups/20261022-163429-237`. The release JAR and source, revised docs, editable renderer, actual screenshots and logs are archived in the asset library. JEI recipe viewing does not perform automatic ingredient transfer.

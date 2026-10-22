@@ -1,5 +1,11 @@
 # Changelog
 
+## 0.2.1 — 22 October 2026
+
+- Infusion emits overlapping bursts of 2–4 differently sized particles from varied upper-chest positions. Each follows its own curved path, travel speed and approach angle into the core.
+- Added optional JEI API integration for server-data-driven six-part Automaton assembly and 50-Magica core infusion, with pedestal catalysts and a Recipes link in the assembly screen.
+- Added opt-in side-camera particle captures and actual JEI recipe lookup/display checks to the Lab scenario.
+
 ## 0.2.0 — 22 October 2026
 
 - Added independent Magica collection, HUD, source eligibility and placement provenance; world infusion spends exactly 50 points per full core.

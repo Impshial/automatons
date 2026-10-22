@@ -71,3 +71,11 @@ description='''${mod_description}'''
 # stop your mod loading on the server for example.
 #[features.${mod_id}]
 #openGLVersion="[3.2,)"
+
+# Optional client recipe viewer; the integration uses the public JEI 15.56 API.
+[[dependencies.${mod_id}]]
+    modId="jei"
+    mandatory=false
+    versionRange="[15.56.0.205,16)"
+    ordering="AFTER"
+    side="CLIENT"

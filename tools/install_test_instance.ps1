@@ -3,11 +3,11 @@ $ErrorActionPreference = 'Stop'
 $instanceRoot = [System.IO.Path]::GetFullPath('C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester')
 $running = Get-CimInstance Win32_Process -Filter "Name='javaw.exe' OR Name='java.exe'" | Where-Object { $_.CommandLine -and ($_.CommandLine.Replace('/','\') -match [regex]::Escape($instanceRoot)) }
 if ($running) { throw 'Save and close Rackworks Tester before installing. No game process or files were changed.' }
-$sourceJar = Join-Path $ReleaseDirectory 'automatons-0.2.0.jar'
+$sourceJar = Join-Path $ReleaseDirectory 'automatons-0.2.1.jar'
 $expected = (Get-FileHash -LiteralPath $sourceJar -Algorithm SHA256).Hash
 $modsRoot = (Resolve-Path -LiteralPath (Join-Path $instanceRoot 'mods')).Path
-$targetJar = Join-Path $modsRoot 'automatons-0.2.0.jar'
-$stagedJar = Join-Path $modsRoot 'automatons-0.2.0.jar.pending'
+$targetJar = Join-Path $modsRoot 'automatons-0.2.1.jar'
+$stagedJar = Join-Path $modsRoot 'automatons-0.2.1.jar.pending'
 $backupRoot = [System.IO.Path]::GetFullPath((Join-Path $instanceRoot ('.automatons-release-backups\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))))
 if (-not $backupRoot.StartsWith($instanceRoot + '\')) { throw 'Backup path outside the designated instance' }
 $oldJars = @(Get-ChildItem -LiteralPath $modsRoot -Filter 'automatons-*.jar' -File)

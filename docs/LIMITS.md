@@ -1,4 +1,4 @@
-# Concrete limits and extension points — 0.2.0
+# Concrete limits and extension points — 0.2.1
 
 All eight specified Overworld tree families are enabled. Dedicated-server tests now grow oak, birch, spruce, jungle, dark oak, acacia, mangrove and cherry, then require a real worker to approach and commit a fall. This covers representative generated forms, not every seed, terrain arrangement or mod interaction.
 
@@ -12,7 +12,7 @@ All eight specified Overworld tree families are enabled. Dedicated-server tests 
 - Each fall has one active worker processor. Packing and recall release it; an unavailable claimant expires after 200 loaded timber ticks. Players can process the same authoritative timber ledger. Uncommitted standing claims are rebuilt after load to avoid stale permanent locks.
 - Ordinary saves persist identities, point balances, partial cores, inventories, recall, pending loot and consumed sections. Source transfer and item transactions occur on the server thread. Separate world-file writes do not provide an operating-system-crash transaction guarantee; maintain normal backups.
 - Infusion saves exact charged points. An unfinished sub-point interval restarts after a reload or invalid donor state; no points are spent early and unloaded time adds no catch-up. Offline/dead/out-of-range donors cannot spend.
-- There is no custom GUI for the infuser. Recipe-book entries cover ordinary crafting; the usage guide explains world infusion and six-slot assembly. JEI does not receive a separate custom infusion/assembly category in this version.
+- The infuser operates in the world rather than a container GUI. Optional JEI integration shows both world infusion and six-slot assembly, including inputs, outputs and their pedestal catalysts. Assembly recipes come from synchronized server data. JEI does not automatically transfer components or spend Magica.
 - The shared roster is paginated. A packed item that has been destroyed remains an administrative Packed entry until deliberately unbound. No arbitrary worker-count cap is imposed; throughput remains governed by server budgets and available space.
 
 Editable extension points are the recipe JSON, block/item tags and `data/<namespace>/automatons_species/<name>.json`. Nether fungi, mushrooms and extra jobs are outside this release's requested scope. See `VERIFICATION.md` for executed checks and client/multiplayer coverage, rather than assuming every visual or modded scenario was tested.

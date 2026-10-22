@@ -205,6 +205,9 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
         lines(g, menu.snapshot.getList("Lines", 8), 139, 224);
       }
     } else {
+      if (net.minecraftforge.fml.ModList.get().isLoaded("jei"))
+        g.drawString(
+            font, Component.translatable("jei.automatons.recipes"), 130, 9, 0xff654582, false);
       g.drawCenteredString(font, "Result", 238, 30, 0xffeee8f6);
       g.drawCenteredString(font, "Take to assemble", 238, 69, 0xffeee8f6);
       g.drawString(font, "Magica", 187, 77, 0xffe8d7ff, false);
