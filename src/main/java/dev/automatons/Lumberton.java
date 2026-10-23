@@ -644,6 +644,25 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (level() instanceof ServerLevel l) WorldData.get(l).release(getUUID());
   }
 
+  private void waitForLanding(Station station) {
+    long now = level().getGameTime();
+    if (landingBlockedSince < 0) landingBlockedSince = now;
+    if (now - landingBlockedSince < 60) {
+      state("Waiting for safe landing");
+      return;
+    }
+    long root = pending.root().asLong();
+    failedTrees.put(root, now + 400);
+    station.deferredFalls.put(root, now + 400);
+    clearPending();
+    navigation.stop();
+    routes.clear();
+    pathTarget = null;
+    nextPath = 0;
+    wantsJob = true;
+    state("Seeking another tree");
+  }
+
   private void beginService(String reason) {
     wantsJob = false;
     serviceReason = reason;
@@ -883,7 +902,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         claimed = true;
         continue;
       }
-      if (failedTrees.getOrDefault(tree.root().asLong(), 0L) > l.getGameTime()) {
+      if (failedTrees.getOrDefault(tree.root().asLong(), 0L) > l.getGameTime()
+          || s.deferredFalls.getOrDefault(tree.root().asLong(), 0L) > l.getGameTime()) {
         blocked = true;
         continue;
       }
@@ -1283,18 +1303,12 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       pendingLanding = TreeFinder.landing(l, pending, s, owner, this);
     }
     if (pendingLanding == null) {
-      if (landingBlockedSince < 0) landingBlockedSince = l.getGameTime();
-      state("Waiting for safe landing");
-      if (l.getGameTime() - landingBlockedSince > 100) {
-        failedTrees.put(pending.root().asLong(), l.getGameTime() + 100);
-        clearPending();
-        beginService("No safe landing space");
-      }
+      waitForLanding(s);
       return;
     }
     if (!TreeFinder.landingStillSafe(l, pending, pendingLanding, s, owner, this)) {
       pendingLanding = null;
-      state("Replanning fall");
+      waitForLanding(s);
       return;
     }
     lookControl.setLookAt(Vec3.atCenterOf(pendingAction));
@@ -1303,6 +1317,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
                 activeTool(), Balance.PREP.get(), s.tier("speed"), s.tier("efficiency"))
             * pending.baseCount();
     if (workTicks < duration) {
+      landingBlockedSince = -1;
       workTicks += 5;
       impact(pendingAction, workTicks, duration);
     }
@@ -1325,7 +1340,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         state("Felling");
       } else {
         pendingLanding = null;
-        state("Replanning fall");
+        waitForLanding(s);
       }
     }
   }

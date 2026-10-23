@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.2.4
+
+- Fixed fall plans rejecting grass, flowers, crops and shared natural leaves as solid obstructions. Only foliage intersecting the fall corridor is trimmed beyond the tree's own crown; neighboring trunks, placed leaves and protected blocks remain intact.
+- Preserve cleared foliage drops in the existing timber ledger, removing both halves of tall plants and paying their item only once. Already removed canopy no longer enlarges the moving trunk's obstruction area.
+- A tree that still cannot fit is deferred after three seconds, with a shared twenty-second retry delay so other Lumbertons can take reachable work. Revalidation and commit failures use the same recovery path.
+- Added regression coverage for the reported two-worker forest layout, ground cover, shared leaves, protected foliage and impossible-fall recovery.
+
 ## 0.2.3
 
 - Magica HUD and pedestal readouts show whole points only, retaining exact fractional accounting.

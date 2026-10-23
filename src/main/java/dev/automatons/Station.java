@@ -25,6 +25,7 @@ public class Station extends BlockEntity implements MenuProvider {
   public final Map<Long, Integer> chestFlags = new HashMap<>();
   public final List<BlockPos> chests = new ArrayList<>();
   public final LinkedHashMap<Long, TreeFinder.Tree> trees = new LinkedHashMap<>();
+  public final Map<Long, Long> deferredFalls = new HashMap<>();
   public String scanReason = "Searching";
   public int cursor, storageCursor, storageEpoch;
   private final LinkedHashSet<BlockPos> pendingRoots = new LinkedHashSet<>();
@@ -222,6 +223,7 @@ public class Station extends BlockEntity implements MenuProvider {
   }
 
   public void invalidateTrees() {
+    deferredFalls.clear();
     trees.clear();
     pendingRoots.clear();
     scanComplete = false;
@@ -286,6 +288,7 @@ public class Station extends BlockEntity implements MenuProvider {
   }
 
   public void scanWork(ServerLevel l) {
+    deferredFalls.values().removeIf(until -> until <= l.getGameTime());
     int range = lumberRange(), height = Balance.ROOT_HEIGHT.get() * 2 + 1;
     if (scanRadius != range || scanColumns.isEmpty()) {
       scanRadius = range;

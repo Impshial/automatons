@@ -217,7 +217,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       LivingEntity actor,
       ItemStack tool) {
     // All source transfers occur on the server thread in one tick; no block loot is emitted here.
-    List<BlockPos> crown = TreeFinder.exclusiveCrown(l, tree);
+    List<BlockPos> crown = TreeFinder.fallFoliage(l, tree, landing);
     if (crown == null) return null;
     for (BlockPos p : crown)
       if (!Permissions.allowed(l, p, owner, Permissions.Action.CUT)) return null;
@@ -233,9 +233,14 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     t.sources.addAll(tree.logs());
     t.targets.addAll(landing.targets());
     t.sweep.addAll(landing.sweep());
-    t.sweep.addAll(crown);
-    for (BlockPos p : crown)
-      t.crownLoot.addAll(Block.getDrops(l.getBlockState(p), l, p, null, actor, tool));
+    for (BlockPos p : crown) {
+      BlockState state = l.getBlockState(p);
+      if (state.getBlock() instanceof DoublePlantBlock
+          && state.getValue(DoublePlantBlock.HALF)
+              == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER
+          && crown.contains(p.below())) continue;
+      t.crownLoot.addAll(Block.getDrops(state, l, p, null, actor, tool));
+    }
     for (BlockPos p : tree.logs()) t.wood.add(l.getBlockState(p));
     t.setPos(Vec3.atBottomCenterOf(tree.root()));
     t.refreshBounds();
@@ -250,8 +255,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       l.getBlockState(p).updateNeighbourShapes(l, p, 3);
       l.updateNeighborsAt(p, Blocks.AIR);
     }
-    // Shared canopy stays in the world. Owned foliage loot is held until a permitted timber
-    // harvest.
+    // Shared canopy outside the swept corridor stays intact. Cleared foliage is paid once,
+    // with the existing timber ledger or the player's completed landing.
     return t;
   }
 

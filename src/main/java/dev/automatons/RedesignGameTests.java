@@ -1418,4 +1418,264 @@ public final class RedesignGameTests {
           h.assertTrue(w.cargo.getStackInSlot(0).isEmpty(), "Delivered cargo duplicated");
         });
   }
+
+  @GameTest(template = "empty", timeoutTicks = 90)
+  public static void connected_fall_clears_grass_and_tall_flowers_once(GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos root = new BlockPos(18, 1, 14);
+    tree(h, root);
+    for (int x = -5; x <= 5; x++)
+      for (int z = -5; z <= 5; z++)
+        if (x != 0 || z != 0) h.setBlock(root.offset(x, 0, z), Blocks.GRASS);
+    for (Direction d : Direction.Plane.HORIZONTAL) {
+      h.setBlock(root.relative(d, 2), Blocks.DANDELION);
+      h.setBlock(root.relative(d, 3), Blocks.SUNFLOWER.defaultBlockState());
+      h.setBlock(
+          root.relative(d, 3).above(),
+          Blocks.SUNFLOWER
+              .defaultBlockState()
+              .setValue(
+                  DoublePlantBlock.HALF,
+                  net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER));
+    }
+    var w = worker(h, r, new BlockPos(12, 1, 10));
+    w.setNoAi(true);
+    var found = TreeFinder.inspect(h.getLevel(), h.absolutePos(root), r.totem).tree();
+    var plan = TreeFinder.landing(h.getLevel(), found, r.totem, w.owner, w);
+    h.assertTrue(plan != null, "Grass/flowers rejected every connected landing");
+    Timber timber = Timber.commit(h.getLevel(), found, plan, w, r.totem);
+    h.assertTrue(timber != null, "Ground-cover fall failed revalidation");
+    int removed = 0;
+    for (Direction d : Direction.Plane.HORIZONTAL) {
+      boolean lower = h.getBlockState(root.relative(d, 3)).is(Blocks.SUNFLOWER);
+      boolean upper = h.getBlockState(root.relative(d, 3).above()).is(Blocks.SUNFLOWER);
+      h.assertTrue(lower == upper, "Fall orphaned half of a tall flower");
+      if (!lower) removed++;
+    }
+    int expected = removed;
+    h.assertTrue(expected > 0, "Fixture missed all tall flowers");
+    h.assertTrue(
+        timber.crownLoot.stream()
+                .filter(v -> v.is(Items.SUNFLOWER))
+                .mapToInt(ItemStack::getCount)
+                .sum()
+            == expected,
+        "Tall flower loot lost or duplicated");
+    h.runAfterDelay(
+        45,
+        () -> {
+          h.assertTrue(timber.progress() >= timber.duration, "Soft plants blocked the active fall");
+          h.assertTrue(
+              timber.remaining() == 5 && new HashSet<>(timber.targets).size() == 5,
+              "Ground cover damaged the timber ledger");
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 180)
+  public static void nearby_worker_moves_clear_instead_of_vetoing_fall(GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos root = new BlockPos(18, 1, 14);
+    tree(h, root);
+    var cutter = worker(h, r, new BlockPos(12, 1, 10));
+    cutter.setNoAi(true);
+    var other = worker(h, r, root.south());
+    other.authorized = false;
+    var found = TreeFinder.inspect(h.getLevel(), h.absolutePos(root), r.totem).tree();
+    var plan = TreeFinder.landing(h.getLevel(), found, r.totem, cutter.owner, cutter);
+    h.assertTrue(plan != null, "Nearby worker permanently vetoed the fall plan");
+    Timber timber = Timber.commit(h.getLevel(), found, plan, cutter, r.totem);
+    h.assertTrue(timber != null, "Nearby worker vetoed transfer before it could move clear");
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(timber.progress() >= timber.duration, "Fall never resumed after evacuation");
+          h.assertTrue(
+              !timber.dangerAt(other.getBoundingBox()), "Worker remained inside fallen wood");
+          h.assertTrue(timber.remaining() == 5, "Evacuation lost logs");
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 90)
+  public static void fall_trims_only_its_corridor_through_shared_natural_leaves(GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos root = new BlockPos(18, 1, 14);
+    tree(h, root);
+    for (Direction d : Direction.Plane.HORIZONTAL) {
+      h.setBlock(root.relative(d, 5).above(2), Blocks.BIRCH_LOG);
+      h.setBlock(
+          root.relative(d, 2),
+          Blocks.OAK_LEAVES.defaultBlockState().setValue(LeavesBlock.DISTANCE, 2));
+    }
+    var w = worker(h, r, new BlockPos(12, 1, 10));
+    w.setNoAi(true);
+    var found = TreeFinder.inspect(h.getLevel(), h.absolutePos(root), r.totem).tree();
+    var plan = TreeFinder.landing(h.getLevel(), found, r.totem, w.owner, w);
+    h.assertTrue(plan != null, "Shared natural leaves blocked every falling direction");
+    Timber timber = Timber.commit(h.getLevel(), found, plan, w, r.totem);
+    h.assertTrue(timber != null, "Shared-leaf corridor failed commit");
+    for (Direction d : Direction.Plane.HORIZONTAL) {
+      h.assertTrue(
+          h.getBlockState(root.relative(d, 5).above(2)).is(Blocks.BIRCH_LOG),
+          "Fell a neighboring log");
+      BlockPos leaf = root.relative(d, 2);
+      if (!plan.sweep().contains(h.absolutePos(leaf)))
+        h.assertTrue(
+            h.getBlockState(leaf).is(Blocks.OAK_LEAVES),
+            "Removed shared leaves outside the fall corridor");
+    }
+    h.runAfterDelay(
+        45,
+        () -> {
+          h.assertTrue(timber.progress() >= timber.duration, "Trimmed fall did not settle");
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2400)
+  public static void two_workers_resume_next_trees_in_reported_forest(GameTestHelper h) {
+    // Explicit placement aligns saved block coordinates with GameTestHelper's origin.
+    try (var input =
+        RedesignGameTests.class.getResourceAsStream(
+            "/data/automatons/structures/reported_forest.nbt")) {
+      CompoundTag fixture = NbtIo.readCompressed(input);
+      ListTag palette = fixture.getList("palette", 10);
+      for (Tag tag : fixture.getList("blocks", 10)) {
+        CompoundTag entry = (CompoundTag) tag;
+        ListTag xyz = entry.getList("pos", 3);
+        var state =
+            NbtUtils.readBlockState(
+                h.getLevel().holderLookup(net.minecraft.core.registries.Registries.BLOCK),
+                palette.getCompound(entry.getInt("state")));
+        h.getLevel()
+            .setBlock(
+                h.absolutePos(new BlockPos(xyz.getInt(0), xyz.getInt(1), xyz.getInt(2))),
+                state,
+                18);
+      }
+    } catch (java.io.IOException error) {
+      throw new RuntimeException(error);
+    }
+    Rig r = rig(h);
+    var output = chest(h, r, new BlockPos(12, 1, 14));
+    var first = worker(h, r, new BlockPos(12, 1, 12));
+    var second = worker(h, r, new BlockPos(12, 1, 11));
+    BlockPos oak = new BlockPos(14, 1, 10), birch = new BlockPos(10, 1, 10);
+    h.assertTrue(
+        h.getBlockState(oak).is(Blocks.OAK_LOG) && h.getBlockState(birch).is(Blocks.BIRCH_LOG),
+        "Reported tree fixture missing: oak="
+            + h.getBlockState(oak)
+            + " birch="
+            + h.getBlockState(birch));
+    Vec3 origin = Vec3.atLowerCornerOf(h.absolutePos(BlockPos.ZERO));
+    first.setPos(origin.add(12.97099236608082, 1, 12.30697704789023));
+    second.setPos(origin.add(12.7341657932064, 1, 11.4496838691655));
+    CompoundTag firstSave = first.saveWithoutId(new CompoundTag());
+    firstSave.putLong("PendingRoot", h.absolutePos(oak).asLong());
+    first.load(firstSave);
+    CompoundTag secondSave = second.saveWithoutId(new CompoundTag());
+    secondSave.putLong("PendingRoot", h.absolutePos(birch).asLong());
+    second.load(secondSave);
+    Timber[] jobs = new Timber[2];
+    h.onEachTick(
+        () -> {
+          for (Timber t :
+              h.getLevel()
+                  .getEntitiesOfClass(Timber.class, new AABB(r.totem.getBlockPos()).inflate(30))) {
+            if (t.blockPosition().equals(h.absolutePos(oak))) jobs[0] = t;
+            if (t.blockPosition().equals(h.absolutePos(birch))) jobs[1] = t;
+          }
+        });
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(
+              !h.getBlockState(oak).is(Blocks.OAK_LOG),
+              "Reported oak remains: " + first.diagnostic() + " reason=" + r.totem.scanReason);
+          h.assertTrue(
+              !h.getBlockState(birch).is(Blocks.BIRCH_LOG),
+              "Reported birch remains: " + second.diagnostic() + " reason=" + r.totem.scanReason);
+          h.assertTrue(
+              jobs[0] != null && jobs[1] != null && jobs[0].finished() && jobs[1].finished(),
+              "Reported trees did not finish processing: first="
+                  + first.diagnostic()
+                  + " second="
+                  + second.diagnostic());
+          int oakCount = count(output, Items.OAK_LOG), birchCount = count(output, Items.BIRCH_LOG);
+          for (Lumberton w : List.of(first, second))
+            for (int slot = 0; slot < w.cargo.getSlots(); slot++) {
+              ItemStack stack = w.cargo.getStackInSlot(slot);
+              if (stack.is(Items.OAK_LOG)) oakCount += stack.getCount();
+              if (stack.is(Items.BIRCH_LOG)) birchCount += stack.getCount();
+            }
+          h.assertTrue(
+              oakCount >= 6 && birchCount >= 7,
+              "Reported tree loot missing: oak=" + oakCount + " birch=" + birchCount);
+          System.out.println(
+              "AUTOMATONS_FOREST_RECOVERY completedTrees=2 oakLogs="
+                  + oakCount
+                  + " birchLogs="
+                  + birchCount);
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void protected_fall_cover_is_not_removed(GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos root = new BlockPos(18, 1, 14);
+    tree(h, root);
+    for (Direction d : Direction.Plane.HORIZONTAL)
+      h.setBlock(root.relative(d, 2), Blocks.DANDELION);
+    var w = worker(h, r, new BlockPos(12, 1, 10));
+    w.setNoAi(true);
+    var found = TreeFinder.inspect(h.getLevel(), h.absolutePos(root), r.totem).tree();
+    var plan = TreeFinder.landing(h.getLevel(), found, r.totem, w.owner, w);
+    h.assertTrue(plan != null, "No initial fall plan");
+    BlockPos flower =
+        plan.sweep().stream()
+            .filter(p -> h.getLevel().getBlockState(p).is(Blocks.DANDELION))
+            .findFirst()
+            .orElseThrow();
+    long chunk = new net.minecraft.world.level.ChunkPos(flower).toLong();
+    WorldData.get(h.getLevel()).protection.put(chunk, w.owner);
+    try {
+      h.assertTrue(
+          Timber.commit(h.getLevel(), found, plan, w, r.totem) == null,
+          "Protected cover was cleared");
+      h.assertTrue(
+          h.getLevel().getBlockState(flower).is(Blocks.DANDELION)
+              && h.getBlockState(root).is(Blocks.OAK_LOG),
+          "Denied fall changed source blocks");
+    } finally {
+      WorldData.get(h.getLevel()).protection.remove(chunk);
+    }
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 1800)
+  public static void impossible_fall_is_deferred_for_other_reachable_logs(GameTestHelper h) {
+    Rig r = rig(h);
+    var chest = chest(h, r, new BlockPos(13, 1, 14));
+    BlockPos root = new BlockPos(18, 1, 18);
+    tree(h, root);
+    for (Direction d : Direction.Plane.HORIZONTAL)
+      for (int y = 0; y <= 10; y++) h.setBlock(root.relative(d, 4).above(y), Blocks.STONE);
+    var w = worker(h, r, new BlockPos(16, 1, 16));
+    boolean[] deferred = {false};
+    h.onEachTick(
+        () -> {
+          if (r.totem.deferredFalls.getOrDefault(h.absolutePos(root).asLong(), 0L)
+              > h.getLevel().getGameTime()) deferred[0] = true;
+        });
+    h.runAfterDelay(180, () -> h.setBlock(new BlockPos(10, 1, 20), Blocks.BIRCH_LOG));
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(
+              deferred[0],
+              "Impossible fall never entered shared retry cooldown: " + w.diagnostic());
+          h.assertTrue(
+              count(chest, Items.BIRCH_LOG) == 1,
+              "Blocked fall starved the reachable log: " + w.diagnostic());
+          h.assertTrue(
+              h.getBlockState(root).is(Blocks.OAK_LOG), "Unsafe fall removed its source tree");
+        });
+  }
 }

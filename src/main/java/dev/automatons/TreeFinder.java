@@ -329,6 +329,44 @@ public final class TreeFinder {
     return state.isAir() || state.is(Blocks.WATER);
   }
 
+  /** Solid terrain and placed leaves remain obstacles; natural foliage can be trimmed. */
+  public static boolean cuttableFallFoliage(ServerLevel level, BlockPos pos) {
+    if (!level.hasChunkAt(pos)) return false;
+    BlockState state = level.getBlockState(pos);
+    if (state.is(BlockTags.LEAVES))
+      return !state.getValue(LeavesBlock.PERSISTENT)
+          && !WorldData.get(level).placedPlants.contains(pos.asLong());
+    return state.getBlock() instanceof BushBlock
+        && !state.hasBlockEntity()
+        && state.getCollisionShape(level, pos).isEmpty();
+  }
+
+  private static boolean clearFallSpace(ServerLevel level, BlockPos pos) {
+    return clearTimberSpace(level.getBlockState(pos)) || cuttableFallFoliage(level, pos);
+  }
+
+  /** Collect permitted cover once, including both halves of a tall plant. */
+  public static List<BlockPos> fallFoliage(ServerLevel level, Tree tree, Landing plan) {
+    List<BlockPos> crown = exclusiveCrown(level, tree);
+    if (crown == null) return null;
+    Set<BlockPos> clearing = new LinkedHashSet<>(crown);
+    for (BlockPos pos : plan.sweep()) {
+      if (!cuttableFallFoliage(level, pos)) continue;
+      clearing.add(pos);
+      BlockState state = level.getBlockState(pos);
+      if (state.getBlock() instanceof DoublePlantBlock) {
+        BlockPos other =
+            state.getValue(DoublePlantBlock.HALF)
+                    == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.LOWER
+                ? pos.above()
+                : pos.below();
+        if (!level.hasChunkAt(other)) return null;
+        if (level.getBlockState(other).is(state.getBlock())) clearing.add(other);
+      }
+    }
+    return clearing.size() > 4096 ? null : List.copyOf(clearing);
+  }
+
   public static Landing landing(
       ServerLevel l,
       Tree tree,
@@ -360,7 +398,7 @@ public final class TreeFinder {
               || Timber.reserves(l, target, worker)
               || (!source.contains(target)
                   && !canopy.contains(target)
-                  && !clearTimberSpace(l.getBlockState(target)))) {
+                  && !clearFallSpace(l, target))) {
             valid = false;
             break;
           }
@@ -385,9 +423,7 @@ public final class TreeFinder {
                   || !l.hasChunkAt(at)
                   || l.isOutsideBuildHeight(at)
                   || WorldData.get(l).protectedAt(at)
-                  || (!source.contains(at)
-                      && !canopy.contains(at)
-                      && !clearTimberSpace(l.getBlockState(at)))
+                  || (!source.contains(at) && !canopy.contains(at) && !clearFallSpace(l, at))
                   || !l.getEntities(
                           worker,
                           new AABB(at),
@@ -530,7 +566,7 @@ public final class TreeFinder {
       if (!workFootprint(s, tree, p) || !Permissions.allowed(l, p, owner, Permissions.Action.FALL))
         return false;
       if (!source.contains(p)
-          && !clearTimberSpace(l.getBlockState(p))
+          && !clearFallSpace(l, p)
           && !(canopy.contains(p) && naturalAttachment(l, p))) return false;
       if (!l.getEntities(
               worker, new AABB(p), e -> e instanceof net.minecraft.world.entity.LivingEntity)
@@ -541,7 +577,7 @@ public final class TreeFinder {
       if (!workFootprint(s, tree, p)
           || Timber.reserves(l, p, worker)
           || !Permissions.allowed(l, p, owner, Permissions.Action.FALL)
-          || (!clearTimberSpace(l.getBlockState(p))
+          || (!clearFallSpace(l, p)
               && !source.contains(p)
               && !(canopy.contains(p) && naturalAttachment(l, p)))) return false;
       supported |=

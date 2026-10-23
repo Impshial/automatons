@@ -1,4 +1,4 @@
-# Recipes and provisional balance — 0.2.3
+# Recipes and provisional balance — 0.2.4
 
 This is the single design reference for initial recipes and configurable values. Server configuration is `serverconfig/automatons-server.toml` inside each world. Recipes, source tags and species definitions live in the mod data pack. All values are provisional.
 
@@ -187,3 +187,5 @@ Species JSON bounds normal trees by height/spread/log count. Associated foliage 
 ## Survival dependency total
 
 Before optional upgrades, a first full setup needs six completed cores (300 Magica): two in the home pedestal, one in the Totem, one in the Wand, and two in the Automaton Torso body component. Crafting axes is separate. All component and upgrade recipes fit the ordinary 3×3 grid except the explicitly documented six-part pedestal assembly.
+
+Connected-fall clearance accepts non-colliding plants and natural, unplaced leaves. Their loot joins the existing foliage ledger. Both halves of tall plants are removed together with one drop calculation. Other solid blocks remain obstacles. A failed fall is deferred after 60 ticks and shared across the Totem for 400 ticks; changes to the work area invalidate this retry delay.

@@ -132,6 +132,15 @@ Scope: from your “ok, big redesign” message and `Automatons-Lumberton-Codex-
 - Verified the packaged client: whole-number HUD, both JEI categories, infusion, connected rotation, four real landed logs, and exact ten-log delivery from the two test trees with no cargo left. The client exited normally.
 - Installed **0.2.3** in Rackworks Tester, backed up 0.2.2, and archived matching source, assets, captures and verification evidence. See `VERIFICATION.md` for the JAR hash and backup location.
 
+## 5. Safe-landing stall fix — version 0.2.4
+
+- Inspected a read-only snapshot of the reported setup: both workers had new pending trees, zero chopping progress, and no remaining Timber entities. This ruled out a leftover falling-tree entity in that snapshot.
+- Reproduced fall rejection caused by grass/flowers and shared natural leaves. The planner now permits those plants to be cleared along the fall corridor, while retaining neighboring logs, placed leaves and protection checks.
+- Preserve plant loot once, including two-block flowers, and exclude already removed canopy from the trunk's collision sweep.
+- Added a shared retry delay for genuinely impossible falls so two workers do not repeatedly take the same blocked tree.
+- Added a regression fixture containing only natural block states from the reported forest layout, with no player or entity data. Test workers restore the reported positions and pending roots; both finish their trees with all six oak and seven birch logs accounted for.
+- All **73 required server tests passed**. Built and installed **0.2.4**, preserved the previous JAR, and archived the matching source and evidence. No saved-world entity or block data was edited.
+
 ## Current default chopping times
 
 At 20 TPS, without enchantments/upgrades; excludes travel and the 1.5-second fall. Loose logs use the processing column directly.

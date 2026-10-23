@@ -1,4 +1,4 @@
-# Verification — through 0.2.2, 22 October 2026
+# Verification — through 0.2.4, 22 October 2026
 
 ## Executed server checks
 
@@ -125,3 +125,18 @@ The final packaged client used `build/packaged-smoke/20261022-190056` and exited
 The connected player's stone axe broke the base once with one durability damage. Four remaining sections had distinct targets, then became **four real log blocks with zero Timber entities**. The worker harvested those blocks and collected the dropped base log. By the final checkpoint the chest held **10 oak logs** from the two five-log trees and the worker's cargo was empty. The initial client check exposed cargo waiting for a long area scan; the final build unloads during that scan, and a new server test explicitly keeps discovery incomplete while requiring delivery.
 
 Installed **automatons-0.2.3.jar**, **364,081 bytes**, SHA-256 **13C5B0B20E5F91EFBF4E7A3BFFBD803FD16F14752F7C7E345A2B9BCD5B6DBF32**. Previous release preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-190611-720`. The installer verified the copied JAR. The source archive, updated assets, full history, release manifest, server logs and final captures are mirrored in `F:\Minecraft\Automatons`.
+
+
+## 0.2.4 safe-landing recovery — 22 October 2026
+
+A read-only inspection of the reported saved forest found **zero Timber entities**. Both workers had a new pending root, empty cargo and zero preparation progress. The blocked roots were an oak at 99,64,-70 and a birch at 95,64,-70. This agrees with the report that no tree was falling: the workers were rejecting plans for their next trees.
+
+Isolated regression tests reproduced two obstruction mistakes in the old implementation: grass/flowers were treated as solid fall obstacles, and shared natural canopy could reject every fall direction. The update trims permitted foliage in the actual fall corridor, keeps neighboring trunks/placed leaves/protected blocks, and records ordinary plant drops once. Cleared crown cells no longer enlarge the moving trunk's obstruction sweep. A continuously blocked plan is released after 60 ticks and deferred for 400 ticks across the Totem's workers, allowing other reachable work.
+
+`revision-0.2.4-tests-3.log` records **all 73 required GameTests passed** and a successful reobfuscated build in 1m49s. The suite includes the previous 67 tests plus ground cover with two-block flower loot, nearby-worker evacuation, shared-leaf corridor trimming, protected foliage, impossible-fall deferral, and the reported two-worker forest. That last fixture contains only natural block states copied from the saved area; newly created test workers restore the reported positions and pending roots. Both target timber jobs finish, with **6 oak logs and 7 birch logs** accounted for across storage and worker cargo. It does not require those workers to unload while more forest jobs remain.
+
+Earlier diagnostic logs are retained. The old-code ground-cover/shared-leaf tests failed as expected. The forest fixture initially had a template-origin offset, then an overly early unload assertion; the impossible-fall fixture initially overwrote its own Totem. Those fixture mistakes were corrected before the final passing run. The nearby-worker test already passed before this patch and is retained as coverage, not evidence of a changed evacuation algorithm.
+
+Asset validation passed 91 JSON resources, 33 textures, the 24-unit rig and proportional UV checks. No new client graphics or manual gameplay acceptance session was run for this server-behavior patch; the 0.2.3 client evidence above remains historical.
+
+Installed **automatons-0.2.4.jar**, **375,935 bytes**, SHA-256 **F4A06588A7E920561E66817B09DCD74817C3229CE42A0492C0CD5270EA8E9088**, after the user confirmed Minecraft was saved and closed. The previous JAR is preserved in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-201837-334`. No saved-world entity or block data was edited. Existing pending jobs resume through the corrected planner after loading. Versioned source, logs, manifest and documentation are archived in the asset library.
