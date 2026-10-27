@@ -26,8 +26,15 @@ public final class ClientSetup {
   public static void setup(FMLClientSetupEvent e) {
     e.enqueueWork(
         () -> {
-          MenuScreens.<WorkMenu, net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<WorkMenu>>register(Automatons.MENU.get(), (menu, inventory, title) ->
-              menu.isWorker || menu.isTotem ? new ProfessionScreen(menu, inventory, title) : new WorkScreen(menu, inventory, title));
+          MenuScreens
+              .<WorkMenu,
+                  net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<WorkMenu>>
+                  register(
+                      Automatons.MENU.get(),
+                      (menu, inventory, title) ->
+                          menu.isWorker || menu.isTotem
+                              ? new ProfessionScreen(menu, inventory, title)
+                              : new WorkScreen(menu, inventory, title));
           MenuScreens.register(MachineParts.MENU.get(), MachineScreen::new);
           if (net.minecraftforge.fml.ModList.get().isLoaded("jeresources"))
             dev.automatons.compat.jer.AutomatonsJerPlugin.initialize();
@@ -47,7 +54,7 @@ public final class ClientSetup {
     e.registerEntityRenderer(Automatons.FISHING_HOOK.get(), WorkerFishingHookRenderer::new);
     e.registerBlockEntityRenderer(Automatons.INFUSER_BE.get(), InfuserRenderer::new);
     e.registerEntityRenderer(Automatons.LUMBERTON.get(), LumbertonRenderer::new);
-    e.registerEntityRenderer(Automatons.GUARDINGTON.get(), LumbertonRenderer::new);
+    e.registerEntityRenderer(Automatons.GUARDINGTON.get(), c -> new LumbertonRenderer(c, true));
     e.registerEntityRenderer(Automatons.TIMBER.get(), TimberRenderer::new);
     e.registerEntityRenderer(MachineParts.ENTITY.get(), MachineRenderer::new);
     e.registerBlockEntityRenderer(Automatons.STATION.get(), TotemRenderer::new);
@@ -62,7 +69,10 @@ public final class ClientSetup {
     var mc = Minecraft.getInstance();
     CompoundTag n = message.data();
     if (n == null) return;
-    if (message.kind() == 6 && mc.player != null && mc.player.containerMenu instanceof MachineMenu menu && menu.containerId == message.menu()) menu.snapshot = n;
+    if (message.kind() == 6
+        && mc.player != null
+        && mc.player.containerMenu instanceof MachineMenu menu
+        && menu.containerId == message.menu()) menu.snapshot = n;
     if (message.kind() == 5) TimberSweep.receive(n);
     if (message.kind() == 0
         && mc.player != null

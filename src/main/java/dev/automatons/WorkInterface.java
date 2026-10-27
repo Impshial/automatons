@@ -138,6 +138,42 @@ public final class WorkInterface {
     n.putInt("RawShards", stock.getOrDefault(Automatons.LUMITE_SHARD.get(), 0));
     n.putInt("InfusedShards", stock.getOrDefault(Automatons.INFUSED_LUMITE.get(), 0));
     if (s.farm != null) n.putBoolean("BoneMeal", s.farm.boneMeal);
+    n.putInt("DimensionBottom", level.getMinBuildHeight());
+    n.putInt("QuarryBottom", s.quarryBottom == null ? level.getMinBuildHeight() : s.quarryBottom);
+    if (s.mine != null && s.mine.quarry != null) {
+      var quarry = s.mine.quarry;
+      n.putInt("QuarryBottom", quarry.bottomY);
+      n.putInt("QuarryY", quarry.y());
+      n.putInt("QuarryDone", quarry.done.cardinality());
+      n.putInt("QuarryUnbreakable", quarry.unbreakable.cardinality());
+      n.putString("QuarryReason", s.mine.reason);
+      n.putBoolean("QuarryActive", true);
+    }
+    if (s.mine != null && s.mine.strip != null) {
+      MinePlan mine = s.mine;
+      StripMine plan = mine.strip;
+      ListTag lines = new ListTag();
+      List<String> text =
+          new ArrayList<>(
+              List.of(
+                  "Fixed strip: 20 passages",
+                  "Level " + plan.floors.size() + " at Y " + mine.chamber().getY(),
+                  "Center corridor: 3 wide",
+                  "Passages: 1 wide, 2 high",
+                  "Storage: four double chests",
+                  mine.reason));
+      int finished = 0, stopped = 0;
+      for (int i = 0; i < 20; i++) {
+        var branch = plan.current().branches.get(i);
+        if (!branch.stopped.isEmpty()) stopped++;
+        else if (branch.done(plan.shapes(level).get(i))) finished++;
+      }
+      text.add("Finished: " + finished + "/20; stopped: " + stopped);
+      for (var branch : plan.current().branches)
+        if (!branch.stopped.isEmpty()) text.add(branch.stopped);
+      text.stream().limit(12).forEach(line -> lines.add(StringTag.valueOf(line)));
+      n.put("MiningLines", lines);
+    }
     if (p != null && s.purpose == WorksitePurpose.FISH) {
       n.putBoolean("WaterValid", new SiteLayout(p, level).waterValid());
       n.putInt("DockUsed", s.dockSlots.size());

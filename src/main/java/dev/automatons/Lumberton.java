@@ -34,16 +34,46 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public final Crafting crafting = new Crafting(this);
   public final LuminaService luminaService = new LuminaService(this);
   public final HealingVisit healingVisit = new HealingVisit(this);
-  private static final EntityDataAccessor<Integer> OPERATING = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
-  private static final EntityDataAccessor<Integer> FISHING_POSE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
-  public int fishingPose() { return entityData.get(FISHING_POSE); }
-  public void fishingPose(int value) { entityData.set(FISHING_POSE, value); }
-  private static final EntityDataAccessor<Integer> SERVICE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
-  public int operating() { return entityData.get(OPERATING); }
-  public void operating(int value) { entityData.set(OPERATING, Math.max(0, Math.min(WorkerEnergy.CAPACITY, value))); }
-  public int serviceReserve() { return entityData.get(SERVICE); }
-  public void serviceReserve(int value) { entityData.set(SERVICE, Math.max(0, Math.min(WorkerEnergy.SERVICE_CAPACITY, value))); }
-  public boolean isGuard() { return getType() == Automatons.GUARDINGTON.get(); }
+  private static final EntityDataAccessor<Integer> OPERATING =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+  private static final EntityDataAccessor<Integer> FISHING_POSE =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+
+  public int fishingPose() {
+    return entityData.get(FISHING_POSE);
+  }
+
+  public void fishingPose(int value) {
+    entityData.set(FISHING_POSE, value);
+  }
+
+  private static final EntityDataAccessor<Integer> SERVICE =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+
+  public int operating() {
+    return entityData.get(OPERATING);
+  }
+
+  public void operating(int value) {
+    entityData.set(OPERATING, Math.max(0, Math.min(WorkerEnergy.CAPACITY, value)));
+  }
+
+  public int serviceReserve() {
+    return entityData.get(SERVICE);
+  }
+
+  public void serviceReserve(int value) {
+    entityData.set(SERVICE, Math.max(0, Math.min(WorkerEnergy.SERVICE_CAPACITY, value)));
+  }
+
+  public boolean isGuard() {
+    return getType() == Automatons.GUARDINGTON.get();
+  }
+
+  public boolean excavator() {
+    return job() == WorkerJob.MININGTON || job() == WorkerJob.QUARRYTON;
+  }
+
   public final Mining mining = new Mining(this);
   public final Building building = new Building(this);
   public final Farming farming = new Farming(this);
@@ -286,14 +316,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     for (int i = 0; i < tools.getSlots(); i++)
       if (!Inventories.tool(next, tools.getStackInSlot(i))
           && !Inventories.insert(packed, tools.getStackInSlot(i), false).isEmpty()) {
-      state(
-          net.minecraft.network.chat.Component.translatable("automatons.runner.unload")
-              .getString());
-      return false;
-    }
+        state(
+            net.minecraft.network.chat.Component.translatable("automatons.runner.unload")
+                .getString());
+        return false;
+      }
     cargo.deserializeNBT(packed.serializeNBT());
     for (int i = 0; i < tools.getSlots(); i++)
-      if (!Inventories.tool(next, tools.getStackInSlot(i))) tools.setStackInSlot(i, ItemStack.EMPTY);
+      if (!Inventories.tool(next, tools.getStackInSlot(i)))
+        tools.setStackInSlot(i, ItemStack.EMPTY);
     entityData.set(JOB, next);
     replantAt = null;
     suspendWork();
@@ -386,7 +417,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public ItemStack expectedOutput() {
-    if (job() == 2) return mining.expectedOutput();
+    if (excavator()) return mining.expectedOutput();
     Timber t = timber();
     if (t != null && t.pendingLoot != null && !t.pendingLoot.isEmpty())
       return t.pendingLoot.get(0).copyWithCount(1);
@@ -405,9 +436,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   public int cargoKeep(ItemStack stack) {
     if (job() == WorkerJob.CRAFTERTON) return crafting.keep().getOrDefault(stack.getItem(), 0);
-    if (WorkerStock.accepts(this, stack)) return WorkerStock.required(this).getOrDefault(stack.getItem(), 16);
+    if (WorkerStock.accepts(this, stack))
+      return WorkerStock.required(this).getOrDefault(stack.getItem(), 16);
     if (job() == WorkerJob.FARMINGTON) return farming.reserve().getOrDefault(stack.getItem(), 0);
-    if (job() == 2) return mining.keep(stack);
+    if (excavator()) return mining.keep(stack);
     if (job() == 1 && stack.is(net.minecraft.tags.ItemTags.SAPLINGS)) return 16;
     if (job() == 1 && ForestryAccess.buildingBlock(stack)) return 64;
     return 0;
@@ -499,7 +531,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       return "Choose your own totem";
     if (target.logisticsHome != null && !target.logisticsHome.equals(homeId))
       return "Totem belongs to another home";
-    if (!setJob(target.purpose.job())) return "Make room for incompatible equipment before reassignment";
+    if (!setJob(target.purpose.job()))
+      return "Make room for incompatible equipment before reassignment";
     unassign();
     totem = target.getBlockPos();
     totemId = target.identity;
@@ -584,7 +617,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   public void travel(Vec3 input) {
-    if (operating() == 0) { super.travel(new Vec3(0, input.y, 0)); return; }
+    if (operating() == 0) {
+      super.travel(new Vec3(0, input.y, 0));
+      return;
+    }
     if (mining != null && mining.travelControlled()) return;
     super.travel(input);
   }
@@ -594,7 +630,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     super.tick();
     if (!level().isClientSide && isAlive() && !packing) {
       if (tickCount % 20 == 0) Assignments.validate(this);
-      if (energy.tick()) { if (tickCount % 20 == 0) WorkerIdentity.update(this, "Deployed"); return; }
+      if (energy.tick()) {
+        if (tickCount % 20 == 0) WorkerIdentity.update(this, "Deployed");
+        return;
+      }
     }
     if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0)
       pickupNearbyItems();
@@ -1380,7 +1419,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       storageCondition(station());
     }
     if (h != null && h.recalled()) {
-      if (isGuard()) { guarding.tick(true); return; }
+      if (isGuard()) {
+        guarding.tick(true);
+        return;
+      }
       hunting.release();
       ranching.release();
       fishing.release();
@@ -1422,7 +1464,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       state("Unassigned — assign to a configured worksite");
       return;
     }
-    if (isGuard()) { guarding.tick(false); return; }
+    if (isGuard()) {
+      guarding.tick(false);
+      return;
+    }
     if (job() == WorkerJob.OPERATORTON) {
       MachineOperator.tick(this);
       return;
@@ -1469,22 +1514,47 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       return;
     }
     if (s.recalled) {
-      hunting.release(); ranching.release(); fishing.release(); farming.release(); building.release(); mining.releaseWork();
+      hunting.release();
+      ranching.release();
+      fishing.release();
+      farming.release();
+      building.release();
+      mining.releaseWork();
       if (mining.returnToSurface()) return;
-      travelTo(s.getBlockPos(), "Returning to paused worksite", "Worksite paused"); return;
+      travelTo(s.getBlockPos(), "Returning to paused worksite", "Worksite paused");
+      return;
     }
     if (job() == WorkerJob.FARMINGTON) {
       farming.tick(s);
       return;
     }
-    if (job() == WorkerJob.HUNTERTON) { hunting.tick(s); return; }
-    if (job() == WorkerJob.CRAFTERTON) { crafting.tick(s); return; }
-    if (job() == WorkerJob.FISHERTON) { fishing.tick(s); return; }
-    if (job() == WorkerJob.RANCHERTON) { ranching.tick(s); return; }
-    if (job() == WorkerJob.LUMINARITON) { luminaService.tick(s); return; }
-    if (job() >= WorkerJob.CRAFTERTON) { navigation.stop(); state("Profession setup in progress"); return; }
-    if (job() == 2) {
+    if (job() == WorkerJob.HUNTERTON) {
+      hunting.tick(s);
+      return;
+    }
+    if (job() == WorkerJob.CRAFTERTON) {
+      crafting.tick(s);
+      return;
+    }
+    if (job() == WorkerJob.FISHERTON) {
+      fishing.tick(s);
+      return;
+    }
+    if (job() == WorkerJob.RANCHERTON) {
+      ranching.tick(s);
+      return;
+    }
+    if (job() == WorkerJob.LUMINARITON) {
+      luminaService.tick(s);
+      return;
+    }
+    if (excavator()) {
       mining.tick(s);
+      return;
+    }
+    if (job() >= WorkerJob.CRAFTERTON) {
+      navigation.stop();
+      state("Profession setup in progress");
       return;
     }
     if (job() == 3) {

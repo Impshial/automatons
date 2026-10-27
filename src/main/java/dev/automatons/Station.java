@@ -27,6 +27,7 @@ public class Station extends BlockEntity implements MenuProvider {
   public final RanchPlan ranch = new RanchPlan();
   public final Map<Integer, UUID> dockSlots = new HashMap<>();
   public final Map<Item, Integer> craftOrders = new LinkedHashMap<>();
+  public Integer quarryBottom;
   public WorksitePurpose purpose = WorksitePurpose.UNCONFIGURED;
   public Direction orientation = Direction.NORTH;
   public String setupIssue = "";
@@ -36,32 +37,60 @@ public class Station extends BlockEntity implements MenuProvider {
     if (!workers.isEmpty()) return "Unassign production workers first";
     if (!(level instanceof ServerLevel l)) return "Worksite unavailable";
     BuildingProject p = project();
-    if (p != null && (p.builder != null || WorldData.get(l).reservations.keySet().stream().anyMatch(pos -> p.contains(l, BlockPos.of(pos)))))
+    if (p != null
+        && (p.builder != null
+            || WorldData.get(l).reservations.keySet().stream()
+                .anyMatch(pos -> p.contains(l, BlockPos.of(pos)))))
       return "Wait for construction and work claims to clear";
-    if (WorldData.get(l).logistics.values().stream().flatMap(n -> n.parcels.values().stream())
-        .anyMatch(parcel -> identity.equals(parcel.source.totem()) || identity.equals(parcel.destination.totem())))
+    if (WorldData.get(l).logistics.values().stream()
+        .flatMap(n -> n.parcels.values().stream())
+        .anyMatch(
+            parcel ->
+                identity.equals(parcel.source.totem())
+                    || identity.equals(parcel.destination.totem())))
       return "Wait for active deliveries to finish";
     if (ranch.handling != null) return "Wait for animal handling to finish";
+    if (mine != null
+        && mine.entrance != null
+        && (mine.traveller != null && mine.travelUntil > l.getGameTime()
+            || mine.builder != null && mine.builderUntil > l.getGameTime()
+            || WorldData.get(l).reservations.keySet().stream()
+                .map(BlockPos::of)
+                .anyMatch(
+                    pos -> pos.getY() < mine.entrance.getY() && MinePlan.inBounds(this, pos))))
+      return "Wait for underground work and ladder travel to finish";
     return "";
   }
 
   /** Explicit menu confirmation changes the plan only; existing world blocks stay in place. */
   public boolean changeProfession(WorksitePurpose value) {
-    if (value == WorksitePurpose.UNCONFIGURED || value == purpose || !professionChangeIssue().isEmpty()) return false;
-    ServerLevel l = (ServerLevel)level; WorldData data = WorldData.get(l);
-    BuildingProject previous = data.buildings.remove(identity); FarmPlan oldFarm = farm;
-    WorksitePurpose oldPurpose = purpose; data.farms.remove(identity); farm = null;
+    if (value == WorksitePurpose.UNCONFIGURED
+        || value == purpose
+        || !professionChangeIssue().isEmpty()) return false;
+    ServerLevel l = (ServerLevel) level;
+    WorldData data = WorldData.get(l);
+    BuildingProject previous = data.buildings.remove(identity);
+    FarmPlan oldFarm = farm;
+    WorksitePurpose oldPurpose = purpose;
+    data.farms.remove(identity);
+    farm = null;
     if (!configure(value)) {
       if (previous != null) data.buildings.put(identity, previous);
-      farm = oldFarm; purpose = oldPurpose;
+      farm = oldFarm;
+      purpose = oldPurpose;
       if (oldFarm != null) data.farms.put(identity, oldFarm);
-      changed(); return false;
+      changed();
+      return false;
     }
     if (previous != null) previous.supplies.abandon(l);
-    mine = null; craftOrders.clear();
+    mine = null;
+    craftOrders.clear();
+    quarryBottom = null;
     project().paused = true;
     project().reason = "New plan paused; review existing blocks before starting construction";
-    data.setDirty(); changed(); return true;
+    data.setDirty();
+    changed();
+    return true;
   }
 
   /** The sole surface range: both nearby inventories and profession work use this boundary. */
@@ -303,6 +332,10 @@ public class Station extends BlockEntity implements MenuProvider {
 
   public void removeMember(UUID id) {
     workers.remove(id);
+    if (mine != null && mine.strip != null) {
+      mine.strip.release(id);
+      mine.release(id);
+    }
     if (id.equals(worker)) {
       worker = null;
       workerHome = null;
@@ -629,7 +662,8 @@ public class Station extends BlockEntity implements MenuProvider {
 
   @Override
   public Component getDisplayName() {
-    return Component.literal(customName.isBlank() ? isTotem() ? "Automaton Totem" : "Automaton Pedestal" : customName);
+    return Component.literal(
+        customName.isBlank() ? isTotem() ? "Automaton Totem" : "Automaton Pedestal" : customName);
   }
 
   @Override
@@ -642,6 +676,7 @@ public class Station extends BlockEntity implements MenuProvider {
     super.saveAdditional(n);
     n.putInt("DataVersion", 2);
     n.putString("CustomName", customName);
+    if (quarryBottom != null) n.putInt("QuarryBottom", quarryBottom);
     n.putInt("Purpose", purpose.ordinal());
     n.putInt("Orientation", orientation.get2DDataValue());
     n.putUUID("Identity", identity);
@@ -655,7 +690,10 @@ public class Station extends BlockEntity implements MenuProvider {
     n.put("Inventory", inventory.serializeNBT());
     if (mine != null) n.put("Mine", mine.save());
     n.put("Ranch", ranch.save());
-    ListTag orders = new ListTag(); craftOrders.forEach((item, count) -> orders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", orders);
+    ListTag orders = new ListTag();
+    craftOrders.forEach(
+        (item, count) -> orders.add(new ItemStack(item, count).save(new CompoundTag())));
+    n.put("CraftOrders", orders);
     ListTag ids = new ListTag();
     for (UUID id : workers) {
       CompoundTag c = new CompoundTag();
@@ -664,7 +702,11 @@ public class Station extends BlockEntity implements MenuProvider {
     }
     n.put("Workers", ids);
     ListTag guardIds = new ListTag();
-    for (UUID id : guards) { CompoundTag c = new CompoundTag(); c.putUUID("Id", id); guardIds.add(c); }
+    for (UUID id : guards) {
+      CompoundTag c = new CompoundTag();
+      c.putUUID("Id", id);
+      guardIds.add(c);
+    }
     n.put("Guards", guardIds);
     ListTag flags = new ListTag();
     chestFlags.forEach(
@@ -680,6 +722,7 @@ public class Station extends BlockEntity implements MenuProvider {
   @Override
   public void load(CompoundTag n) {
     customName = n.getString("CustomName");
+    quarryBottom = n.contains("QuarryBottom") ? n.getInt("QuarryBottom") : null;
     super.load(n);
     purpose = WorksitePurpose.of(n.getInt("Purpose"));
     orientation = Direction.from2DDataValue(n.getInt("Orientation"));
@@ -698,13 +741,16 @@ public class Station extends BlockEntity implements MenuProvider {
     mine = n.contains("Mine") ? MinePlan.load(n.getCompound("Mine")) : null;
     ranch.load(n.getCompound("Ranch"));
     craftOrders.clear();
-    for (Tag value : n.getList("CraftOrders", 10)) { ItemStack order = ItemStack.of((CompoundTag)value); if (!order.isEmpty()) craftOrders.put(order.getItem(), Math.min(64, order.getCount())); }
+    for (Tag value : n.getList("CraftOrders", 10)) {
+      ItemStack order = ItemStack.of((CompoundTag) value);
+      if (!order.isEmpty()) craftOrders.put(order.getItem(), Math.min(64, order.getCount()));
+    }
     CompoundTag slots = n.getCompound("Inventory").copy();
     if (!isTotem() && slots.getInt("Size") < 6) slots.putInt("Size", 6);
     inventory.deserializeNBT(slots);
     workers.clear();
     guards.clear();
-    for (Tag t : n.getList("Guards", 10)) guards.add(((CompoundTag)t).getUUID("Id"));
+    for (Tag t : n.getList("Guards", 10)) guards.add(((CompoundTag) t).getUUID("Id"));
     for (Tag t : n.getList("Workers", 10)) workers.add(((CompoundTag) t).getUUID("Id"));
     if (isTotem() && worker != null) workers.add(worker);
     chestFlags.clear();

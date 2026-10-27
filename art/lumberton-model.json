@@ -1,9 +1,10 @@
 {
   "texture_size": [
-    128,
-    128
+    256,
+    256
   ],
-  "height_blocks": 1.78125,
+  "standing_body_height": 26,
+  "guard_body_height": 40,
   "units_per_block": 16,
   "parts": [
     {
@@ -152,8 +153,8 @@
       "parent": null,
       "job": 0,
       "uv": [
-        0,
-        19
+        116,
+        0
       ]
     },
     {
@@ -177,8 +178,8 @@
       "parent": null,
       "job": 0,
       "uv": [
-        16,
-        19
+        132,
+        0
       ]
     },
     {
@@ -202,8 +203,8 @@
       "parent": null,
       "job": 0,
       "uv": [
-        34,
-        19
+        150,
+        0
       ]
     },
     {
@@ -227,57 +228,157 @@
       "parent": null,
       "job": 0,
       "uv": [
-        46,
-        19
+        162,
+        0
       ]
     },
     {
-      "name": "lumber_apron",
+      "name": "boot_r",
       "origin": [
         0,
         0,
         0
       ],
       "from": [
-        -3,
-        2,
-        -4
+        -2.5,
+        4,
+        -2.5
       ],
       "size": [
-        6,
-        6,
-        1
+        4,
+        4,
+        5
       ],
-      "material": "green",
-      "parent": "body",
-      "job": 1,
+      "material": "boot",
+      "parent": "right_leg",
+      "job": -1,
       "uv": [
-        58,
-        19
+        174,
+        0
       ]
     },
     {
-      "name": "lumber_shoulder",
+      "name": "boot_l",
       "origin": [
         0,
         0,
         0
       ],
       "from": [
-        -4.5,
+        -1.5,
+        4,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "boot",
+      "parent": "left_leg",
+      "job": -1,
+      "uv": [
+        194,
+        0
+      ]
+    },
+    {
+      "name": "lumber_shirt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
         0,
         -3.5
       ],
       "size": [
-        2,
-        2,
+        10,
+        9,
         7
       ],
-      "material": "green",
+      "material": "red",
       "parent": "body",
       "job": 1,
       "uv": [
-        74,
+        214,
+        0
+      ]
+    },
+    {
+      "name": "lumber_sleeve_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "red",
+      "parent": "right_arm",
+      "job": 1,
+      "uv": [
+        0,
+        19
+      ]
+    },
+    {
+      "name": "lumber_sleeve_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "red",
+      "parent": "left_arm",
+      "job": 1,
+      "uv": [
+        20,
+        19
+      ]
+    },
+    {
+      "name": "lumber_belt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        7,
+        -4
+      ],
+      "size": [
+        10,
+        2,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 1,
+      "uv": [
+        40,
         19
       ]
     },
@@ -302,7 +403,157 @@
       "parent": "body",
       "job": 1,
       "uv": [
-        94,
+        64,
+        19
+      ]
+    },
+    {
+      "name": "miner_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        1,
+        -4
+      ],
+      "size": [
+        8,
+        8,
+        1
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 2,
+      "uv": [
+        72,
+        19
+      ]
+    },
+    {
+      "name": "miner_knee_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2.5,
+        2,
+        -3
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "right_leg",
+      "job": 2,
+      "uv": [
+        92,
+        19
+      ]
+    },
+    {
+      "name": "miner_knee_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        2,
+        -3
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "left_leg",
+      "job": 2,
+      "uv": [
+        104,
+        19
+      ]
+    },
+    {
+      "name": "quarry_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        1,
+        -4
+      ],
+      "size": [
+        8,
+        8,
+        1
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 11,
+      "uv": [
+        116,
+        19
+      ]
+    },
+    {
+      "name": "quarry_knee_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2.5,
+        2,
+        -3
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "right_leg",
+      "job": 11,
+      "uv": [
+        136,
+        19
+      ]
+    },
+    {
+      "name": "quarry_knee_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        2,
+        -3
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "left_leg",
+      "job": 11,
+      "uv": [
+        148,
         19
       ]
     },
@@ -327,8 +578,33 @@
       "parent": "head",
       "job": 2,
       "uv": [
+        160,
+        19
+      ]
+    },
+    {
+      "name": "miner_brim",
+      "origin": [
         0,
-        33
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        -7,
+        -5.5
+      ],
+      "size": [
+        11,
+        1,
+        11
+      ],
+      "material": "helmet",
+      "parent": "head",
+      "job": 2,
+      "uv": [
+        200,
+        19
       ]
     },
     {
@@ -352,32 +628,132 @@
       "parent": "head",
       "job": 2,
       "uv": [
-        40,
-        33
+        246,
+        19
       ]
     },
     {
-      "name": "miner_apron",
+      "name": "quarry_band",
       "origin": [
         0,
         0,
         0
       ],
       "from": [
-        -3,
-        2,
-        -4
+        -5,
+        -8,
+        -4.5
       ],
       "size": [
-        6,
-        6,
+        10,
+        1,
+        9
+      ],
+      "material": "strap",
+      "parent": "head",
+      "job": 11,
+      "uv": [
+        0,
+        33
+      ]
+    },
+    {
+      "name": "quarry_rim_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        -9,
+        -5
+      ],
+      "size": [
+        4,
+        3,
         1
       ],
-      "material": "leather",
-      "parent": "body",
-      "job": 2,
+      "material": "iron",
+      "parent": "head",
+      "job": 11,
       "uv": [
-        50,
+        40,
+        33
+      ]
+    },
+    {
+      "name": "quarry_lens_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 11,
+      "uv": [
+        52,
+        33
+      ]
+    },
+    {
+      "name": "quarry_rim_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        0.5,
+        -9,
+        -5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "head",
+      "job": 11,
+      "uv": [
+        62,
+        33
+      ]
+    },
+    {
+      "name": "quarry_lens_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 11,
+      "uv": [
+        74,
         33
       ]
     },
@@ -389,20 +765,20 @@
         0
       ],
       "from": [
-        -3.5,
-        0.5,
+        -4,
+        0,
         3
       ],
       "size": [
-        7,
         8,
-        3
+        10,
+        4
       ],
       "material": "leather",
       "parent": "body",
       "job": 3,
       "uv": [
-        66,
+        84,
         33
       ]
     },
@@ -427,32 +803,7 @@
       "parent": "body",
       "job": 3,
       "uv": [
-        88,
-        33
-      ]
-    },
-    {
-      "name": "strap_left",
-      "origin": [
-        0,
-        0,
-        0
-      ],
-      "from": [
-        2.5,
-        0,
-        -4
-      ],
-      "size": [
-        1,
-        8,
-        1
-      ],
-      "material": "strap",
-      "parent": "body",
-      "job": 3,
-      "uv": [
-        94,
+        110,
         33
       ]
     },
@@ -477,7 +828,32 @@
       "parent": "body",
       "job": 3,
       "uv": [
-        100,
+        116,
+        33
+      ]
+    },
+    {
+      "name": "strap_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2.5,
+        0,
+        -4
+      ],
+      "size": [
+        1,
+        8,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        132,
         33
       ]
     },
@@ -502,8 +878,33 @@
       "parent": "body",
       "job": 3,
       "uv": [
+        138,
+        33
+      ]
+    },
+    {
+      "name": "strap_cross",
+      "origin": [
         0,
-        47
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        4,
+        -4.5
+      ],
+      "size": [
+        7,
+        1,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        154,
+        33
       ]
     },
     {
@@ -514,12 +915,12 @@
         0
       ],
       "from": [
-        -1.5,
-        3,
-        6
+        -2,
+        5,
+        7
       ],
       "size": [
-        3,
+        4,
         3,
         1
       ],
@@ -527,8 +928,58 @@
       "parent": "body",
       "job": 3,
       "uv": [
-        16,
-        47
+        172,
+        33
+      ]
+    },
+    {
+      "name": "runner_cap",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        -9,
+        -4.5
+      ],
+      "size": [
+        10,
+        3,
+        9
+      ],
+      "material": "denim",
+      "parent": "head",
+      "job": 3,
+      "uv": [
+        184,
+        33
+      ]
+    },
+    {
+      "name": "runner_peak",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -7,
+        -7.5
+      ],
+      "size": [
+        8,
+        1,
+        4
+      ],
+      "material": "denim",
+      "parent": "head",
+      "job": 3,
+      "uv": [
+        224,
+        33
       ]
     },
     {
@@ -539,12 +990,12 @@
         0
       ],
       "from": [
-        -3,
+        -3.5,
         1,
         -4
       ],
       "size": [
-        6,
+        7,
         7,
         1
       ],
@@ -552,8 +1003,8 @@
       "parent": "body",
       "job": 4,
       "uv": [
-        26,
-        47
+        0,
+        49
       ]
     },
     {
@@ -566,7 +1017,7 @@
       "from": [
         -4.5,
         6,
-        -4
+        -4.5
       ],
       "size": [
         9,
@@ -577,8 +1028,8 @@
       "parent": "body",
       "job": 4,
       "uv": [
-        42,
-        47
+        18,
+        49
       ]
     },
     {
@@ -602,8 +1053,33 @@
       "parent": "body",
       "job": 4,
       "uv": [
-        64,
-        47
+        40,
+        49
+      ]
+    },
+    {
+      "name": "builder_pouch",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2,
+        6,
+        -5
+      ],
+      "size": [
+        3,
+        3,
+        2
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 4,
+      "uv": [
+        48,
+        49
       ]
     },
     {
@@ -627,8 +1103,8 @@
       "parent": "head",
       "job": 5,
       "uv": [
-        72,
-        47
+        60,
+        49
       ]
     },
     {
@@ -652,12 +1128,1012 @@
       "parent": "head",
       "job": 5,
       "uv": [
-        0,
-        61
+        108,
+        49
       ]
     },
     {
-      "name": "farmer_apron",
+      "name": "farmer_overalls",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        1,
+        -4
+      ],
+      "size": [
+        7,
+        8,
+        1
+      ],
+      "material": "denim",
+      "parent": "body",
+      "job": 5,
+      "uv": [
+        140,
+        49
+      ]
+    },
+    {
+      "name": "farmer_patch",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        5,
+        -4.5
+      ],
+      "size": [
+        2,
+        2,
+        1
+      ],
+      "material": "patch",
+      "parent": "body",
+      "job": 5,
+      "uv": [
+        158,
+        49
+      ]
+    },
+    {
+      "name": "farmer_trouser_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "denim",
+      "parent": "right_leg",
+      "job": 5,
+      "uv": [
+        166,
+        49
+      ]
+    },
+    {
+      "name": "farmer_trouser_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "denim",
+      "parent": "left_leg",
+      "job": 5,
+      "uv": [
+        186,
+        49
+      ]
+    },
+    {
+      "name": "farmer_strap_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        0,
+        -4
+      ],
+      "size": [
+        1,
+        4,
+        1
+      ],
+      "material": "denim",
+      "parent": "body",
+      "job": 5,
+      "uv": [
+        206,
+        49
+      ]
+    },
+    {
+      "name": "farmer_strap_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2,
+        0,
+        -4
+      ],
+      "size": [
+        1,
+        4,
+        1
+      ],
+      "material": "denim",
+      "parent": "body",
+      "job": 5,
+      "uv": [
+        212,
+        49
+      ]
+    },
+    {
+      "name": "operator_band",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        -8,
+        -4.5
+      ],
+      "size": [
+        10,
+        1,
+        9
+      ],
+      "material": "strap",
+      "parent": "head",
+      "job": 6,
+      "uv": [
+        218,
+        49
+      ]
+    },
+    {
+      "name": "operator_rim_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        -9,
+        -5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "head",
+      "job": 6,
+      "uv": [
+        0,
+        63
+      ]
+    },
+    {
+      "name": "operator_lens_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 6,
+      "uv": [
+        12,
+        63
+      ]
+    },
+    {
+      "name": "operator_rim_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        0.5,
+        -9,
+        -5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "head",
+      "job": 6,
+      "uv": [
+        22,
+        63
+      ]
+    },
+    {
+      "name": "operator_lens_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 6,
+      "uv": [
+        34,
+        63
+      ]
+    },
+    {
+      "name": "operator_glove_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "right_arm",
+      "job": 6,
+      "uv": [
+        44,
+        63
+      ]
+    },
+    {
+      "name": "operator_glove_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "left_arm",
+      "job": 6,
+      "uv": [
+        64,
+        63
+      ]
+    },
+    {
+      "name": "hunter_shirt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        0,
+        -3.5
+      ],
+      "size": [
+        10,
+        9,
+        7
+      ],
+      "material": "camo",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        84,
+        63
+      ]
+    },
+    {
+      "name": "hunter_sleeve_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "camo",
+      "parent": "right_arm",
+      "job": 7,
+      "uv": [
+        120,
+        63
+      ]
+    },
+    {
+      "name": "hunter_sleeve_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "camo",
+      "parent": "left_arm",
+      "job": 7,
+      "uv": [
+        140,
+        63
+      ]
+    },
+    {
+      "name": "hunter_cap",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        -9,
+        -4.5
+      ],
+      "size": [
+        10,
+        3,
+        9
+      ],
+      "material": "camo",
+      "parent": "head",
+      "job": 7,
+      "uv": [
+        160,
+        63
+      ]
+    },
+    {
+      "name": "hunter_peak",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -7,
+        -6.5
+      ],
+      "size": [
+        8,
+        1,
+        3
+      ],
+      "material": "camo",
+      "parent": "head",
+      "job": 7,
+      "uv": [
+        200,
+        63
+      ]
+    },
+    {
+      "name": "hunter_quiver",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        -1,
+        3.5
+      ],
+      "size": [
+        3,
+        10,
+        3
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        224,
+        63
+      ]
+    },
+    {
+      "name": "hunter_arrow_1",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        -4,
+        4.5
+      ],
+      "size": [
+        1,
+        5,
+        1
+      ],
+      "material": "parcel",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        238,
+        63
+      ]
+    },
+    {
+      "name": "hunter_feather_1",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        0.5,
+        -4,
+        4
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "material": "iron",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        244,
+        63
+      ]
+    },
+    {
+      "name": "hunter_arrow_3",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        3,
+        -4,
+        4.5
+      ],
+      "size": [
+        1,
+        5,
+        1
+      ],
+      "material": "parcel",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        0,
+        81
+      ]
+    },
+    {
+      "name": "hunter_feather_3",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2.5,
+        -4,
+        4
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "material": "iron",
+      "parent": "body",
+      "job": 7,
+      "uv": [
+        6,
+        81
+      ]
+    },
+    {
+      "name": "crafter_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        0,
+        -4.5
+      ],
+      "size": [
+        8,
+        11,
+        2
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 8,
+      "uv": [
+        16,
+        81
+      ]
+    },
+    {
+      "name": "crafter_pocket",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2,
+        4,
+        -5.5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 8,
+      "uv": [
+        38,
+        81
+      ]
+    },
+    {
+      "name": "crafter_band",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        -9,
+        -4.5
+      ],
+      "size": [
+        10,
+        1,
+        9
+      ],
+      "material": "strap",
+      "parent": "head",
+      "job": 8,
+      "uv": [
+        50,
+        81
+      ]
+    },
+    {
+      "name": "crafter_rim_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        -10,
+        -5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "head",
+      "job": 8,
+      "uv": [
+        90,
+        81
+      ]
+    },
+    {
+      "name": "crafter_lens_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -9.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 8,
+      "uv": [
+        102,
+        81
+      ]
+    },
+    {
+      "name": "crafter_rim_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        0.5,
+        -10,
+        -5
+      ],
+      "size": [
+        4,
+        3,
+        1
+      ],
+      "material": "iron",
+      "parent": "head",
+      "job": 8,
+      "uv": [
+        112,
+        81
+      ]
+    },
+    {
+      "name": "crafter_lens_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        1,
+        -9.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "goggle",
+      "parent": "head",
+      "job": 8,
+      "uv": [
+        124,
+        81
+      ]
+    },
+    {
+      "name": "crafter_glove_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "right_arm",
+      "job": 8,
+      "uv": [
+        134,
+        81
+      ]
+    },
+    {
+      "name": "crafter_glove_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "left_arm",
+      "job": 8,
+      "uv": [
+        154,
+        81
+      ]
+    },
+    {
+      "name": "fisher_shirt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        0,
+        -3.5
+      ],
+      "size": [
+        10,
+        9,
+        7
+      ],
+      "material": "green",
+      "parent": "body",
+      "job": 9,
+      "uv": [
+        174,
+        81
+      ]
+    },
+    {
+      "name": "fisher_sleeve_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "green",
+      "parent": "right_arm",
+      "job": 9,
+      "uv": [
+        210,
+        81
+      ]
+    },
+    {
+      "name": "fisher_sleeve_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        6,
+        5
+      ],
+      "material": "green",
+      "parent": "left_arm",
+      "job": 9,
+      "uv": [
+        230,
+        81
+      ]
+    },
+    {
+      "name": "fisher_brim",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -6,
+        -7.5,
+        -5.5
+      ],
+      "size": [
+        12,
+        1,
+        11
+      ],
+      "material": "green",
+      "parent": "head",
+      "job": 9,
+      "uv": [
+        0,
+        99
+      ]
+    },
+    {
+      "name": "fisher_hat",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        -10.5,
+        -4
+      ],
+      "size": [
+        9,
+        3,
+        8
+      ],
+      "material": "green",
+      "parent": "head",
+      "job": 9,
+      "uv": [
+        48,
+        99
+      ]
+    },
+    {
+      "name": "fisher_waders",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        4,
+        -4.5
+      ],
+      "size": [
+        8,
+        5,
+        1
+      ],
+      "material": "boot",
+      "parent": "body",
+      "job": 9,
+      "uv": [
+        84,
+        99
+      ]
+    },
+    {
+      "name": "fisher_wader_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        8,
+        5
+      ],
+      "material": "boot",
+      "parent": "right_leg",
+      "job": 9,
+      "uv": [
+        104,
+        99
+      ]
+    },
+    {
+      "name": "fisher_wader_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        0,
+        -2.5
+      ],
+      "size": [
+        4,
+        8,
+        5
+      ],
+      "material": "boot",
+      "parent": "left_leg",
+      "job": 9,
+      "uv": [
+        124,
+        99
+      ]
+    },
+    {
+      "name": "fisher_lure_red",
       "origin": [
         0,
         0,
@@ -666,19 +2142,1019 @@
       "from": [
         -3,
         1,
+        -4.5
+      ],
+      "size": [
+        1,
+        2,
+        1
+      ],
+      "material": "red",
+      "parent": "body",
+      "job": 9,
+      "uv": [
+        144,
+        99
+      ]
+    },
+    {
+      "name": "fisher_lure_gold",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2,
+        1,
+        -4.5
+      ],
+      "size": [
+        1,
+        2,
+        1
+      ],
+      "material": "trim",
+      "parent": "body",
+      "job": 9,
+      "uv": [
+        150,
+        99
+      ]
+    },
+    {
+      "name": "ranch_brim",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -6.5,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        13,
+        1,
+        11
+      ],
+      "material": "leather",
+      "parent": "head",
+      "job": 10,
+      "uv": [
+        156,
+        99
+      ]
+    },
+    {
+      "name": "ranch_crown",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -11.5,
+        -3.5
+      ],
+      "size": [
+        8,
+        3,
+        7
+      ],
+      "material": "leather",
+      "parent": "head",
+      "job": 10,
+      "uv": [
+        206,
+        99
+      ]
+    },
+    {
+      "name": "ranch_band",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        -9.5,
+        -4
+      ],
+      "size": [
+        9,
+        1,
+        8
+      ],
+      "material": "strap",
+      "parent": "head",
+      "job": 10,
+      "uv": [
+        0,
+        114
+      ]
+    },
+    {
+      "name": "ranch_glove_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "right_arm",
+      "job": 10,
+      "uv": [
+        36,
+        114
+      ]
+    },
+    {
+      "name": "ranch_glove_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        9,
+        -2.5
+      ],
+      "size": [
+        4,
+        4,
+        5
+      ],
+      "material": "glove",
+      "parent": "left_arm",
+      "job": 10,
+      "uv": [
+        56,
+        114
+      ]
+    },
+    {
+      "name": "mage_robe",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        0,
+        -4
+      ],
+      "size": [
+        10,
+        13,
+        8
+      ],
+      "material": "purple",
+      "parent": "body",
+      "job": 12,
+      "uv": [
+        76,
+        114
+      ]
+    },
+    {
+      "name": "mage_trim",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1,
+        0,
+        -4.5
+      ],
+      "size": [
+        2,
+        13,
+        1
+      ],
+      "material": "trim",
+      "parent": "body",
+      "job": 12,
+      "uv": [
+        114,
+        114
+      ]
+    },
+    {
+      "name": "mage_sleeve_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        12,
+        6
+      ],
+      "material": "purple",
+      "parent": "right_arm",
+      "job": 12,
+      "uv": [
+        122,
+        114
+      ]
+    },
+    {
+      "name": "mage_sleeve_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        12,
+        6
+      ],
+      "material": "purple",
+      "parent": "left_arm",
+      "job": 12,
+      "uv": [
+        146,
+        114
+      ]
+    },
+    {
+      "name": "mage_brim",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -6,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        12,
+        1,
+        11
+      ],
+      "material": "purple",
+      "parent": "head",
+      "job": 12,
+      "uv": [
+        170,
+        114
+      ]
+    },
+    {
+      "name": "mage_hat_0",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.0,
+        -10.5,
+        -4.0
+      ],
+      "size": [
+        8,
+        2,
+        8
+      ],
+      "material": "purple",
+      "parent": "head",
+      "job": 12,
+      "uv": [
+        218,
+        114
+      ]
+    },
+    {
+      "name": "mage_hat_1",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.0,
+        -12.5,
+        -3.0
+      ],
+      "size": [
+        6,
+        2,
+        6
+      ],
+      "material": "purple",
+      "parent": "head",
+      "job": 12,
+      "uv": [
+        0,
+        137
+      ]
+    },
+    {
+      "name": "mage_hat_2",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -2.0,
+        -14.5,
+        -2.0
+      ],
+      "size": [
+        4,
+        2,
+        4
+      ],
+      "material": "purple",
+      "parent": "head",
+      "job": 12,
+      "uv": [
+        26,
+        137
+      ]
+    },
+    {
+      "name": "mage_hat_3",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.0,
+        -16.5,
+        -1.0
+      ],
+      "size": [
+        2,
+        2,
+        2
+      ],
+      "material": "purple",
+      "parent": "head",
+      "job": 12,
+      "uv": [
+        44,
+        137
+      ]
+    },
+    {
+      "name": "guard_head",
+      "origin": [
+        0,
+        -6,
+        0
+      ],
+      "from": [
+        -4.5,
+        -10,
+        -5
+      ],
+      "size": [
+        9,
+        10,
+        10
+      ],
+      "material": "plank",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        54,
+        137
+      ]
+    },
+    {
+      "name": "guard_body",
+      "origin": [
+        0,
+        -2,
+        0
+      ],
+      "from": [
+        -6,
+        0,
+        -4
+      ],
+      "size": [
+        12,
+        14,
+        8
+      ],
+      "material": "armor",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        94,
+        137
+      ]
+    },
+    {
+      "name": "guard_right_arm",
+      "origin": [
+        -6,
+        -2,
+        0
+      ],
+      "from": [
+        -5,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        19,
+        6
+      ],
+      "material": "steel_dark",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        136,
+        137
+      ]
+    },
+    {
+      "name": "guard_left_arm",
+      "origin": [
+        6,
+        -2,
+        0
+      ],
+      "from": [
+        0,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        19,
+        6
+      ],
+      "material": "steel_dark",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        160,
+        137
+      ]
+    },
+    {
+      "name": "guard_right_leg",
+      "origin": [
+        -3.5,
+        12,
+        0
+      ],
+      "from": [
+        -2.5,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        12,
+        6
+      ],
+      "material": "steel_dark",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        184,
+        137
+      ]
+    },
+    {
+      "name": "guard_left_leg",
+      "origin": [
+        3.5,
+        12,
+        0
+      ],
+      "from": [
+        -2.5,
+        0,
+        -3
+      ],
+      "size": [
+        5,
+        12,
+        6
+      ],
+      "material": "steel_dark",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        208,
+        137
+      ]
+    },
+    {
+      "name": "guard_neck",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        -6,
+        -3
+      ],
+      "size": [
+        6,
+        4,
+        6
+      ],
+      "material": "iron",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        232,
+        137
+      ]
+    },
+    {
+      "name": "guard_helmet_top",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        -10,
+        -5.5
+      ],
+      "size": [
+        11,
+        2,
+        11
+      ],
+      "material": "armor",
+      "parent": "guard_head",
+      "job": 0,
+      "uv": [
+        0,
+        164
+      ]
+    },
+    {
+      "name": "guard_helmet_back",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        -8,
+        4.5
+      ],
+      "size": [
+        11,
+        8,
+        1
+      ],
+      "material": "armor",
+      "parent": "guard_head",
+      "job": 0,
+      "uv": [
+        46,
+        164
+      ]
+    },
+    {
+      "name": "guard_helmet_r",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        -8,
+        -5.5
+      ],
+      "size": [
+        2,
+        8,
+        10
+      ],
+      "material": "armor",
+      "parent": "guard_head",
+      "job": 0,
+      "uv": [
+        72,
+        164
+      ]
+    },
+    {
+      "name": "guard_helmet_l",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        3.5,
+        -8,
+        -5.5
+      ],
+      "size": [
+        2,
+        8,
+        10
+      ],
+      "material": "armor",
+      "parent": "guard_head",
+      "job": 0,
+      "uv": [
+        98,
+        164
+      ]
+    },
+    {
+      "name": "guard_chestplate",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -6.5,
+        1,
+        -5
+      ],
+      "size": [
+        13,
+        10,
+        2
+      ],
+      "material": "armor",
+      "parent": "guard_body",
+      "job": 0,
+      "uv": [
+        124,
+        164
+      ]
+    },
+    {
+      "name": "guard_core",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        3,
+        -5.5
+      ],
+      "size": [
+        3,
+        4,
+        1
+      ],
+      "material": "purple",
+      "parent": "guard_body",
+      "job": 0,
+      "uv": [
+        156,
+        164
+      ]
+    },
+    {
+      "name": "guard_shoulder_right",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        -1,
         -4
       ],
       "size": [
         6,
+        6,
+        8
+      ],
+      "material": "armor",
+      "parent": "guard_right_arm",
+      "job": 0,
+      "uv": [
+        166,
+        164
+      ]
+    },
+    {
+      "name": "guard_hand_right",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5.5,
+        14,
+        -3.5
+      ],
+      "size": [
+        6,
+        5,
+        7
+      ],
+      "material": "armor",
+      "parent": "guard_right_arm",
+      "job": 0,
+      "uv": [
+        196,
+        164
+      ]
+    },
+    {
+      "name": "guard_boot_right",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        7,
+        -4
+      ],
+      "size": [
+        6,
+        5,
+        8
+      ],
+      "material": "armor",
+      "parent": "guard_right_leg",
+      "job": 0,
+      "uv": [
+        224,
+        164
+      ]
+    },
+    {
+      "name": "guard_shoulder_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        -1,
+        -4
+      ],
+      "size": [
+        6,
+        6,
+        8
+      ],
+      "material": "armor",
+      "parent": "guard_left_arm",
+      "job": 0,
+      "uv": [
+        0,
+        184
+      ]
+    },
+    {
+      "name": "guard_hand_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -0.5,
+        14,
+        -3.5
+      ],
+      "size": [
+        6,
+        5,
+        7
+      ],
+      "material": "armor",
+      "parent": "guard_left_arm",
+      "job": 0,
+      "uv": [
+        30,
+        184
+      ]
+    },
+    {
+      "name": "guard_boot_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        7,
+        -4
+      ],
+      "size": [
+        6,
+        5,
+        8
+      ],
+      "material": "armor",
+      "parent": "guard_left_leg",
+      "job": 0,
+      "uv": [
+        58,
+        184
+      ]
+    },
+    {
+      "name": "fishing_chair",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        17,
+        -3
+      ],
+      "size": [
+        10,
+        1,
+        8
+      ],
+      "material": "plank",
+      "parent": null,
+      "job": 0,
+      "uv": [
+        88,
+        184
+      ]
+    },
+    {
+      "name": "chair_rl",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        18,
+        -3
+      ],
+      "size": [
+        1,
+        6,
+        1
+      ],
+      "material": "plank",
+      "parent": "fishing_chair",
+      "job": 0,
+      "uv": [
+        126,
+        184
+      ]
+    },
+    {
+      "name": "chair_ll",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        4,
+        18,
+        -3
+      ],
+      "size": [
+        1,
+        6,
+        1
+      ],
+      "material": "plank",
+      "parent": "fishing_chair",
+      "job": 0,
+      "uv": [
+        132,
+        184
+      ]
+    },
+    {
+      "name": "chair_rb",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        18,
+        4
+      ],
+      "size": [
+        1,
+        6,
+        1
+      ],
+      "material": "plank",
+      "parent": "fishing_chair",
+      "job": 0,
+      "uv": [
+        138,
+        184
+      ]
+    },
+    {
+      "name": "chair_lb",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        4,
+        18,
+        4
+      ],
+      "size": [
+        1,
+        6,
+        1
+      ],
+      "material": "plank",
+      "parent": "fishing_chair",
+      "job": 0,
+      "uv": [
+        144,
+        184
+      ]
+    },
+    {
+      "name": "chair_back",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        10,
+        4
+      ],
+      "size": [
+        10,
         7,
         1
       ],
-      "material": "green",
-      "parent": "body",
-      "job": 5,
+      "material": "plank",
+      "parent": "fishing_chair",
+      "job": 0,
       "uv": [
-        32,
-        61
+        150,
+        184
       ]
     }
   ]

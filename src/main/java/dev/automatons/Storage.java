@@ -69,7 +69,8 @@ public final class Storage {
 
   /** Only this mine's four placed chest cells bypass the Totem surface range. */
   public static IItemHandler depotHandler(ServerLevel l, BlockPos p, MinePlan mine) {
-    if (!mine.depotBuilt || !mine.depotCell(p) || !l.hasChunkAt(p)) return null;
+    if ((!mine.depotBuilt && mine.strip == null) || !mine.depotCell(p) || !l.hasChunkAt(p))
+      return null;
     var state = l.getBlockState(p);
     if (!state.is(Blocks.CHEST) || state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) return null;
     BlockPos other = p.relative(ChestBlock.getConnectedDirection(state));
@@ -103,7 +104,7 @@ public final class Storage {
       boolean relevant = false;
       if (supply) {
         for (int i = 0; i < h.getSlots(); i++)
-          if (w.job() == 2
+          if (w.excavator()
               ? w.mining.wants(h.extractItem(i, 64, true))
               : Inventories.tool(w.job(), h.extractItem(i, 1, true))) relevant = true;
       } else {
@@ -180,7 +181,7 @@ public final class Storage {
             }
             break;
           }
-      if (w.job() == 2) {
+      if (w.excavator()) {
         for (int source = 0; source < h.getSlots(); source++) {
           ItemStack preview = h.extractItem(source, 1, true);
           int slot = w.mining.replacementSlot(preview);

@@ -230,7 +230,7 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
           final String key = column == 0 ? "Production" : "Protectors";
           button(
               12 + column * 174,
-              63 + i * 34,
+              59 + i * 38,
               162,
               () -> {
                 var entries = list(key);
@@ -454,6 +454,34 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
           () -> action(data().getBoolean("MinePaused") ? 32 : 33),
           this::editable,
           "");
+      case QUARRY -> {
+        EditBox bottom =
+            new EditBox(
+                font, leftPos + 12, topPos + 82, 94, 18, Component.literal("Quarry bottom Y"));
+        bottom.setMaxLength(7);
+        bottom.setValue(Integer.toString(data().getInt("QuarryBottom")));
+        bottom.setFilter(value -> value.matches("-?[0-9]*"));
+        bottom.setEditable(editable());
+        addRenderableWidget(bottom);
+        button(112, 82, 52, "Set Y", () -> send("quarry_y", bottom.getValue()));
+        button(
+            12,
+            105,
+            152,
+            "Use dimension bottom",
+            () -> {
+              send("quarry_y", "default");
+              bottom.setValue(Integer.toString(data().getInt("DimensionBottom")));
+            });
+        button(
+            188,
+            114,
+            160,
+            () -> data().getBoolean("MinePaused") ? "Resume after checking" : "Pause excavation",
+            () -> action(data().getBoolean("MinePaused") ? 32 : 33),
+            this::editable,
+            "");
+      }
       case BUILDER -> button(12, 115, 152, "Check building repairs", () -> action(43));
       default -> {}
     }
@@ -479,7 +507,11 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
   }
 
   private void text(GuiGraphics g, String value, int x, int y, int width) {
-    g.drawString(font, font.plainSubstrByWidth(value, width), x, y, 0xff38332c, false);
+    String shown =
+        font.width(value) > width
+            ? font.plainSubstrByWidth(value, width - font.width("…")) + "…"
+            : value;
+    g.drawString(font, shown, x, y, 0xff38332c, false);
   }
 
   private void lines(GuiGraphics g, String key, int x, int y, int width, int count) {
@@ -554,7 +586,7 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
               ? data().getString("SiteStatus")
               : data().getString("Feedback"),
           12,
-          194,
+          202,
           336);
       return;
     }
@@ -657,9 +689,10 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
                 ? (int) entry.getFloat("Health")
                     + " HP · "
                     + entry.getInt("Operating") / 1000
-                    + " Lumina · "
+                    + " Lumina"
                 : "";
-        text(g, stats + entry.getString("Activity"), 12 + column * 174, 84 + i * 34, 162);
+        text(g, stats, 12 + column * 174, 78 + i * 38, 162);
+        text(g, entry.getString("Activity"), 12 + column * 174, 88 + i * 38, 162);
       }
     }
   }
@@ -758,8 +791,18 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
       case MINE -> lines(g, "MiningLines", 188, 52, 160, 12);
       case LUMBER -> lines(g, "ForestryLines", 188, 52, 160, 12);
       case QUARRY -> {
-        text(g, "Excavation: 15 × 15", 12, 73, 164);
-        lines(g, "LogisticsLines", 188, 52, 160, 12);
+        text(g, "Bottom Y (15 × 15 area)", 12, 66, 164);
+        text(
+            g,
+            data().getBoolean("QuarryActive")
+                ? "Working at Y " + data().getInt("QuarryY")
+                : "Awaiting Quarryton",
+            188,
+            52,
+            160);
+        text(g, "Layer cells: " + data().getInt("QuarryDone") + "/225", 188, 68, 160);
+        text(g, "Unbreakable: " + data().getInt("QuarryUnbreakable"), 188, 84, 160);
+        text(g, data().getString("QuarryReason"), 188, 100, 160);
       }
       default -> lines(g, "LogisticsLines", 188, 52, 160, 12);
     }

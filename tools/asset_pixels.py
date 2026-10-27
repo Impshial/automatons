@@ -8,11 +8,21 @@ RES=ROOT/'src/main/resources'
 ART=ROOT/'art'
 def write(path,data):
     path.parent.mkdir(parents=True,exist_ok=True)
-    path.write_text(json.dumps(data,indent=2)+'\n',encoding='utf-8')
+    atomic_write(path, (json.dumps(data,indent=2)+'\n').encode('utf-8'))
+
+def atomic_write(path, data):
+    # Asset previews/indexers may memory-map an existing file on Windows. Publish a
+    # complete replacement instead of truncating a file while a reader uses it.
+    temporary = path.with_name(path.name+'.'+uuid.uuid4().hex+'.tmp')
+    try:
+        temporary.write_bytes(data)
+        temporary.replace(path)
+    finally:
+        temporary.unlink(missing_ok=True)
 def chunk(kind,data):return struct.pack('!I',len(data))+kind+data+struct.pack('!I',zlib.crc32(kind+data)&0xffffffff)
 def png(path,pixels):
     path.parent.mkdir(parents=True,exist_ok=True);h=len(pixels);w=len(pixels[0]);raw=b''.join(b'\x00'+b''.join(bytes(c) for c in row) for row in pixels)
-    path.write_bytes(b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',w,h,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b''))
+    atomic_write(path,b'\x89PNG\r\n\x1a\n'+chunk(b'IHDR',struct.pack('!2I5B',w,h,8,6,0,0,0))+chunk(b'IDAT',zlib.compress(raw,9))+chunk(b'IEND',b''))
 def rgb(s):return tuple(bytes.fromhex(s))+(255,)
 wood=list(map(rgb,['6a4829','795431','906738','a77b44','b78b50','c2985b']))
 metal=list(map(rgb,['555858','6b6e6b','8c8f88','b3b4a8']))

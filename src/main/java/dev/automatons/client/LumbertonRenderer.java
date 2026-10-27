@@ -7,7 +7,11 @@ import net.minecraft.resources.ResourceLocation;
 
 public class LumbertonRenderer extends MobRenderer<Lumberton, LumbertonModel> {
   public LumbertonRenderer(EntityRendererProvider.Context c) {
-    super(c, new LumbertonModel(c.bakeLayer(LumbertonModel.LAYER)), .4f);
+    this(c, false);
+  }
+
+  public LumbertonRenderer(EntityRendererProvider.Context c, boolean armored) {
+    super(c, new LumbertonModel(c.bakeLayer(LumbertonModel.LAYER), armored), armored ? .7f : .4f);
     addLayer(new ItemInHandLayer<>(this, c.getItemInHandRenderer()));
   }
 
@@ -18,6 +22,7 @@ public class LumbertonRenderer extends MobRenderer<Lumberton, LumbertonModel> {
 
   @Override
   public ResourceLocation getTextureLocation(Lumberton w) {
+    if (w.operating() == 0) return Automatons.id("textures/entity/lumberton_off.png");
     if (Math.floorMod(w.tickCount + w.getId() * 17, 100) < 3)
       return Automatons.id("textures/entity/lumberton_blink.png");
     return Automatons.id(

@@ -113,18 +113,35 @@ public final class MiningRules {
     UUID claimant = WorldData.get(l).reservations.get(p.asLong());
     if (claimant != null && !claimant.equals(w.getUUID())) return "Waiting for colleague";
     BlockState state = l.getBlockState(p);
+    boolean plugging =
+        s.mine.quarry != null
+            && task.placement()
+            && task.activity().equals("Plugging quarry fluid")
+            && QuarryPlan.FILLERS.contains(task.place().getBlock().asItem())
+            && (s.mine.quarry.contains(p) || s.mine.quarry.accessCell(s.mine, p));
     if (state.hasBlockEntity()) return "Container or machine excluded";
-    if (!l.getFluidState(p).isEmpty()) return "Fluid ahead";
+    if (!plugging && !l.getFluidState(p).isEmpty()) return "Fluid ahead";
     if (!task.placement() && !state.isAir() && !state.canBeReplaced()) {
-      if (!state.is(TERRAIN)) return "Structure excluded";
+      boolean ownPlug =
+          s.mine.quarry != null
+              && s.mine.quarry.plugs.contains(p.asLong())
+              && QuarryPlan.FILLERS.contains(state.getBlock().asItem());
+      if (!state.is(TERRAIN) && !ownPlug) return "Structure excluded";
       if (state.getDestroySpeed(l, p) < 0) return "Unbreakable terrain";
-      if (s.mine.supports.contains(p.asLong()) || s.mine.torchSupports.contains(p.asLong()))
-        return "Reserved access support";
+      boolean extendingShaft =
+          (s.mine.strip != null || s.mine.quarry != null)
+              && s.mine.stage == MinePlan.Stage.SHAFT
+              && task.activity().equals("Excavating shaft")
+              && p.getX() == s.mine.entrance.getX()
+              && p.getZ() == s.mine.entrance.getZ()
+              && p.getY() >= s.mine.entrance.getY() - s.mine.shaftDepth;
+      if (s.mine.supports.contains(p.asLong()) && !extendingShaft
+          || s.mine.torchSupports.contains(p.asLong())) return "Reserved access support";
     }
     for (Direction d : Direction.values()) {
       BlockPos q = p.relative(d);
       if (!l.hasChunkAt(q)) return "Area unloaded";
-      if (!l.getFluidState(q).isEmpty()) return "Fluid ahead";
+      if (!plugging && !l.getFluidState(q).isEmpty()) return "Fluid ahead";
     }
     if (fallingNow(l, p)) return "Waiting for falling material to settle";
     if (!task.placement() && fallingRisk(l, p)) {
@@ -136,6 +153,9 @@ public final class MiningRules {
     }
     AABB cell = new AABB(p);
     for (LivingEntity e : l.getEntitiesOfClass(LivingEntity.class, cell.inflate(0, 2, 0))) {
+      // Torches have no collision and can be placed beside a worker's feet, as in vanilla.
+      if (task.placement() && (task.place().is(Blocks.TORCH) || task.place().is(Blocks.WALL_TORCH)))
+        continue;
       boolean cling =
           e == w
               && w.onClimbable()

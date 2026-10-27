@@ -5,6 +5,7 @@ import java.util.*;
 import java.util.function.Consumer;
 import net.minecraft.client.*;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.core.*;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.item.*;
@@ -60,6 +61,7 @@ public final class ExpansionVisualReview {
     var l = p.serverLevel();
     p.closeContainer();
     if (l.getBlockEntity(SITE) instanceof Station old) {
+      if (old.mine != null) WorldData.get(l).mines.remove(old.mine.id);
       WorldData.get(l).buildings.remove(old.identity);
       WorldData.get(l).farms.remove(old.identity);
       old.workers.clear();
@@ -93,6 +95,29 @@ public final class ExpansionVisualReview {
         s.craftOrders.put(Items.IRON_PICKAXE, 2);
         s.craftOrders.put(Items.TORCH, 32);
         s.craftOrders.put(Items.OAK_PLANKS, 48);
+      }
+      if (purpose == WorksitePurpose.MINE) {
+        s.mine = new MinePlan();
+        s.mine.entrance = SITE;
+        s.mine.forward = Direction.SOUTH;
+        s.mine.strip = new StripMine();
+        s.mine.stage = MinePlan.Stage.READY;
+        s.mine.depotBuilt = true;
+        s.mine.strip.current().corridor = 150;
+        s.mine.strip.current().branches.get(0).cell = 48;
+        s.mine.strip.current().branches.get(1).stopped = "Water at passage 2";
+        s.mine.reason = "Mining fixed passages";
+      }
+      if (purpose == WorksitePurpose.QUARRY) {
+        s.mine = new MinePlan();
+        s.mine.entrance = new SiteLayout(project, l).shaft();
+        s.mine.forward = Direction.SOUTH;
+        s.mine.quarry = QuarryPlan.create(l, project);
+        s.mine.quarry.layer = 4;
+        s.mine.quarry.done.set(0, 37);
+        s.mine.shaftDepth = 5;
+        s.mine.stage = MinePlan.Stage.READY;
+        s.mine.reason = "Waiting for ladders";
       }
     }
     s.changed();
@@ -168,6 +193,26 @@ public final class ExpansionVisualReview {
         });
   }
 
+  private static void roster(ServerPlayer p) {
+    site(p, WorksitePurpose.LUMINA);
+    Station s = (Station) p.serverLevel().getBlockEntity(SITE),
+        home = (Station) p.serverLevel().getBlockEntity(HOME);
+    for (int i = 0; i < 6; i++) {
+      Lumberton w =
+          (i < 4 ? Automatons.LUMBERTON : Automatons.GUARDINGTON).get().create(p.serverLevel());
+      w.owner = p.getUUID();
+      w.homeId = home.identity;
+      w.home = HOME;
+      w.setNoAi(true);
+      w.moveTo(6.5 + i, 64, 4.5);
+      p.serverLevel().addFreshEntity(w);
+      w.assign(s);
+      w.operating(120000 + i * 7000);
+      w.state(i < 4 ? "Ready for service" : "Protecting Eastfield");
+      WorkerIdentity.update(w, "Deployed");
+    }
+  }
+
   public static void tick(int tick) {
     var mc = Minecraft.getInstance();
     if (tick == 5)
@@ -232,7 +277,59 @@ public final class ExpansionVisualReview {
     if (tick == start + 140) server(p -> worker(p, WorkerJob.LUMINARITON));
     if (tick == start + 150) server(ExpansionVisualReview::openWorker);
     if (tick == start + 170) shot("mage-reserves");
-    if (tick == start + 200) {
+    if (tick == start + 200) server(ExpansionVisualReview::roster);
+    if (tick == start + 210) server(ExpansionVisualReview::openSite);
+    if (tick == start + 230) press("Workers");
+    if (tick == start + 250) shot("roster-production-and-guards");
+    if (tick == start + 260) press(">");
+    if (tick == start + 280) shot("roster-second-page");
+    if (tick == start + 290) press("Name");
+    if (tick == start + 310)
+      mc.screen.children().stream()
+          .filter(c -> c instanceof EditBox)
+          .map(c -> (EditBox) c)
+          .findFirst()
+          .orElseThrow()
+          .setValue("Eastfield Service");
+    if (tick == start + 320) shot("rename-worksite");
+    if (tick == start + 330) press("Save name");
+    if (tick == start + 350) shot("renamed-roster");
+    if (tick == start + 360)
+      server(
+          p -> {
+            Station s = (Station) p.serverLevel().getBlockEntity(SITE);
+            for (UUID id : List.copyOf(s.workers)) s.removeMember(id);
+            for (UUID id : List.copyOf(s.guards))
+              if (p.serverLevel().getEntity(id) instanceof Lumberton guard) guard.guarding.clear();
+          });
+    if (tick == start + 380) press("Settings");
+    if (tick == start + 390) press("Change profession");
+    if (tick == start + 410) shot("change-profession-chooser");
+    if (tick == start + 420) press(WorksitePurpose.FARM.label);
+    if (tick == start + 440) shot("change-profession-confirmation");
+    if (tick == start + 450) press("Keep current profession");
+    if (tick == start + 470) shot("change-profession-cancelled");
+    if (tick == start + 480) press(WorksitePurpose.FARM.label);
+    if (tick == start + 500) press("Confirm profession change");
+    if (tick == start + 520) shot("changed-profession-paused");
+    if (tick == start + 540) {
+      mc.player.closeContainer();
+      mc.setScreen(new AppearanceReviewScreen(false));
+    }
+    if (tick == start + 560)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-expansion-profession-appearances.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 580) mc.setScreen(new AppearanceReviewScreen(true));
+    if (tick == start + 600)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-expansion-powered-down-and-seated.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 620) {
       System.out.println("AUTOMATONS_WORKSITE_VISUAL_COMPLETE");
       mc.stop();
     }

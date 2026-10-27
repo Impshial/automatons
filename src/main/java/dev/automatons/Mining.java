@@ -53,6 +53,7 @@ public final class Mining {
 
   public void releaseWork() {
     if (access != null) {
+      if (access.quarry != null) access.quarry.release(w.getUUID());
       if (w.getUUID().equals(access.builder)) access.builder = null;
       if (climb == 0 && !exiting && !holdingLadder && w.getUUID().equals(access.traveller))
         access.traveller = null;
@@ -64,6 +65,8 @@ public final class Mining {
 
   public void release() {
     releaseWork();
+    if (access != null && access.strip != null && (!w.isAlive() || w.packing || w.totemId == null))
+      access.strip.release(w.getUUID());
     servicing = false;
   }
 
@@ -83,6 +86,10 @@ public final class Mining {
         + exiting
         + " reason="
         + serviceReason
+        + " servicing="
+        + servicing
+        + " entrance="
+        + (access == null ? null : access.entrance)
         + " climb="
         + climb
         + " climbY="
@@ -146,7 +153,43 @@ public final class Mining {
     Map<Item, Integer> result = new LinkedHashMap<>();
     Station s = w.station();
     MinePlan mine = s == null ? null : s.mine;
-    if (w.job() != 2 || mine == null || mine.paused) return result;
+    if (!w.excavator() || mine == null || mine.paused) return result;
+    if (mine.quarry != null) {
+      result.put(Luminall.BOTTLE.get(), 1);
+      result.put(Items.TORCH, Math.max(16, Balance.TORCH_STOCK.get()));
+      result.put(Items.LADDER, 4);
+      result.put(Items.COBBLESTONE, 32);
+      return result;
+    }
+    if (mine.strip != null) {
+      result.put(Luminall.BOTTLE.get(), 1);
+      result.put(Items.TORCH, Balance.TORCH_STOCK.get());
+      if (mine.stage == MinePlan.Stage.READY) {
+        int missing = 0, backing = 0;
+        for (int d = 1; d <= mine.shaftDepth; d++) {
+          BlockPos p = mine.ladder(d);
+          if (!level().hasChunkAt(p)) continue;
+          if (!level().getBlockState(p).equals(mine.ladderState())) missing++;
+          BlockPos wall = p.relative(mine.forward.getOpposite());
+          if (!level().getBlockState(wall).isFaceSturdy(level(), wall, mine.forward)) backing++;
+        }
+        if (missing > 0) result.put(Items.LADDER, Math.min(64, missing));
+        if (backing > 0) result.put(Items.COBBLESTONE, Math.min(64, backing));
+      }
+      if (mine.stage != MinePlan.Stage.READY) {
+        for (var task : mine.constructionTasks(level())) {
+          if (!task.placement()) continue;
+          if (level().hasChunkAt(task.pos())
+              && (Construction.matches(level().getBlockState(task.pos()), task.place())
+                  || task.place().is(Blocks.COBBLESTONE)
+                      && level()
+                          .getBlockState(task.pos())
+                          .isFaceSturdy(level(), task.pos(), Direction.UP))) continue;
+          result.merge(task.place().getBlock().asItem(), 1, Integer::sum);
+        }
+      }
+      return result;
+    }
     if (mine.stage == MinePlan.Stage.SITE) {
       // The complete kit is validated across real staging chests before site reservation.
       // Carry one material at a time so a nine-slot miner still has room for excavation loot.
@@ -309,7 +352,16 @@ public final class Mining {
   public boolean courierTravel(MinePlan mine, BlockPos destination, String message) {
     if (access != null && !access.id.equals(mine.id) && returnToSurface()) return false;
     access = mine;
-    if (goUnderground(mine.chamber()) || routeToWork(destination)) return false;
+    BlockPos landing =
+        mine.strip == null
+            ? mine.chamber()
+            : mine.chamber()
+                .atY(
+                    destination.getY()
+                        - Math.floorMod(
+                            destination.getY() - mine.chamber().getY(), StripMine.LEVEL_STEP));
+    if (mine.strip != null && w.getY() < landing.getY() - .7 && returnToSurface()) return false;
+    if (goUnderground(landing) || routeToWork(destination)) return false;
     return w.travelTo(destination, message, message);
   }
 
@@ -341,7 +393,9 @@ public final class Mining {
           .allMatch(e -> available.getOrDefault(e.getKey(), 0) >= e.getValue());
     }
     for (var need : reserve().entrySet())
-      if (need.getKey() != Items.TORCH && carried(need.getKey()) < need.getValue()) return false;
+      if (need.getKey() != Items.TORCH
+          && need.getKey() != Luminall.BOTTLE.get()
+          && carried(need.getKey()) < need.getValue()) return false;
     return true;
   }
 
@@ -460,7 +514,9 @@ public final class Mining {
           hasOutput() ? "Unloading" : "Restocking")) Storage.transfer(w, s, chest);
       return;
     }
-    servicing = false;
+    // Storage and route shortages are waiting states. Keep the unload trip active
+    // until cargo is actually deposited, instead of descending with the same full load.
+    servicing = hasOutput();
     blockedAt = -1;
     retry = level().getGameTime() + 40;
     w.alerts = serviceFlags;
@@ -468,8 +524,48 @@ public final class Mining {
   }
 
   public void tick(Station s) {
+    if (s.purpose == WorksitePurpose.QUARRY
+        && s.project() != null
+        && s.project().ready
+        && (s.mine == null || s.mine.entrance == null)) {
+      if (s.mine == null) s.mine = new MinePlan();
+      s.mine.quarry = QuarryPlan.create(level(), s.project());
+      if (s.quarryBottom != null)
+        s.mine.quarry.bottomY =
+            Math.max(level().getMinBuildHeight(), Math.min(s.mine.quarry.topY, s.quarryBottom));
+      s.mine.entrance = new SiteLayout(s.project(), level()).shaft();
+      s.mine.forward = s.project().front;
+      s.mine.shaftDepth = 1;
+      s.mine.rustic = false;
+      s.mine.depotRequired = false;
+      s.mine.depotBuilt = false;
+      s.mine.entranceComplete = true;
+      s.mine.stage = MinePlan.Stage.SHAFT;
+      s.mine.edgeQuarry = false;
+      s.changed();
+    }
+    if (s.mine != null && s.mine.entrance == null && s.project() != null && s.project().ready) {
+      s.mine.entrance = s.project().at(level(), 3, 1, 3);
+      s.mine.forward = s.project().front;
+      s.mine.rustic = true;
+      s.mine.entranceComplete = true;
+      s.mine.strip = new StripMine();
+      s.mine.shaftDepth = s.mine.strip.depth();
+      s.mine.stage = MinePlan.Stage.SHAFT;
+      s.mine.edgeQuarry = false;
+      s.changed();
+    }
     if (s.mine == null) {
       s.mine = new MinePlan();
+      if (s.project() != null && s.project().ready) {
+        s.mine.entrance = s.project().at(level(), 3, 1, 3);
+        s.mine.forward = s.project().front;
+        s.mine.rustic = true;
+        s.mine.entranceComplete = true;
+        s.mine.stage = MinePlan.Stage.SHAFT;
+        s.mine.strip = new StripMine();
+        s.mine.edgeQuarry = false;
+      }
       s.changed();
     }
     MinePlan m = s.mine;
@@ -485,7 +581,12 @@ public final class Mining {
     }
     if (m.paused) {
       releaseWork();
+      if ((m.strip != null || m.quarry != null) && returnToSurface()) return;
       w.getNavigation().stop();
+      if (m.strip != null || m.quarry != null) {
+        reason(s, m.reason, 16);
+        return;
+      }
       w.alerts = 0;
       w.state("Mine paused — holding position");
       return;
@@ -496,6 +597,14 @@ public final class Mining {
     }
     if (level().getGameTime() < retry) {
       w.state(serviceReason);
+      return;
+    }
+    if (m.strip != null) {
+      fixedStrip(s);
+      return;
+    }
+    if (m.quarry != null) {
+      fixedQuarry(s);
       return;
     }
     if (m.stage == MinePlan.Stage.READY
@@ -620,6 +729,360 @@ public final class Mining {
     if (!accessValid(s)) return;
     if (m.mode == MinePlan.Mode.TUNNEL) tunnel(s);
     else quarry(s);
+  }
+
+  private boolean quarryFluid(Station s, BlockPos target) {
+    MinePlan mine = s.mine;
+    QuarryPlan quarry = mine.quarry;
+    List<BlockPos> cells = new ArrayList<>(List.of(target));
+    for (Direction direction : Direction.values()) cells.add(target.relative(direction));
+    for (BlockPos cell : cells) {
+      if (!level().hasChunkAt(cell)) {
+        reason(s, "Area unloaded", 0);
+        return true;
+      }
+      if (level().getFluidState(cell).isEmpty()) continue;
+      if (!quarry.contains(cell) && !quarry.accessCell(mine, cell)) {
+        pauseStrip(s, "Fluid outside the quarry boundary — contain it before resuming");
+        return true;
+      }
+      Item filler =
+          QuarryPlan.FILLERS.stream().filter(item -> carried(item) > 0).findFirst().orElse(null);
+      if (filler == null) {
+        service(s, "Needs safe filler blocks", 16);
+        returnToSurface();
+        return true;
+      }
+      var state = ((BlockItem) filler).getBlock().defaultBlockState();
+      if (execute(s, new MinePlan.Task(cell, state, "Plugging quarry fluid"))) {
+        quarry.plugs.add(cell.asLong());
+        if (cell.getY() == quarry.y())
+          for (int i = 0; i < 225; i++) if (quarry.cell(mine, i).equals(cell)) quarry.done.clear(i);
+        changed(s);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  private void fixedQuarry(Station s) {
+    MinePlan mine = s.mine;
+    QuarryPlan quarry = mine.quarry;
+    if (quarry.complete) {
+      if (hasOutput()) {
+        service(s, "Cargo full", Lumberton.CARGO);
+        return;
+      }
+      if (!returnToSurface()) reason(s, quarry.completionReason, 0);
+      return;
+    }
+    if (quarry.y() < Math.max(level().getMinBuildHeight(), quarry.bottomY)) {
+      quarry.complete = true;
+      quarry.completionReason = "Quarry stopped at bottom Y " + quarry.bottomY;
+      changed(s);
+      return;
+    }
+    if (needsTool()) {
+      service(s, "Needs capable tool", 1);
+      return;
+    }
+    if (carried(Items.TORCH) == 0) {
+      service(s, "Needs torches", 64);
+      returnToSurface();
+      return;
+    }
+    if (mine.stage == MinePlan.Stage.SHAFT) {
+      if (!mine.claim(w)) {
+        reason(s, "Waiting for quarry ladder construction", 0);
+        return;
+      }
+      BlockPos shaft = mine.ladder(mine.shaftDepth);
+      if (mine.shaftDepth > 1 && goUnderground(mine.ladder(mine.shaftDepth - 1))) return;
+      if (mine.construction == 0) {
+        if (quarryFluid(s, shaft)) return;
+        var state = level().getBlockState(shaft);
+        if (state.getDestroySpeed(level(), shaft) < 0) {
+          quarry.complete = true;
+          quarry.completionReason =
+              "Lowest reachable quarry level: shaft blocked by unbreakable terrain";
+          changed(s);
+          return;
+        }
+        String cave = quarry.cave(level(), mine, shaft);
+        if (!cave.isEmpty() && !state.equals(mine.ladderState())) {
+          if (cave.equals("Area unloaded")) reason(s, cave, 0);
+          else pauseStrip(s, cave);
+          return;
+        }
+        if (state.equals(mine.ladderState())
+            || execute(s, new MinePlan.Task(shaft, null, "Excavating shaft"))) {
+          mine.construction++;
+          changed(s);
+        }
+      } else if (mine.construction == 1) {
+        BlockPos backing = shaft.relative(mine.forward.getOpposite());
+        if (quarryFluid(s, backing)) return;
+        if (level().getBlockState(backing).isFaceSturdy(level(), backing, mine.forward)
+            || execute(
+                s,
+                new MinePlan.Task(
+                    backing, Blocks.COBBLESTONE.defaultBlockState(), "Backing quarry ladder"))) {
+          mine.supports.add(backing.asLong());
+          mine.construction++;
+          changed(s);
+        }
+      } else if (mine.construction == 2) {
+        if (execute(s, new MinePlan.Task(shaft, mine.ladderState(), "Installing ladder"))) {
+          mine.construction++;
+          changed(s);
+        }
+      } else {
+        mine.construction = 0;
+        mine.stage = MinePlan.Stage.READY;
+        mine.release(w.getUUID());
+        changed(s);
+      }
+      return;
+    }
+    if (quarry.done.cardinality() == 225) {
+      if (returnToSurface()) return;
+      if (s.loadedWorkers().stream()
+          .anyMatch(peer -> peer.excavator() && peer.getY() < mine.entrance.getY() - .5)) {
+        reason(s, "Waiting for workers to clear the completed quarry layer", 0);
+        return;
+      }
+      quarry.next();
+      mine.shaftDepth++;
+      mine.stage = MinePlan.Stage.SHAFT;
+      mine.construction = 0;
+      mine.revision++;
+      changed(s);
+      return;
+    }
+    // A safe one-block ledge inside the footprint is a valid stance for plugging a
+    // contained fluid cell. Do not cancel that step by routing back to the ladder.
+    if ((!quarry.contains(w.blockPosition()) || w.getY() > quarry.y() + 1.6)
+        && goUnderground(mine.chamber())) return;
+    if (!accessValid(s) || lighting(s)) return;
+    int cell = quarry.claim(w, s);
+    if (cell < 0) {
+      reason(s, "Sharing quarry — waiting for a work cell", 0);
+      return;
+    }
+    BlockPos target = quarry.cell(mine, cell);
+    if (quarryFluid(s, target)) return;
+    var state = level().getBlockState(target);
+    if (state.getDestroySpeed(level(), target) < 0) {
+      quarry.finish(cell, true);
+      changed(s);
+      return;
+    }
+    String cave = quarry.cave(level(), mine, target);
+    if (!cave.isEmpty()) {
+      if (cave.equals("Area unloaded")) reason(s, cave, 0);
+      else pauseStrip(s, cave);
+      return;
+    }
+    if (execute(s, new MinePlan.Task(target, null, "Quarrying"))) {
+      quarry.finish(cell, false);
+      mine.exposed(target);
+      changed(s);
+    }
+  }
+
+  private void pauseStrip(Station s, String message) {
+    s.mine.paused = true;
+    releaseWork();
+    reason(s, message, 16);
+    s.changed();
+    returnToSurface();
+  }
+
+  /** The fixed plan supplies one bounded transaction; the existing executor owns all mutations. */
+  private void fixedStrip(Station s) {
+    MinePlan m = s.mine;
+    StripMine plan = m.strip;
+    if (plan.complete) {
+      if (!returnToSurface()) reason(s, "Strip mine complete: lowest reachable level", 0);
+      return;
+    }
+    if (m.chamber().getY() <= level().getMinBuildHeight()) {
+      pauseStrip(s, "Lowest reachable level: no supported landing below the build limit");
+      return;
+    }
+    if (needsTool()) {
+      service(s, "Needs capable tool", 1);
+      return;
+    }
+    if (carried(Items.TORCH) == 0) {
+      service(s, "Needs torches", 64);
+      return;
+    }
+    if (m.stage != MinePlan.Stage.READY) {
+      if (!m.claim(w)) {
+        reason(s, "Waiting for shared access construction", 0);
+        return;
+      }
+      var tasks = m.constructionTasks(level());
+      if (m.construction >= tasks.size()) {
+        if (m.stage == MinePlan.Stage.SHAFT) m.stage = MinePlan.Stage.CHAMBER;
+        else if (m.stage == MinePlan.Stage.CHAMBER) m.stage = MinePlan.Stage.STORAGE;
+        else {
+          m.depotBuilt = true;
+          m.stage = MinePlan.Stage.READY;
+          m.release(w.getUUID());
+          s.refreshStorage();
+        }
+        m.construction = 0;
+        changed(s);
+        s.changed();
+        return;
+      }
+      var task = tasks.get(m.construction);
+      BlockPos pos = task.pos();
+      if (!level().hasChunkAt(pos)) {
+        reason(s, "Area unloaded", 0);
+        return;
+      }
+      var actual = level().getBlockState(pos);
+      // Adopt sound terrain as support; never replace ore with decorative cobblestone.
+      boolean support =
+          task.activity().equals("Backing ladder") || task.activity().equals("Supporting landing");
+      if (support
+              && actual.isFaceSturdy(
+                  level(), pos, task.activity().equals("Backing ladder") ? m.forward : Direction.UP)
+          || task.placement() && Construction.matches(actual, task.place())) {
+        if (support) m.supports.add(pos.asLong());
+        if (task.placement() && task.place().is(Blocks.CHEST)) m.placedChests.add(pos.asLong());
+        m.construction++;
+        changed(s);
+        return;
+      }
+      // The installed ladder satisfies the matching excavation task after a reload.
+      if (!task.placement() && actual.equals(m.ladderState())) {
+        m.construction++;
+        changed(s);
+        return;
+      }
+      if (m.stage == MinePlan.Stage.SHAFT) {
+        int depth = m.entrance.getY() - pos.getY();
+        if (depth > 1 && goUnderground(m.ladder(depth - 1))) return;
+        if (!task.placement() && depth > 2 && !m.passage.contains(pos.asLong())) {
+          String opening = plan.opening(level(), m, pos, false);
+          if (opening.equals("Area unloaded")) {
+            reason(s, opening, 0);
+            return;
+          }
+          if (!opening.isEmpty()) {
+            pauseStrip(s, "Shaft blocked: " + opening + " — make safe and resume");
+            return;
+          }
+        }
+      } else {
+        if (goUnderground(m.chamber())) return;
+        if (lighting(s)) return;
+        if (!task.placement() && !m.passage.contains(pos.asLong())) {
+          String opening = plan.opening(level(), m, pos, false);
+          if (opening.equals("Area unloaded")) {
+            reason(s, opening, 0);
+            return;
+          }
+          if (!opening.isEmpty()) {
+            pauseStrip(s, "Landing blocked: " + opening + " — make safe and resume");
+            return;
+          }
+        }
+      }
+      if (!task.placement() && actual.getDestroySpeed(level(), pos) < 0) {
+        pauseStrip(s, "Access blocked by unbreakable terrain");
+        return;
+      }
+      if (execute(s, task)) {
+        if (!task.placement()) {
+          m.passage.add(pos.asLong());
+          if (task.activity().equals("Clearing landing") && pos.getY() == m.chamber().getY())
+            m.retain(pos);
+        } else if (support) m.supports.add(pos.asLong());
+        m.construction++;
+        changed(s);
+      }
+      return;
+    }
+    if (plan.floorDone(level())) {
+      if (returnToSurface()) return;
+      if (s.loadedWorkers().stream()
+          .anyMatch(
+              peer -> peer.job() == WorkerJob.MININGTON && peer.getY() < m.entrance.getY() - 1)) {
+        reason(s, "Waiting for miners to clear this level", 0);
+        return;
+      }
+      if (m.chamber().getY() - StripMine.LEVEL_STEP <= level().getMinBuildHeight()) {
+        plan.complete = true;
+        changed(s);
+        return;
+      }
+      plan.floors.add(new StripMine.Floor());
+      m.shaftDepth = plan.depth();
+      m.stage = MinePlan.Stage.SHAFT;
+      m.construction = 0;
+      m.depotBuilt = false;
+      m.revision++;
+      changed(s);
+      s.changed();
+      return;
+    }
+    if (goUnderground(m.chamber())) return;
+    if (!accessValid(s) || lighting(s)) return;
+    int branch = -1;
+    BlockPos pos;
+    if (plan.current().corridor < 150) {
+      if (!m.claim(w)) {
+        reason(s, "Waiting for center corridor construction", 0);
+        return;
+      }
+      pos = plan.corridorCell(m);
+    } else {
+      branch = plan.claim(w, s);
+      if (branch < 0) {
+        reason(s, "Waiting for an available passage", 0);
+        return;
+      }
+      pos = plan.branchCell(m, level(), branch);
+    }
+    if (!level().hasChunkAt(pos)) {
+      reason(s, "Area unloaded", 0);
+      return;
+    }
+    String opening = plan.opening(level(), m, pos, branch >= 0);
+    if (opening.equals("Area unloaded")) {
+      reason(s, opening, 0);
+      return;
+    }
+    if (!opening.isEmpty()) {
+      if (branch >= 0) {
+        var b = plan.current().branches.get(branch);
+        b.stopped = opening + " at " + pos.toShortString();
+        releaseWork();
+        target = null;
+        staged = null;
+        reason(s, "Passage " + (branch + 1) + " stopped: " + opening, 0);
+        changed(s);
+        routeBack();
+      } else pauseStrip(s, "Center corridor blocked: " + opening + " — make safe and resume");
+      return;
+    }
+    BlockPos feet = pos.getY() == m.chamber().getY() ? pos : pos.below();
+    if (!MiningRules.supported(level(), feet)) {
+      reason(s, "Passage floor needs support", 16);
+      return;
+    }
+    if (execute(s, new MinePlan.Task(pos, null, "Mining fixed passage"))) {
+      if (branch < 0) plan.current().corridor++;
+      else plan.current().branches.get(branch).cell++;
+      m.passage.add(pos.asLong());
+      if (pos.equals(feet)) m.retain(feet);
+      changed(s);
+    }
   }
 
   private void findSite(Station s) {
@@ -926,6 +1389,8 @@ public final class Mining {
     BlockState state = level().getBlockState(p);
     if (!task.placement()
         && s.mine.stage == MinePlan.Stage.READY
+        && s.mine.strip == null
+        && s.mine.quarry == null
         && MiningRules.fluidAhead(level(), p)) {
       avoidFluid(s);
       return false;
@@ -959,7 +1424,10 @@ public final class Mining {
           && (w.getBoundingBox().intersects(new AABB(p))
               || w.getBoundingBox().move(0, -.1, 0).intersects(new AABB(p)))
           && retreat(s, p)) return false;
-      if (hazard.equals("Fluid ahead") && s.mine.stage == MinePlan.Stage.READY) {
+      if (hazard.equals("Fluid ahead")
+          && s.mine.stage == MinePlan.Stage.READY
+          && s.mine.strip == null
+          && s.mine.quarry == null) {
         avoidFluid(s);
         return false;
       }
@@ -1042,7 +1510,7 @@ public final class Mining {
       }
       BlockState placed = material == Items.DIRT ? Blocks.DIRT.defaultBlockState() : task.place();
       if (!w.authorized
-          || w.job() != 2
+          || !w.excavator()
           || s.mine.paused
           || revision != s.mine.revision
           || MiningRules.hazard(w, s, task) != null) return false;
@@ -1080,7 +1548,7 @@ public final class Mining {
     }
     if (progress < duration) return false;
     if (!w.authorized
-        || w.job() != 2
+        || !w.excavator()
         || s.mine.paused
         || revision != s.mine.revision
         || !w.inReach(p)
@@ -1110,6 +1578,8 @@ public final class Mining {
     boolean settling = MiningRules.fallingRisk(level(), p);
     if (!level().getBlockState(p).equals(state)
         || !level().setBlock(p, Blocks.AIR.defaultBlockState(), 3)) return false;
+    if (s.mine.strip != null || s.mine.quarry != null) s.mine.passage.add(p.asLong());
+    if (s.mine.quarry != null) s.mine.quarry.plugs.remove(p.asLong());
     for (ItemStack drop : staged) {
       ItemStack rest = Inventories.insert(w.cargo, drop, false);
       if (!rest.isEmpty()) drop(rest, p);
@@ -1176,8 +1646,9 @@ public final class Mining {
     if (access == null || access.entrance == null) return false;
     if (w.getY() > access.chamber().getY() + .7 && goUnderground(access.chamber())) return true;
     if (routeBack()) return true;
-    if (w.position().distanceToSqr(Vec3.atBottomCenterOf(access.chamber())) > 1) {
-      walkTo(access.chamber());
+    BlockPos platform = access.strip == null ? access.chamber() : access.strip.at(access, 0, 0, 2);
+    if (w.position().distanceToSqr(Vec3.atBottomCenterOf(platform)) > 1) {
+      walkTo(platform);
       w.state("Returning to underground platform");
       return true;
     }
@@ -1245,6 +1716,26 @@ public final class Mining {
   private boolean retreat(Station s, BlockPos target) {
     MinePlan m = s.mine;
     List<BlockPos> candidates = new ArrayList<>();
+    if (m.quarry != null) {
+      int feetY = (int) Math.round(w.getY());
+      for (int dx = -2; dx <= 2; dx++)
+        for (int dz = -2; dz <= 2; dz++)
+          for (int dy : new int[] {0, -1, 1}) {
+            BlockPos feet = new BlockPos(target.getX() + dx, feetY + dy, target.getZ() + dz);
+            if (m.quarry.contains(feet) || m.quarry.accessCell(m, feet)) candidates.add(feet);
+          }
+      candidates.sort(Comparator.comparingDouble(p -> w.distanceToSqr(Vec3.atBottomCenterOf(p))));
+    }
+    if (m.strip != null) {
+      int feetY = (int) Math.round(w.getY());
+      for (int front : new int[] {2, 1, 3})
+        for (int side : new int[] {0, -1, 1})
+          candidates.add(
+              m.entrance
+                  .atY(feetY)
+                  .relative(m.forward, front)
+                  .relative(m.forward.getClockWise(), side));
+    }
     if (m.stage == MinePlan.Stage.ARCH) {
       for (int x = -3; x <= 3; x++)
         for (int z = -3; z <= 3; z++) for (int y = 0; y <= 1; y++) candidates.add(m.at(x, y, z));
@@ -1336,6 +1827,8 @@ public final class Mining {
           for (Direction direction : Direction.Plane.HORIZONTAL) {
             BlockPos floor = torch.relative(direction, d).above(y);
             if (m.passage.contains(floor.asLong())
+                && !floor.equals(torch)
+                && !floor.below().equals(excavation)
                 && MiningRules.supported(level(), floor)
                 && level().getBlockState(floor).getCollisionShape(level(), floor).isEmpty()) {
               m.relocatingTorch = torch;
@@ -1371,7 +1864,7 @@ public final class Mining {
         return true;
       }
       if (!w.authorized
-          || w.job() != 2
+          || !w.excavator()
           || m.paused
           || revision != m.revision
           || !MinePlan.inBounds(s, p)
@@ -1474,35 +1967,40 @@ public final class Mining {
     List<MinePlan.Task> options = new ArrayList<>();
     // Side walls first, above foot height, so a light does not occupy the next front face.
     for (int y : new int[] {1, 0})
-      for (int along : new int[] {0, -1, 1}) {
-        BlockPos pos = floor.relative(m.forward, along).above(y);
-        if (!level().hasChunkAt(pos)
-            || !level().getBlockState(pos).isAir()
-            || pos.equals(m.excavationConflict)) continue;
-        for (Direction d :
-            new Direction[] {
-              m.forward.getClockWise(),
-              m.forward.getCounterClockWise(),
-              m.forward,
-              m.forward.getOpposite()
-            }) {
-          BlockState torch =
-              Blocks.WALL_TORCH.defaultBlockState().setValue(WallTorchBlock.FACING, d);
-          BlockPos support = pos.relative(d.getOpposite());
-          if (level().hasChunkAt(support)
-              && torch.canSurvive(level(), pos)
-              && !m.passage.contains(support.asLong())
-              && !support.equals(target)
-              && !support.equals(m.excavationConflict)
-              && !m.plannedExcavation(support))
-            options.add(new MinePlan.Task(pos, torch, "Placing torch"));
+      for (int along : new int[] {0, -1, 1})
+        for (int sideways : m.quarry == null ? new int[] {0} : new int[] {0, -1, 1}) {
+          BlockPos pos =
+              floor
+                  .relative(m.forward, along)
+                  .relative(m.forward.getClockWise(), sideways)
+                  .above(y);
+          if (!level().hasChunkAt(pos)
+              || !level().getBlockState(pos).isAir()
+              || pos.equals(m.excavationConflict)) continue;
+          for (Direction d :
+              new Direction[] {
+                m.forward.getClockWise(),
+                m.forward.getCounterClockWise(),
+                m.forward,
+                m.forward.getOpposite()
+              }) {
+            BlockState torch =
+                Blocks.WALL_TORCH.defaultBlockState().setValue(WallTorchBlock.FACING, d);
+            BlockPos support = pos.relative(d.getOpposite());
+            if (level().hasChunkAt(support)
+                && torch.canSurvive(level(), pos)
+                && !m.passage.contains(support.asLong())
+                && !support.equals(target)
+                && !support.equals(m.excavationConflict)
+                && (!m.plannedExcavation(support) || relocating && m.quarry != null))
+              options.add(new MinePlan.Task(pos, torch, "Placing torch"));
+          }
+          if (y == 0
+              && !pos.below().equals(m.excavationConflict)
+              && (!m.plannedExcavation(pos.below()) || relocating && m.quarry != null)
+              && Blocks.TORCH.defaultBlockState().canSurvive(level(), pos))
+            options.add(new MinePlan.Task(pos, Blocks.TORCH.defaultBlockState(), "Placing torch"));
         }
-        if (y == 0
-            && !pos.below().equals(m.excavationConflict)
-            && !m.plannedExcavation(pos.below())
-            && Blocks.TORCH.defaultBlockState().canSurvive(level(), pos))
-          options.add(new MinePlan.Task(pos, Blocks.TORCH.defaultBlockState(), "Placing torch"));
-      }
     for (var task : options) {
       if (MiningRules.hazard(w, s, task) != null) continue;
       if (!w.inReach(task.pos())) {
@@ -1514,7 +2012,7 @@ public final class Mining {
       }
       if (!WorldData.get(level()).reserve(List.of(task.pos()), w.getUUID())) continue;
       if (!w.authorized
-          || w.job() != 2
+          || !w.excavator()
           || m.paused
           || revision != m.revision
           || carried(Items.TORCH) == 0) break;
@@ -1586,16 +2084,24 @@ public final class Mining {
       return false;
     }
     BlockPos top = access.entrance;
+    if ((access.strip != null || access.quarry != null)
+        && w.getY() < top.getY() - 2
+        && !atShaft()) {
+      if (routeBack()) return true;
+      walkTo(new BlockPos(top.getX(), (int) Math.floor(w.getY()), top.getZ()));
+      w.state("Returning to shared ladder");
+      return true;
+    }
     // Elevation is not proof of being in the shaft: hillside workers may be below
     // the entrance while still many blocks away. Walk to the mouth before claiming it.
     if (!atShaft()
         && (w.getY() < top.getY() - .2
             || w.position()
-                    .subtract(Vec3.atBottomCenterOf(top.relative(access.forward)))
+                    .subtract(Vec3.atBottomCenterOf(access.surfaceExit()))
                     .horizontalDistanceSqr()
                 > .16)) {
       stopLadderHold();
-      walkTo(top.relative(access.forward));
+      walkTo(access.surfaceExit());
       if (!w.getNavigation().isDone()) w.state("Approaching mine ladder");
       return true;
     }
@@ -1637,7 +2143,10 @@ public final class Mining {
       return false;
     }
     // A surface return on a slope must use ordinary walking, never remote climbing.
-    if (!atShaft() && w.getY() > access.chamber().getY() + 3) {
+    if (!atShaft()
+        && w.getY() > access.chamber().getY() + 3
+        && (access.strip == null
+            || w.getY() > access.entrance.getY() - StripMine.FIRST_DEPTH + 3)) {
       stopLadderHold();
       return false;
     }
@@ -1662,7 +2171,11 @@ public final class Mining {
     if (w.position().subtract(Vec3.atBottomCenterOf(foot)).horizontalDistanceSqr() > 1.05
         || Math.abs(w.getY() - foot.getY()) > .7) {
       stopLadderHold();
-      walkTo(foot);
+      // Ground navigation stops short of a ladder with open rungs underneath.
+      // Approach on the excavated floor before making the final step onto it.
+      BlockPos approach = foot.relative(access.forward);
+      if (access.quarry != null && MiningRules.supported(level(), approach)) walkTo(approach);
+      else walkTo(foot);
       return true;
     }
     if (!passageClaim()) return true;
@@ -1695,6 +2208,12 @@ public final class Mining {
 
   private boolean localLight(BlockPos floor) {
     if (w.distanceToSqr(Vec3.atCenterOf(floor)) > 100) return false;
+    if (access != null && access.strip != null) {
+      BlockPos here = access.strip.local(access, w.blockPosition()),
+          there = access.strip.local(access, floor);
+      if (Math.abs(here.getX()) > (here.getZ() <= 4 ? 2 : 1))
+        return here.getZ() == there.getZ() && Math.abs(w.getY() - floor.getY()) < 1.1;
+    }
     MinePlan.Tunnel current = currentTunnel();
     if (current == null) return true;
     // A light through the wall may be close in space but require a long crosscut detour.
@@ -1707,6 +2226,21 @@ public final class Mining {
   }
 
   private boolean routeBack() {
+    if (access.strip != null) {
+      BlockPos local = access.strip.local(access, w.blockPosition());
+      BlockPos junction =
+          access.strip.at(access, 0, 0, local.getZ()).atY((int) Math.floor(w.getY()));
+      Direction side = access.forward.getClockWise();
+      double lateral =
+          (w.getX() - access.entrance.getX() - .5) * side.getStepX()
+              + (w.getZ() - access.entrance.getZ() - .5) * side.getStepZ();
+      if (Math.abs(lateral) > .7 && local.getZ() >= 1) {
+        walkTo(junction);
+        w.state("Returning through fixed passage");
+        return true;
+      }
+      return false;
+    }
     if (w.getY() < access.chamber().getY() - .7 && access.quarrySide != 0) {
       int depth =
           Math.max(
@@ -1823,6 +2357,18 @@ public final class Mining {
   private boolean routeToWork(BlockPos target) {
     if (access == null || access.entrance == null || w.getY() >= access.entrance.getY() - .2)
       return false;
+    if (access.strip != null) {
+      var at = access.strip.local(access, w.blockPosition());
+      var destination = access.strip.local(access, target);
+      if (Math.abs(at.getZ() - destination.getZ()) > 1 && routeBack()) return true;
+      if (Math.abs(destination.getX()) > (destination.getZ() <= 4 ? 2 : 1)
+          && Math.abs(at.getZ() - destination.getZ()) > 0) {
+        walkTo(access.strip.at(access, 0, 0, destination.getZ()).atY((int) Math.floor(w.getY())));
+        w.state("Travelling along center corridor");
+        return true;
+      }
+      return false;
+    }
     if (access.quarrySide != 0
         && w.getY() < access.chamber().getY() - 4
         && target.getY() > w.getY() + 4) {
@@ -1893,7 +2439,7 @@ public final class Mining {
     w.getNavigation().stop();
     ((WorkerMoveControl) w.getMoveControl()).stop();
     if (exiting) {
-      BlockPos exit = ladderExit == null ? access.entrance.relative(access.forward) : ladderExit;
+      BlockPos exit = ladderExit == null ? access.surfaceExit() : ladderExit;
       Vec3 delta = Vec3.atBottomCenterOf(exit).subtract(w.position());
       if (delta.horizontalDistanceSqr() < .04) {
         exiting = false;
@@ -1939,11 +2485,11 @@ public final class Mining {
       climb = 0;
       w.setDeltaMovement(Vec3.ZERO);
       ladderExit =
-          (up
-                  ? access.entrance
-                  : new BlockPos(
-                      access.entrance.getX(), (int) Math.round(climbY), access.entrance.getZ()))
-              .relative(access.forward);
+          up
+              ? access.surfaceExit()
+              : new BlockPos(
+                      access.entrance.getX(), (int) Math.round(climbY), access.entrance.getZ())
+                  .relative(access.forward);
       if (level()
           .noCollision(
               w, w.getDimensions(Pose.STANDING).makeBoundingBox(Vec3.atBottomCenterOf(ladderExit))))

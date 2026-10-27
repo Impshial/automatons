@@ -62,6 +62,27 @@ public final class WorkActions {
               && player.serverLevel().getBlockEntity(project.anchor) instanceof Station site)
             menu.feedback = menu.worker.guarding.protect(site);
         }
+        case "quarry_y" -> {
+          if (!menu.isTotem || menu.station.purpose != WorksitePurpose.QUARRY) return;
+          var plan = menu.station.mine == null ? null : menu.station.mine.quarry;
+          int y =
+              action.value.equals("default")
+                  ? player.level().getMinBuildHeight()
+                  : Integer.parseInt(action.value);
+          int top = plan == null ? menu.station.getBlockPos().getY() - 1 : plan.topY;
+          if (y < player.level().getMinBuildHeight() || y > top) {
+            menu.feedback =
+                "Bottom Y must be between " + player.level().getMinBuildHeight() + " and " + top;
+            break;
+          }
+          menu.station.quarryBottom = action.value.equals("default") ? null : y;
+          if (plan != null) {
+            plan.bottomY = y;
+            plan.complete = false;
+            plan.completionReason = "";
+          }
+          menu.station.changed();
+        }
         case "assign", "open", "unassign" -> {
           if (!menu.isTotem) return;
           UUID id = UUID.fromString(action.value);

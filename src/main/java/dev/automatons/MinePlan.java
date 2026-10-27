@@ -178,6 +178,8 @@ public final class MinePlan {
   public BlockPos entrance;
   public Direction forward = Direction.NORTH;
   public int shaftDepth = 20;
+  public StripMine strip;
+  public QuarryPlan quarry;
   public boolean rustic;
   public boolean entranceComplete;
   public boolean openAccess = true;
@@ -253,6 +255,10 @@ public final class MinePlan {
     return at(0, -shaftDepth, 1);
   }
 
+  public BlockPos surfaceExit() {
+    return entrance.relative(quarry == null ? forward : forward.getOpposite());
+  }
+
   public BlockPos exit() {
     return workAt(0, -shaftDepth, 3);
   }
@@ -292,6 +298,10 @@ public final class MinePlan {
   }
 
   public static boolean inBounds(Station s, BlockPos p) {
+    if (s.mine != null && s.mine.quarry != null && s.mine.entrance != null)
+      return s.mine.quarry.contains(p) || s.mine.quarry.accessCell(s.mine, p);
+    if (s.mine != null && s.mine.strip != null && s.mine.entrance != null)
+      return s.mine.strip.footprint(s.mine, p);
     return Math.max(
             Math.abs(p.getX() - s.getBlockPos().getX()),
             Math.abs(p.getZ() - s.getBlockPos().getZ()))
@@ -350,6 +360,10 @@ public final class MinePlan {
 
   public boolean protectedInfrastructure(BlockPos p) {
     if (entrance == null) return false;
+    if (quarry != null
+        && quarry.contains(p)
+        && p.getY() <= quarry.topY
+        && p.getY() >= quarry.bottomY) return true;
     if (supports.contains(p.asLong()) || torchSupports.contains(p.asLong()) || depotCell(p))
       return true;
     for (int i = 1; i <= shaftDepth; i++)
@@ -368,6 +382,7 @@ public final class MinePlan {
 
   public List<Task> constructionTasks(ServerLevel l) {
     if (entrance == null) return List.of();
+    if (strip != null) return strip.construction(l, this);
     List<Task> out = new ArrayList<>();
     if (stage == Stage.ARCH && rustic) {
       BuildingTemplate template = minehead(l);
@@ -472,6 +487,7 @@ public final class MinePlan {
   }
 
   public List<BlockPos> depotPositions() {
+    if (strip != null) return strip.chests(this);
     return List.of(
         at(-2, -shaftDepth, 0),
         at(-2, -shaftDepth, 1),
@@ -480,11 +496,23 @@ public final class MinePlan {
   }
 
   public boolean depotCell(BlockPos pos) {
+    if (strip != null && placedChests.contains(pos.asLong())) return true;
     return depotRequired && entrance != null && depotPositions().contains(pos);
+  }
+
+  public List<BlockPos> storagePositions() {
+    return strip == null
+        ? depotPositions()
+        : placedChests.stream()
+            .map(BlockPos::of)
+            .sorted(Comparator.comparingLong(BlockPos::asLong))
+            .toList();
   }
 
   public boolean plannedExcavation(BlockPos p) {
     if (entrance == null) return false;
+    if (quarry != null) return quarry.contains(p) && p.getY() == quarry.y();
+    if (strip != null) return strip.planned(this, p);
     for (Tunnel t : tunnels) {
       Direction direction = facing(t.route), side = direction.getClockWise();
       int x =
@@ -553,6 +581,7 @@ public final class MinePlan {
   }
 
   public void switchMode(Mode requested) {
+    if (strip != null) return;
     if (mode != requested) {
       mode = requested;
       revision++;
@@ -563,6 +592,8 @@ public final class MinePlan {
 
   public CompoundTag save() {
     CompoundTag n = new CompoundTag();
+    if (strip != null) n.put("Strip", strip.save());
+    if (quarry != null) n.put("Quarry", quarry.save());
     n.putUUID("Id", id);
     if (leadMiner != null) n.putUUID("LeadMiner", leadMiner);
     ListTag fronts = new ListTag();
@@ -619,6 +650,8 @@ public final class MinePlan {
 
   public static MinePlan load(CompoundTag n) {
     MinePlan p = new MinePlan();
+    if (n.contains("Strip")) p.strip = StripMine.load(n.getCompound("Strip"));
+    if (n.contains("Quarry")) p.quarry = QuarryPlan.load(n.getCompound("Quarry"));
     if (n.hasUUID("Id")) p.id = n.getUUID("Id");
     if (n.hasUUID("LeadMiner")) p.leadMiner = n.getUUID("LeadMiner");
     for (Tag t : n.getList("Tunnels", Tag.TAG_COMPOUND))
@@ -633,9 +666,13 @@ public final class MinePlan {
     } catch (IllegalArgumentException ignored) {
     }
     p.shaftDepth =
-        n.contains("ShaftDepth")
-            ? Math.max(5, Math.min(20, n.getInt("ShaftDepth")))
-            : p.entrance == null ? 20 : 5;
+        p.quarry != null
+            ? Math.max(1, n.getInt("ShaftDepth"))
+            : p.strip != null
+                ? p.strip.depth()
+                : n.contains("ShaftDepth")
+                    ? Math.max(5, Math.min(20, n.getInt("ShaftDepth")))
+                    : p.entrance == null ? 20 : 5;
     p.depotRequired = !n.contains("DepotRequired") || n.getBoolean("DepotRequired");
     p.depotBuilt = n.getBoolean("DepotBuilt");
     for (long pos : n.getLongArray("PlacedChests")) p.placedChests.add(pos);

@@ -112,6 +112,47 @@ public final class LogisticsNetwork {
   public final Map<String, Report> reports = new LinkedHashMap<>();
   public final Map<Long, ForestryHelp.Request> obstacles = new LinkedHashMap<>();
   private final Map<UUID, Station> stations = new HashMap<>();
+
+  private record CraftLease(UUID worker, long until) {}
+
+  private final Map<Item, CraftLease> crafting = new HashMap<>();
+
+  public List<Lumberton> crafters(ServerLevel level) {
+    return stations.values().stream()
+        .flatMap(s -> s.loadedWorkers().stream())
+        .filter(w -> w.isAlive() && member(w) && w.job() == WorkerJob.CRAFTERTON)
+        .distinct()
+        .toList();
+  }
+
+  public boolean claimCrafting(Lumberton worker, Item output) {
+    if (!member(worker)) return false;
+    ServerLevel level = (ServerLevel) worker.level();
+    long now = level.getGameTime();
+    crafting
+        .entrySet()
+        .removeIf(
+            e ->
+                e.getValue().until <= now
+                    || !(level.getEntity(e.getValue().worker) instanceof Lumberton live)
+                    || !live.isAlive()
+                    || !live.authorized
+                    || !member(live)
+                    || live.job() != WorkerJob.CRAFTERTON
+                    || live.station() == null);
+    CraftLease lease = crafting.get(output);
+    if (lease != null && !lease.worker.equals(worker.getUUID())) return false;
+    crafting
+        .entrySet()
+        .removeIf(e -> e.getKey() != output && e.getValue().worker.equals(worker.getUUID()));
+    crafting.put(output, new CraftLease(worker.getUUID(), now + 200));
+    return true;
+  }
+
+  public void releaseCrafting(Lumberton worker) {
+    crafting.values().removeIf(c -> c.worker.equals(worker.getUUID()));
+  }
+
   private long nextRefresh;
   private int dispatches, collectionTurn;
   private int reportCursor, scanSlots;
@@ -221,8 +262,17 @@ public final class LogisticsNetwork {
       if (WorkerStock.needsTool(w)) demand(next, w, "tool", null, 1, 0, l);
       for (var need : WorkerStock.required(w).entrySet()) {
         int missing = need.getValue() - WorkerStock.carried(w, need.getKey());
-        if (missing > 0) demand(next, w, need.getKey() == Luminall.BOTTLE.get() ? "energy" : need.getKey() == Items.TORCH ? "torch" : "supplies",
-            need.getKey(), missing, need.getKey() == Luminall.BOTTLE.get() ? 0 : 1, l);
+        if (missing > 0)
+          demand(
+              next,
+              w,
+              need.getKey() == Luminall.BOTTLE.get()
+                  ? "energy"
+                  : need.getKey() == Items.TORCH ? "torch" : "supplies",
+              need.getKey(),
+              missing,
+              need.getKey() == Luminall.BOTTLE.get() ? 0 : 1,
+              l);
       }
       if (w.job() == WorkerJob.LUMINARITON && WorkerStock.plants(w) < 16)
         demand(next, w, "flowers", null, 16 - WorkerStock.plants(w), 2, l);
@@ -271,8 +321,8 @@ public final class LogisticsNetwork {
       if (warehouse != null && warehouse.supplies.chest != null)
         targets.add(
             new ReportTarget(s, warehouse.supplies.chest, false, warehouse.supplies.handler(l)));
-      if (s.mine != null && s.mine.depotBuilt)
-        for (BlockPos p : s.mine.depotPositions())
+      if (s.mine != null && (s.mine.depotBuilt || s.mine.strip != null))
+        for (BlockPos p : s.mine.storagePositions())
           targets.add(new ReportTarget(s, p, false, Storage.depotHandler(l, p, s.mine)));
     }
     Map<BlockPos, List<ReportTarget>> groups = new LinkedHashMap<>();
@@ -389,14 +439,26 @@ public final class LogisticsNetwork {
       if (station.farm != null) required.putAll(station.farm.reserves(l));
       for (Lumberton worker : workers)
         if (station.identity.equals(WorkerStock.siteId(worker))) {
-          WorkerStock.required(worker).forEach((item, count) -> {
-            if (item == Luminall.BOTTLE.get() || worker.job() != WorkerJob.FARMINGTON) required.merge(item, Math.max(0, count - WorkerStock.carried(worker, item)), Integer::sum);
-          });
-          if (worker.job() == WorkerJob.CRAFTERTON) worker.crafting.held.forEach((item, count) ->
-              required.merge(item, Math.max(0, count - worker.mining.carried(item)), Math::max));
+          WorkerStock.required(worker)
+              .forEach(
+                  (item, count) -> {
+                    if (item == Luminall.BOTTLE.get() || worker.job() != WorkerJob.FARMINGTON)
+                      required.merge(
+                          item,
+                          Math.max(0, count - WorkerStock.carried(worker, item)),
+                          Integer::sum);
+                  });
+          if (worker.job() == WorkerJob.CRAFTERTON)
+            worker.crafting.held.forEach(
+                (item, count) ->
+                    required.merge(
+                        item, Math.max(0, count - worker.mining.carried(item)), Math::max));
           if (worker.job() == WorkerJob.LUMINARITON && WorkerStock.plants(worker) < 16) {
-            for (Report local : reports.values()) if (local.loaded && local.sites.contains(station.identity))
-              for (ItemStack stack : local.contents) if (LuminaService.plantingStock(stack)) required.merge(stack.getItem(), 16, Math::max);
+            for (Report local : reports.values())
+              if (local.loaded && local.sites.contains(station.identity))
+                for (ItemStack stack : local.contents)
+                  if (LuminaService.plantingStock(stack))
+                    required.merge(stack.getItem(), 16, Math::max);
           }
           if (worker.job() == WorkerJob.FARMINGTON)
             required.replaceAll((item, count) -> Math.max(0, count - worker.mining.carried(item)));
@@ -485,7 +547,7 @@ public final class LogisticsNetwork {
     report.loaded = true;
     Map<Item, Integer> reserves = new HashMap<>();
     for (Lumberton w : workers)
-      if (sites.contains(w.totemId) && w.job() == 2)
+      if (sites.contains(w.totemId) && w.excavator())
         w.mining.requiredStock().forEach((item, count) -> reserves.merge(item, count, Math::max));
     report.reserves = reserves;
     return true;
@@ -502,7 +564,7 @@ public final class LogisticsNetwork {
           || !Objects.equals(e.totem, WorkerStock.siteId(w))) return null;
       if (Inventories.tool(w.job(), item)) return w.tools;
       return WorkerStock.accepts(w, item)
-              || w.job() == 2 && w.mining.wants(item)
+              || w.excavator() && w.mining.wants(item)
               || w.job() == WorkerJob.FARMINGTON && w.farming.reserve().containsKey(item.getItem())
               || w.job() == WorkerJob.BUILDINGTON
                   && w.building.active() != null
@@ -546,7 +608,7 @@ public final class LogisticsNetwork {
     if (d.item != null) return stack.is(d.item);
     return l.getEntity(d.worker) instanceof Lumberton w
         && member(w)
-        && (w.job() == 2
+        && (w.excavator()
             ? w.mining.acceptsNeededTool(stack)
             : w.job() == 3 ? Inventories.pick(stack) : Inventories.tool(w.job(), stack));
   }
@@ -560,7 +622,9 @@ public final class LogisticsNetwork {
         || !Objects.equals(WorkerStock.siteId(w), d.totem)) return 0;
     if (d.kind.equals("flowers")) return Math.max(0, 16 - WorkerStock.plants(w) - localStock(l, d));
     if (d.item != null && WorkerStock.required(w).containsKey(d.item))
-      return Math.max(0, WorkerStock.required(w).get(d.item) - WorkerStock.carried(w, d.item) - localStock(l, d));
+      return Math.max(
+          0,
+          WorkerStock.required(w).get(d.item) - WorkerStock.carried(w, d.item) - localStock(l, d));
     if (d.item != null)
       return w.job() == WorkerJob.FARMINGTON
           ? Math.max(
@@ -568,7 +632,7 @@ public final class LogisticsNetwork {
               w.farming.reserve().getOrDefault(d.item, 0)
                   - w.mining.carried(d.item)
                   - localStock(l, d))
-          : w.job() == 2
+          : w.excavator()
               ? Math.max(
                   0,
                   w.mining.requiredStock().getOrDefault(d.item, 0)
@@ -727,18 +791,36 @@ public final class LogisticsNetwork {
   /** A crafter without couriers may physically deliver its already-existing output. */
   public boolean offerCarried(Lumberton worker) {
     if (parcels.containsKey(worker.getUUID())) return true;
-    ServerLevel level = (ServerLevel)worker.level();
-    for (Demand demand : demands.values().stream().filter(d -> d.source == null && d.worker != null && !d.worker.equals(worker.getUUID()))
-        .sorted(Comparator.comparingInt(d -> d.priority)).toList()) {
-      int needed = neededNow(level, demand); if (needed <= 0) continue;
+    ServerLevel level = (ServerLevel) worker.level();
+    for (Demand demand :
+        demands.values().stream()
+            .filter(d -> d.source == null && d.worker != null && !d.worker.equals(worker.getUUID()))
+            .sorted(Comparator.comparingInt(d -> d.priority))
+            .toList()) {
+      int needed = neededNow(level, demand);
+      if (needed <= 0) continue;
       for (int i = 0; i < worker.cargo.getSlots(); i++) {
         ItemStack stack = worker.cargo.getStackInSlot(i);
-        if (!matches(level, demand, stack) || worker.cargoKeep(stack) >= worker.mining.carried(stack.getItem())) continue;
+        if (!matches(level, demand, stack)
+            || worker.cargoKeep(stack) >= worker.mining.carried(stack.getItem())) continue;
         Endpoint destination = new Endpoint(demand.totem, null, demand.worker);
-        int amount = Math.min(Math.min(needed, stack.getCount()), capacity(level, destination, stack, worker.getUUID()));
+        int amount =
+            Math.min(
+                Math.min(needed, stack.getCount()),
+                capacity(level, destination, stack, worker.getUUID()));
         if (amount <= 0) continue;
-        Parcel parcel = reserve(worker, demand.id, new Endpoint(WorkerStock.siteId(worker), null, worker.getUUID()), destination, stack, amount);
-        parcel.picked = amount; parcel.phase = Phase.CARRYING; dirty(level); return true;
+        Parcel parcel =
+            reserve(
+                worker,
+                demand.id,
+                new Endpoint(WorkerStock.siteId(worker), null, worker.getUUID()),
+                destination,
+                stack,
+                amount);
+        parcel.picked = amount;
+        parcel.phase = Phase.CARRYING;
+        dirty(level);
+        return true;
       }
     }
     return false;
@@ -842,7 +924,7 @@ public final class LogisticsNetwork {
         Station site = stations.get(siteId);
         if (site != null)
           for (Lumberton worker : site.loadedWorkers())
-            if (member(worker) && worker.job() == WorkerJob.MININGTON)
+            if (member(worker) && worker.excavator())
               keep = Math.max(keep, worker.mining.requiredStock().getOrDefault(item.getItem(), 0));
       }
     } else if (committing) keep = Math.max(keep, freshWorksiteReserve(l, r, item.getItem(), null));
@@ -862,10 +944,13 @@ public final class LogisticsNetwork {
           && !local.id.equals(exceptProject)
           && projects.add(local.id)) required += local.remaining(l).getOrDefault(item, 0);
       for (Lumberton worker : site.loadedWorkers()) {
-        if (member(worker) && worker.job() != WorkerJob.FARMINGTON && worker.job() != WorkerJob.BUILDINGTON
+        if (member(worker)
+            && worker.job() != WorkerJob.FARMINGTON
+            && worker.job() != WorkerJob.BUILDINGTON
             && countedWorkers.add(worker.getUUID())) {
           int keep = WorkerStock.required(worker).getOrDefault(item, 0);
-          if (worker.job() == WorkerJob.CRAFTERTON) keep = Math.max(keep, worker.crafting.held.getOrDefault(item, 0));
+          if (worker.job() == WorkerJob.CRAFTERTON)
+            keep = Math.max(keep, worker.crafting.held.getOrDefault(item, 0));
           required += Math.max(0, keep - WorkerStock.carried(worker, item));
         }
         if (!member(worker)

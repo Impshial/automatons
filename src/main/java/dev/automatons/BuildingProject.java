@@ -65,8 +65,14 @@ public final class BuildingProject {
   }
 
   public BlockPos entrance(ServerLevel l) {
-    return template(l).feature(anchor, front, "door",
-        template(l).feature(anchor, front, "healing_position", at(l, template(l).anchor.getX(), 1, 0)));
+    return template(l)
+        .feature(
+            anchor,
+            front,
+            "door",
+            template(l)
+                .feature(
+                    anchor, front, "healing_position", at(l, template(l).anchor.getX(), 1, 0)));
   }
 
   public boolean contains(ServerLevel l, BlockPos p) {
@@ -91,7 +97,8 @@ public final class BuildingProject {
   }
 
   public boolean reserve(ServerLevel l) {
-    if (!new SiteLayout(this, l).waterValid()) return fail("Fishing dock needs a 7 by 10 area of source water");
+    if (!new SiteLayout(this, l).waterValid())
+      return fail("Fishing dock needs a 7 by 10 area of source water");
     for (BuildingProject other : WorldData.get(l).buildings.values()) {
       if (other == this) continue;
       if (bounds(l).intersects(other.bounds(l))
@@ -149,13 +156,15 @@ public final class BuildingProject {
         result.merge(template(l).frames.get(index).item(), 1, Integer::sum);
       }
     if (completedStands.size() < template(l).stands.size())
-      result.merge(Items.ARMOR_STAND, template(l).stands.size() - completedStands.size(), Integer::sum);
+      result.merge(
+          Items.ARMOR_STAND, template(l).stands.size() - completedStands.size(), Integer::sum);
     return result;
   }
 
   /** Smallest payable placement still needing this item (double slabs require two). */
   public int minimumWorkingAmount(ServerLevel level, Item item) {
-    if (item == Items.ARMOR_STAND && completedStands.size() < template(level).stands.size()) return 1;
+    if (item == Items.ARMOR_STAND && completedStands.size() < template(level).stands.size())
+      return 1;
     int minimum = Integer.MAX_VALUE;
     for (var cell : template(level).cells) {
       ItemStack cost = BuildingTemplate.cost(cell.state());
@@ -163,8 +172,7 @@ public final class BuildingProject {
       BlockPos pos = template.world(anchor, front, cell.local());
       if (level.hasChunkAt(pos)
           && Construction.matches(
-              level.getBlockState(pos), cell.state().rotate(template.rotationFor(front))))
-        continue;
+              level.getBlockState(pos), cell.state().rotate(template.rotationFor(front)))) continue;
       minimum = Math.min(minimum, cost.getCount());
     }
     for (int i = 0; i < template(level).frames.size(); i++)
@@ -208,17 +216,17 @@ public final class BuildingProject {
       if (l.getGameTime() < nextBuildAction) return false;
       if (!Objects.equals(builder, w.getUUID())
           || !Inventories.tool(WorkerJob.BUILDINGTON, w.activeTool())) return false;
-        Direction displayFacing = template.rotationFor(front).rotate(display.facing());
-        if (WorldData.get(l).protectedAt(p)
-            || MiningRules.breakPermission(
-                    w,
-                    p.relative(displayFacing.getOpposite()),
-                    l.getBlockState(p.relative(displayFacing.getOpposite())))
+      Direction displayFacing = template.rotationFor(front).rotate(display.facing());
+      if (WorldData.get(l).protectedAt(p)
+          || MiningRules.breakPermission(
+                  w,
+                  p.relative(displayFacing.getOpposite()),
+                  l.getBlockState(p.relative(displayFacing.getOpposite())))
               < 0) {
         w.state("Display placement protected");
         return false;
       }
-        var frame = new net.minecraft.world.entity.decoration.ItemFrame(l, p, displayFacing);
+      var frame = new net.minecraft.world.entity.decoration.ItemFrame(l, p, displayFacing);
       frame.getPersistentData().putUUID("AutomatonsProject", id);
       frame.getPersistentData().putInt("AutomatonsDisplay", index);
       frame.setItem(new ItemStack(display.item()), false);
@@ -244,11 +252,20 @@ public final class BuildingProject {
       if (completedStands.contains(i)) continue;
       BlockPos pos = template.world(anchor, front, template.stands.get(i));
       final int index = i;
-      if (!level.getEntitiesOfClass(net.minecraft.world.entity.decoration.ArmorStand.class,
-          new AABB(pos).inflate(.5), e -> id.equals(e.getPersistentData().hasUUID("AutomatonsProject")
-              ? e.getPersistentData().getUUID("AutomatonsProject") : null)
-              && e.getPersistentData().getInt("AutomatonsDisplay") == index).isEmpty()) {
-        completedStands.add(i); dirty(level); continue;
+      if (!level
+          .getEntitiesOfClass(
+              net.minecraft.world.entity.decoration.ArmorStand.class,
+              new AABB(pos).inflate(.5),
+              e ->
+                  id.equals(
+                          e.getPersistentData().hasUUID("AutomatonsProject")
+                              ? e.getPersistentData().getUUID("AutomatonsProject")
+                              : null)
+                      && e.getPersistentData().getInt("AutomatonsDisplay") == index)
+          .isEmpty()) {
+        completedStands.add(i);
+        dirty(level);
+        continue;
       }
       if (w.mining.carried(Items.ARMOR_STAND) == 0) {
         if (!restock(w, station, Items.ARMOR_STAND, 1)) w.state("Needs armor stand");
@@ -256,14 +273,22 @@ public final class BuildingProject {
       }
       if (!outsideStance(w, pos) || level.getGameTime() < nextBuildAction) return false;
       if (!level.hasChunkAt(pos) || WorldData.get(level).protectedAt(pos)) return false;
-      var stand = new net.minecraft.world.entity.decoration.ArmorStand(level, pos.getX() + .5, pos.getY(), pos.getZ() + .5);
+      var stand =
+          new net.minecraft.world.entity.decoration.ArmorStand(
+              level, pos.getX() + .5, pos.getY(), pos.getZ() + .5);
       stand.setYRot(front.toYRot());
       stand.getPersistentData().putUUID("AutomatonsProject", id);
       stand.getPersistentData().putInt("AutomatonsDisplay", i);
       stand.getPersistentData().putBoolean("AutomatonsDisplayArmor", true);
-      if (!level.noCollision(stand) || !level.addFreshEntity(stand)) { w.state("Clear armor stand position"); return false; }
+      if (!level.noCollision(stand) || !level.addFreshEntity(stand)) {
+        w.state("Clear armor stand position");
+        return false;
+      }
       consume(w, Items.ARMOR_STAND, 1);
-      completedStands.add(i); worked(level); dirty(level); return false;
+      completedStands.add(i);
+      worked(level);
+      dirty(level);
+      return false;
     }
     return true;
   }
@@ -379,13 +404,14 @@ public final class BuildingProject {
       // Only essential interior headroom is cleared. Eave air and surrounding terrain are
       // untouched.
       for (var cell : template(l).cells)
-        if (cell.state().isAir() && (template(l).explicitAir || (
-            cell.local().getY() > 0
-            && cell.local().getY() <= 2
-            && cell.local().getX() > 0
-            && cell.local().getX() < template.size.getX() - 1
-            && cell.local().getZ() > 0
-            && cell.local().getZ() < template.size.getZ() - 1))) order.add(cell);
+        if (cell.state().isAir()
+            && (template(l).explicitAir
+                || (cell.local().getY() > 0
+                    && cell.local().getY() <= 2
+                    && cell.local().getX() > 0
+                    && cell.local().getX() < template.size.getX() - 1
+                    && cell.local().getZ() > 0
+                    && cell.local().getZ() < template.size.getZ() - 1))) order.add(cell);
       // No temporary access hole is needed when the worker stays outside. Such a hole
       // also incorrectly demanded demolition of an already-correct stone foundation.
       order.addAll(template(l).placements());
@@ -404,7 +430,8 @@ public final class BuildingProject {
       }
       BlockState target = c.state().rotate(template.rotationFor(front));
       BlockState now = l.getBlockState(p);
-      if (target.is(Blocks.GRASS_BLOCK) && !FarmPlan.soil(now)) target = Blocks.DIRT.defaultBlockState();
+      if (target.is(Blocks.GRASS_BLOCK) && !FarmPlan.soil(now))
+        target = Blocks.DIRT.defaultBlockState();
       if (WorldData.get(l).protectedAt(p)) {
         w.state("Construction protected");
         return;
@@ -533,7 +560,8 @@ public final class BuildingProject {
     }
     if (missing) {
       // Use the materials already carried before interrupting construction for stock.
-      if (nextMaterial != null && restock(w, s, nextMaterial, Math.min(64, remaining(l).getOrDefault(nextMaterial, 1))))
+      if (nextMaterial != null
+          && restock(w, s, nextMaterial, Math.min(64, remaining(l).getOrDefault(nextMaterial, 1))))
         return;
       w.getNavigation().stop();
       ((WorkerMoveControl) w.getMoveControl()).stop();
@@ -569,7 +597,10 @@ public final class BuildingProject {
     }
     if (!finishFrames(w, s)) return;
     if (!finishStands(w, s)) return;
-    if (!new SiteLayout(this, l).waterValid()) { w.state("Fishing water has changed — restore source water"); return; }
+    if (!new SiteLayout(this, l).waterValid()) {
+      w.state("Fishing water has changed — restore source water");
+      return;
+    }
     ready = true;
     reason = purpose.label + " ready";
     if (supplies.chest == null) release(w.getUUID());
@@ -581,6 +612,9 @@ public final class BuildingProject {
       s.mine.openAccess = true;
       s.mine.entranceComplete = true;
       s.mine.stage = MinePlan.Stage.SHAFT;
+      s.mine.strip = new StripMine();
+      s.mine.shaftDepth = s.mine.strip.depth();
+      s.mine.edgeQuarry = false;
       s.mine.reason = "Preparing shaft";
       WorldData.get(l).mines.put(s.mine.id, s.mine);
     }

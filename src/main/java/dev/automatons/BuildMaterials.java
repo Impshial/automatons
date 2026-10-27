@@ -63,6 +63,28 @@ public final class BuildMaterials {
           (plan == null ? BuildingTemplate.load(l, "warehouse") : plan.template(l)).materials);
       total.merge(Items.CHEST, 1, Integer::sum);
       left.putAll(plan == null ? total : plan.supplies.needed(l));
+    } else if (s.mine != null && s.mine.quarry != null) {
+      MinePlan mine = s.mine;
+      total.put(Items.LADDER, 4);
+      total.put(Items.COBBLESTONE, 32);
+      total.put(Items.TORCH, Math.max(16, Balance.TORCH_STOCK.get()));
+      left.putAll(total);
+    } else if (s.mine != null && s.mine.strip != null) {
+      MinePlan mine = s.mine;
+      total.put(Items.CHEST, 8);
+      total.put(Items.LADDER, mine.shaftDepth);
+      total.put(Items.COBBLESTONE, 25 + mine.shaftDepth);
+      total.put(Items.TORCH, Balance.TORCH_STOCK.get());
+      for (var task : mine.constructionTasks(l)) {
+        if (!task.placement()) continue;
+        if (l.hasChunkAt(task.pos())
+            && (Construction.matches(l.getBlockState(task.pos()), task.place())
+                || task.place().is(Blocks.COBBLESTONE)
+                    && l.getBlockState(task.pos())
+                        .isFaceSturdy(l, task.pos(), net.minecraft.core.Direction.UP))) continue;
+        left.merge(task.place().getBlock().asItem(), 1, Integer::sum);
+      }
+      left.put(Items.TORCH, Balance.TORCH_STOCK.get());
     } else {
       MinePlan m = s.mine == null ? new MinePlan() : s.mine;
       total.putAll(m.minehead(l).materials);
@@ -112,7 +134,7 @@ public final class BuildMaterials {
       supplies.add(worker.station());
     Set<UUID> workers = new HashSet<>();
     for (Lumberton w : s.loadedWorkers())
-      if (w.job() == (warehouse ? WorkerJob.BUILDINGTON : WorkerJob.MININGTON)
+      if ((warehouse ? w.job() == WorkerJob.BUILDINGTON : w.excavator())
           && workers.add(w.getUUID())) BuildingProject.count(w.cargo, have);
     if (worker != null && workers.add(worker.getUUID())) BuildingProject.count(worker.cargo, have);
     Set<BlockPos> chests = new HashSet<>();

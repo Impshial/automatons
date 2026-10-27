@@ -29,10 +29,17 @@ public class WorkMenu extends AbstractContainerMenu {
   public long professionConfirmationUntil;
   public String feedback = "";
 
-  public boolean showInventory() { return !player.level().isClientSide || (!isWorker && !isTotem) || view == (isWorker ? 1 : 2); }
+  public boolean showInventory() {
+    return !player.level().isClientSide || (!isWorker && !isTotem) || view == (isWorker ? 1 : 2);
+  }
 
   private Slot playerSlot(Inventory inv, int index, int x, int y) {
-    return new Slot(inv, index, x, y) { @Override public boolean isActive() { return showInventory(); } };
+    return new Slot(inv, index, x, y) {
+      @Override
+      public boolean isActive() {
+        return showInventory();
+      }
+    };
   }
 
   public WorkMenu(int id, Inventory inv, FriendlyByteBuf b) {
@@ -87,7 +94,8 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     for (int row = 0; row < 3; row++)
       for (int col = 0; col < 9; col++)
-        addSlot(playerSlot(inv, col + row * 9 + 9, 8 + col * 18, 152 + cargoLayoutExtra + row * 18));
+        addSlot(
+            playerSlot(inv, col + row * 9 + 9, 8 + col * 18, 152 + cargoLayoutExtra + row * 18));
     for (int col = 0; col < 9; col++)
       addSlot(playerSlot(inv, col, 8 + col * 18, 210 + cargoLayoutExtra));
     refreshPreview();
@@ -95,7 +103,11 @@ public class WorkMenu extends AbstractContainerMenu {
 
   private Slot ownedSlot(IItemHandler handler, int index, int x, int y) {
     return new SlotItemHandler(handler, index, x, y) {
-      @Override public boolean isActive() { return showInventory(); }
+      @Override
+      public boolean isActive() {
+        return showInventory();
+      }
+
       @Override
       public boolean mayPlace(ItemStack s) {
         return canEdit() && super.mayPlace(s);
@@ -201,7 +213,8 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (worker != null) {
       if (worker.isGuard() && action == 190) worker.guarding.mode(true);
-      if (worker.isGuard() && action == 191 && worker.guarding.assigned() != null) worker.guarding.mode(false);
+      if (worker.isGuard() && action == 191 && worker.guarding.assigned() != null)
+        worker.guarding.mode(false);
       if (action == 6) {
         worker.authorized = true;
         WorkerIdentity.update(worker, "Deployed");
@@ -221,17 +234,34 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (isTotem) {
       if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
-      if (action == 240) { station.recalled = !station.recalled; station.changed(); }
+      if (action == 240) {
+        station.recalled = !station.recalled;
+        station.changed();
+      }
       if (station.purpose == WorksitePurpose.CRAFT && action == 230 && !getCarried().isEmpty()) {
-        station.craftOrders.put(getCarried().getItem(), Math.min(64, getCarried().getCount())); station.changed();
+        station.craftOrders.put(getCarried().getItem(), Math.min(64, getCarried().getCount()));
+        station.changed();
       }
       if (station.purpose == WorksitePurpose.CRAFT && action == 231 && !getCarried().isEmpty()) {
-        station.craftOrders.remove(getCarried().getItem()); station.changed();
+        station.craftOrders.remove(getCarried().getItem());
+        station.changed();
       }
       if (station.purpose == WorksitePurpose.RANCH) {
-        if (action >= 200 && action <= 203) { int species = action - 200; station.ranch.enabled[species] = !station.ranch.enabled[species]; station.changed(); }
-        if (action >= 210 && action <= 213) { int species = action - 210; station.ranch.targets[species] = Math.max(2, station.ranch.targets[species] - 1); station.changed(); }
-        if (action >= 220 && action <= 223) { int species = action - 220; station.ranch.targets[species] = Math.min(64, station.ranch.targets[species] + 1); station.changed(); }
+        if (action >= 200 && action <= 203) {
+          int species = action - 200;
+          station.ranch.enabled[species] = !station.ranch.enabled[species];
+          station.changed();
+        }
+        if (action >= 210 && action <= 213) {
+          int species = action - 210;
+          station.ranch.targets[species] = Math.max(2, station.ranch.targets[species] - 1);
+          station.changed();
+        }
+        if (action >= 220 && action <= 223) {
+          int species = action - 220;
+          station.ranch.targets[species] = Math.min(64, station.ranch.targets[species] + 1);
+          station.changed();
+        }
       }
       if (action >= 61 && action <= 65) station.configure(WorksitePurpose.of(action - 60));
       if (action == 66 && station.project() == null) {
@@ -244,9 +274,9 @@ public class WorkMenu extends AbstractContainerMenu {
       }
       if (station.purpose == WorksitePurpose.FARM && station.farm != null) {
         if (action >= 180 && action <= 182 && station.farm.select(action - 180, getCarried()))
-          station.farm.changed((ServerLevel)p.level(), station);
+          station.farm.changed((ServerLevel) p.level(), station);
         if (action >= 185 && action <= 187 && station.farm.select(action - 185, ItemStack.EMPTY))
-          station.farm.changed((ServerLevel)p.level(), station);
+          station.farm.changed((ServerLevel) p.level(), station);
       }
       if (action >= 40 && action <= 43) {
         var warehouse = WorldData.get((ServerLevel) p.level()).buildings.get(station.identity);
@@ -264,6 +294,9 @@ public class WorkMenu extends AbstractContainerMenu {
         if (action == 30 || action == 31) station.mine.switchMode(MinePlan.Mode.TUNNEL);
         if (action == 32 || action == 33) {
           station.mine.paused = action == 33;
+          if (action == 32 && station.mine.strip != null) station.mine.strip.acknowledge();
+          if (action == 32 && station.mine.quarry != null)
+            station.mine.quarry.acknowledge((ServerLevel) p.level());
           station.mine.revision++;
           station.mine.builder = null;
         }
@@ -390,7 +423,10 @@ public class WorkMenu extends AbstractContainerMenu {
     if (station != null && !isTotem) {
       n.put("ActiveBuilds", BuildMaterials.network(station));
       n.put("Ranch", station.ranch.save());
-      ListTag craftOrders = new ListTag(); station.craftOrders.forEach((item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", craftOrders);
+      ListTag craftOrders = new ListTag();
+      station.craftOrders.forEach(
+          (item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag())));
+      n.put("CraftOrders", craftOrders);
       n.putBoolean("Ready", station.ready());
       add(lines, station.recalled ? "Work disabled" : "Work enabled");
       for (BuildingProject project : WorldData.get((ServerLevel) player.level()).buildings.values())
@@ -406,7 +442,10 @@ public class WorkMenu extends AbstractContainerMenu {
     if (isTotem) {
       n.putInt("Purpose", station.purpose.ordinal());
       n.put("Ranch", station.ranch.save());
-      ListTag craftOrders = new ListTag(); station.craftOrders.forEach((item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", craftOrders);
+      ListTag craftOrders = new ListTag();
+      station.craftOrders.forEach(
+          (item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag())));
+      n.put("CraftOrders", craftOrders);
       n.putBoolean("Configured", station.project() != null);
       n.putString("Orientation", station.orientation.getName());
       ListTag worksite = new ListTag();
@@ -442,8 +481,14 @@ public class WorkMenu extends AbstractContainerMenu {
         add(farming, "Shared crop cells: " + f.cells.size());
         n.putIntArray("Crops", f.crops);
         for (int strip = 0; strip < 3; strip++)
-          add(farming, List.of("Left: ", "Middle: ", "Right: ").get(strip)
-              + (f.crops[strip] == 0 ? "No planting" : new ItemStack(FarmPlan.PLANTS.get(f.crops[strip] - 1)).getHoverName().getString()));
+          add(
+              farming,
+              List.of("Left: ", "Middle: ", "Right: ").get(strip)
+                  + (f.crops[strip] == 0
+                      ? "No planting"
+                      : new ItemStack(FarmPlan.PLANTS.get(f.crops[strip] - 1))
+                          .getHoverName()
+                          .getString()));
         add(farming, "Use bone meal: " + (f.boneMeal ? "ON (optional)" : "OFF"));
         f.reserves((ServerLevel) player.level())
             .forEach(
@@ -579,7 +624,9 @@ public class WorkMenu extends AbstractContainerMenu {
       for (UUID guard : station.guards) {
         CompoundTag record = ledger.workers.get(guard);
         if (record != null && !record.getString("State").equals("Destroyed")) {
-          CompoundTag copy = record.copy(); copy.putUUID("Id", guard); guards.add(copy);
+          CompoundTag copy = record.copy();
+          copy.putUUID("Id", guard);
+          guards.add(copy);
         }
       }
       n.put("Guards", guards);
