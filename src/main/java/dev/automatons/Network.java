@@ -36,6 +36,7 @@ public final class Network {
 
   public static void init() {
     MachineActions.register();
+    WorkActions.register();
     CHANNEL.registerMessage(
         3,
         TimberMaintenance.Query.class,

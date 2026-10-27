@@ -16,6 +16,56 @@ import net.minecraftforge.gametest.*;
 @PrefixGameTestTemplate(false)
 public final class ExpansionGameTests {
   @GameTest(template = "empty", timeoutTicks = 40)
+  public static void unassigning_rancher_releases_handling_and_returns_one_real_lead(GameTestHelper h) {
+    var level=h.getLevel(); BlockPos pos=h.absolutePos(new BlockPos(5,2,5));
+    level.setBlock(pos,Automatons.TOTEM.get().defaultBlockState(),3); Station site=(Station)level.getBlockEntity(pos);
+    site.owner=UUID.randomUUID(); site.purpose=WorksitePurpose.RANCH;
+    Lumberton worker=Automatons.LUMBERTON.get().create(level); worker.owner=site.owner; worker.homeId=UUID.randomUUID(); worker.setNoAi(true);
+    worker.assign(site); worker.moveTo(Vec3.atBottomCenterOf(pos.south())); level.addFreshEntity(worker);
+    var cow=net.minecraft.world.entity.EntityType.COW.create(level); cow.moveTo(worker.position().add(1,0,0)); cow.setNoAi(true); level.addFreshEntity(cow);
+    AnimalTasks.register(cow,site); AnimalTasks.claim(cow,worker,"Cull"); cow.setLeashedTo(worker,false); site.ranch.handling=cow.getUUID();
+    CompoundTag lease=new CompoundTag(); lease.putUUID("Animal",cow.getUUID()); lease.putLong("Site",pos.asLong()); worker.ranching.load(lease);
+    worker.unassign(); worker.ranching.release();
+    h.assertTrue(site.ranch.handling==null && !cow.isLeashed() && AnimalTasks.managed(cow),"Unassignment retained a handling claim or removed livestock protection");
+    int leads=level.getEntitiesOfClass(ItemEntity.class,new AABB(pos).inflate(4)).stream().filter(e -> e.getItem().is(Items.LEAD)).mapToInt(e -> e.getItem().getCount()).sum();
+    h.assertTrue(leads==1,"Repeated handling release duplicated or lost the lead");
+    cow.discard(); worker.discard(); h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void profession_change_requires_owner_confirmation_and_clear_claims_without_replacing_blocks(GameTestHelper h) {
+    var level=h.getLevel(); BlockPos anchor=h.absolutePos(new BlockPos(8,2,8));
+    level.setBlock(anchor,Automatons.TOTEM.get().defaultBlockState(),3); Station site=(Station)level.getBlockEntity(anchor);
+    var player=net.minecraftforge.common.util.FakePlayerFactory.get(level,new com.mojang.authlib.GameProfile(UUID.randomUUID(),"MenuOwner"));
+    player.setPos(Vec3.atCenterOf(anchor)); site.owner=player.getUUID(); site.purpose=WorksitePurpose.CRAFT;
+    BuildingProject original=new BuildingProject(); original.purpose=site.purpose; original.anchor=anchor; original.front=Direction.SOUTH;
+    original.owner=site.owner; original.totem=site.identity; original.approved=original.ready=true; WorldData.get(level).buildings.put(site.identity,original);
+    BlockPos marker=anchor.east(); level.setBlock(marker,Blocks.CHEST.defaultBlockState(),3);
+    var chest=(net.minecraft.world.level.block.entity.ChestBlockEntity)level.getBlockEntity(marker); chest.setItem(0,new ItemStack(Items.DIAMOND,7));
+    WorkMenu menu=new WorkMenu(51,player.getInventory(),site,null); player.containerMenu=menu;
+    WorkActions.handle(player,new WorkActions.Action(51,"confirm",""));
+    h.assertTrue(site.purpose==WorksitePurpose.CRAFT,"Unrequested confirmation changed profession");
+    UUID assigned=UUID.randomUUID(); site.workers.add(assigned);
+    WorkActions.handle(player,new WorkActions.Action(51,"change","3"));
+    h.assertTrue(menu.pendingProfession==0,"Profession change ignored assigned worker"); site.workers.clear();
+    WorldData.get(level).reservations.put(marker.asLong(),assigned);
+    WorkActions.handle(player,new WorkActions.Action(51,"change","3"));
+    h.assertTrue(menu.pendingProfession==0,"Profession change ignored active claim"); WorldData.get(level).reservations.remove(marker.asLong());
+    WorkActions.handle(player,new WorkActions.Action(51,"change","3"));
+    h.assertTrue(menu.pendingProfession==3 && site.purpose==WorksitePurpose.CRAFT,"Request changed profession before confirmation");
+    WorkActions.handle(player,new WorkActions.Action(51,"confirm",""));
+    h.assertTrue(site.purpose==WorksitePurpose.FARM && site.project().paused && !site.project().ready,"Confirmed change did not pause new construction");
+    h.assertTrue(level.getBlockEntity(marker)==chest && chest.getItem(0).is(Items.DIAMOND) && chest.getItem(0).getCount()==7,"Profession change replaced world blocks or inventory");
+    WorkActions.handle(player,new WorkActions.Action(50,"name","Wrong menu"));
+    h.assertTrue(site.customName.isEmpty(),"Stale menu packet renamed a totem");
+    WorkActions.handle(player,new WorkActions.Action(51,"name","East Field"));
+    h.assertTrue(site.getDisplayName().getString().equals("East Field") && site.saveWithoutMetadata().getString("CustomName").equals("East Field"),"Totem name did not persist");
+    site.owner=UUID.randomUUID(); WorkActions.handle(player,new WorkActions.Action(51,"name","Foreign name"));
+    h.assertTrue(site.customName.equals("East Field"),"Foreign owner changed totem name");
+    WorldData.get(level).buildings.remove(site.identity); WorldData.get(level).farms.remove(site.identity); h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
   public static void crafting_returns_containers_and_refuses_partial_commits_or_named_ingredients(GameTestHelper h) {
     var level = h.getLevel(); var cargo = new net.minecraftforge.items.ItemStackHandler(9);
     for (int i = 0; i < 3; i++) cargo.setStackInSlot(i, new ItemStack(Items.MILK_BUCKET));

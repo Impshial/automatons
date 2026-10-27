@@ -36,9 +36,23 @@ These are foundations, not a finished expansion. Fixed mining/quarry replacement
 
 ## Fishing, crafting and supplies checkpoint
 
+Pushed as `80ddae4` on `codex/full-expansion`.
+
 The focused suite now passes **23 required GameTests**, including a real vanilla fishing bite/loot/rod-durability cycle, all six exclusive dock slots and source-water validation, two concurrent couriers physically delivering a named sword and arrows without consuming their personal recharge bottles, transactional crafting/remainders, and a complete authored-workshop sequence from three raw iron plus one coal and two sticks to one pickaxe. The workshop test caught and fixed a fuel deposit/fetch loop. The hostile-acquisition test now permits vanilla's bounded randomized acquisition interval instead of assuming acquisition at exactly tick 30.
 
 Fishing uses a dedicated hook with vanilla bite timing and loot context, an isolated fake fishing actor, stable dock poses and a cosmetic chair. Crafting searches bounded RecipeManager dependencies, uses actual table and furnace inventories, preserves intermediate material/fuel reserves, and simulates container remainders before any commit. Without a courier it can physically fetch and deliver; that complete network route still needs a dedicated integration test. With a courier it stays in its workshop. Cargo supplies and per-site reserve checks now cover the new jobs. Remaining multi-crafter contention, modded recipes, GUI, appearance, mining/quarry, full regressions and client review are still outstanding. This remains an implementation checkpoint, not an installable release.
+
+## Interface work in progress
+
+`ProfessionScreen` replaces the old worker/totem screen through the menu factory; the pedestal retains its existing screen. Workers have Status/Inventory tabs with a read-only profession, guard patrol controls and separate mage reserve. Totems have a chooser followed by Overview/Workers/Settings, crop ghost slots, ranch targets, crafting orders, naming and separate production/guard lists. Menu-scoped `WorkActions` validates ownership, menu identity, distance and current claims. Confirming a profession change preserves world blocks and pauses the replacement plan. A focused server test verifies those invariants, bringing the passing suite to **24 tests**. New ranch lease cleanup and its 25th test are not yet verified.
+
+Client layout verification is still in progress. The first isolated review (`build/packaged-smoke/20261027-024636`) failed its harness assertion because the menu was not open before its first capture. The revised `ExpansionVisualReview` waits for world startup and separates fixture placement from menu opening. It uses the existing `--worksite-review` flag and runs in a disposable copy only. The exact command below now has saved approval; keep it unchanged for future retries:
+
+```powershell
+& 'C:\Users\impsh\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' tools/instance_smoke.py --isolated --worksite-review
+```
+
+Do not mark the GUI complete yet: quarry depth/acknowledgement and fixed mining status await their behavior implementation; full worker/guard roster interaction and client screenshots still require review. Existing older smoke classes referring directly to WorkScreen need reconciliation when running their old scenarios.
 
 Guard protection now has a separate persisted roster, circuit/assigned-site patrols, recall perimeter, surface exclusions and equipment restocking. Hunting uses exclusive animal claims, real weapons/ammunition, ordinary drops, a fixed 96-block totem radius, and protection rechecks at both attack and damage time. Entity-persisted livestock protection remains after escape/reload. Shared flower pickup respects cargo capacity and persistent collector-bed geometry.
 
@@ -53,3 +67,5 @@ Reuse the saved test command verbatim (normal installed Gradle cache access is r
 ```powershell
 .\tools\test_release.ps1 -Expansion *> build/expansion-tests.log; Get-Content build/expansion-tests.log -Tail 50; exit $LASTEXITCODE
 ```
+
+Latest interface evidence: all 25 required expansion GameTests passed (03:01:34), including idempotent ranch unassignment returning exactly one lead. The second disposable client review, build/packaged-smoke/20261027-025206, completed with exit 0 and all 27 screenshots. Chooser, crop strips, crafting, ranch, inventory, guard and mage screens were visually inspected. Minor crafting spacing and unloaded-worker health-label corrections followed; production pause now also applies before the farmer dispatch. Roster interaction review and mining/quarry settings remain outstanding. No live installation was changed.

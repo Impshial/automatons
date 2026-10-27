@@ -188,7 +188,7 @@ public final class VisualSmoke {
       return;
     }
     if (Boolean.getBoolean("automatons.worksiteReview")) {
-      WorksiteVisualSmoke.tick(ticks);
+      ExpansionVisualReview.tick(ticks);
       return;
     }
     if (Boolean.getBoolean("automatons.runningReview")) {

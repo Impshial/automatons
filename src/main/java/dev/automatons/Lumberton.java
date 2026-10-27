@@ -1419,7 +1419,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       alerts = 0;
       if (mining.returnToSurface()) return;
       navigation.stop();
-      state("Unassigned — choose a job");
+      state("Unassigned — assign to a configured worksite");
       return;
     }
     if (isGuard()) { guarding.tick(false); return; }
@@ -1467,6 +1467,11 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (job() == WorkerJob.MININGTON && s.purpose != WorksitePurpose.MINE) {
       state("This worksite has no mine entrance");
       return;
+    }
+    if (s.recalled) {
+      hunting.release(); ranching.release(); fishing.release(); farming.release(); building.release(); mining.releaseWork();
+      if (mining.returnToSurface()) return;
+      travelTo(s.getBlockPos(), "Returning to paused worksite", "Worksite paused"); return;
     }
     if (job() == WorkerJob.FARMINGTON) {
       farming.tick(s);

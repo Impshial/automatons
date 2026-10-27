@@ -26,7 +26,8 @@ public final class ClientSetup {
   public static void setup(FMLClientSetupEvent e) {
     e.enqueueWork(
         () -> {
-          MenuScreens.register(Automatons.MENU.get(), WorkScreen::new);
+          MenuScreens.<WorkMenu, net.minecraft.client.gui.screens.inventory.AbstractContainerScreen<WorkMenu>>register(Automatons.MENU.get(), (menu, inventory, title) ->
+              menu.isWorker || menu.isTotem ? new ProfessionScreen(menu, inventory, title) : new WorkScreen(menu, inventory, title));
           MenuScreens.register(MachineParts.MENU.get(), MachineScreen::new);
           if (net.minecraftforge.fml.ModList.get().isLoaded("jeresources"))
             dev.automatons.compat.jer.AutomatonsJerPlugin.initialize();

@@ -24,6 +24,16 @@ public class WorkMenu extends AbstractContainerMenu {
   private int ticks;
   public int chestPage, workerPage;
   public UUID selectedWorker;
+  public int view;
+  public int pendingProfession;
+  public long professionConfirmationUntil;
+  public String feedback = "";
+
+  public boolean showInventory() { return !player.level().isClientSide || (!isWorker && !isTotem) || view == (isWorker ? 1 : 2); }
+
+  private Slot playerSlot(Inventory inv, int index, int x, int y) {
+    return new Slot(inv, index, x, y) { @Override public boolean isActive() { return showInventory(); } };
+  }
 
   public WorkMenu(int id, Inventory inv, FriendlyByteBuf b) {
     this(id, inv, readTarget(inv, b));
@@ -77,14 +87,15 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     for (int row = 0; row < 3; row++)
       for (int col = 0; col < 9; col++)
-        addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 152 + cargoLayoutExtra + row * 18));
+        addSlot(playerSlot(inv, col + row * 9 + 9, 8 + col * 18, 152 + cargoLayoutExtra + row * 18));
     for (int col = 0; col < 9; col++)
-      addSlot(new Slot(inv, col, 8 + col * 18, 210 + cargoLayoutExtra));
+      addSlot(playerSlot(inv, col, 8 + col * 18, 210 + cargoLayoutExtra));
     refreshPreview();
   }
 
   private Slot ownedSlot(IItemHandler handler, int index, int x, int y) {
     return new SlotItemHandler(handler, index, x, y) {
+      @Override public boolean isActive() { return showInventory(); }
       @Override
       public boolean mayPlace(ItemStack s) {
         return canEdit() && super.mayPlace(s);
@@ -210,6 +221,7 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (isTotem) {
       if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
+      if (action == 240) { station.recalled = !station.recalled; station.changed(); }
       if (station.purpose == WorksitePurpose.CRAFT && action == 230 && !getCarried().isEmpty()) {
         station.craftOrders.put(getCarried().getItem(), Math.min(64, getCarried().getCount())); station.changed();
       }
@@ -741,6 +753,7 @@ public class WorkMenu extends AbstractContainerMenu {
       n.put("LogisticsLines", logistics);
     }
     n.put("Lines", lines);
+    WorkInterface.describe(this, n);
     return n;
   }
 

@@ -30,6 +30,39 @@ public class Station extends BlockEntity implements MenuProvider {
   public WorksitePurpose purpose = WorksitePurpose.UNCONFIGURED;
   public Direction orientation = Direction.NORTH;
   public String setupIssue = "";
+  public String customName = "";
+
+  public String professionChangeIssue() {
+    if (!workers.isEmpty()) return "Unassign production workers first";
+    if (!(level instanceof ServerLevel l)) return "Worksite unavailable";
+    BuildingProject p = project();
+    if (p != null && (p.builder != null || WorldData.get(l).reservations.keySet().stream().anyMatch(pos -> p.contains(l, BlockPos.of(pos)))))
+      return "Wait for construction and work claims to clear";
+    if (WorldData.get(l).logistics.values().stream().flatMap(n -> n.parcels.values().stream())
+        .anyMatch(parcel -> identity.equals(parcel.source.totem()) || identity.equals(parcel.destination.totem())))
+      return "Wait for active deliveries to finish";
+    if (ranch.handling != null) return "Wait for animal handling to finish";
+    return "";
+  }
+
+  /** Explicit menu confirmation changes the plan only; existing world blocks stay in place. */
+  public boolean changeProfession(WorksitePurpose value) {
+    if (value == WorksitePurpose.UNCONFIGURED || value == purpose || !professionChangeIssue().isEmpty()) return false;
+    ServerLevel l = (ServerLevel)level; WorldData data = WorldData.get(l);
+    BuildingProject previous = data.buildings.remove(identity); FarmPlan oldFarm = farm;
+    WorksitePurpose oldPurpose = purpose; data.farms.remove(identity); farm = null;
+    if (!configure(value)) {
+      if (previous != null) data.buildings.put(identity, previous);
+      farm = oldFarm; purpose = oldPurpose;
+      if (oldFarm != null) data.farms.put(identity, oldFarm);
+      changed(); return false;
+    }
+    if (previous != null) previous.supplies.abandon(l);
+    mine = null; craftOrders.clear();
+    project().paused = true;
+    project().reason = "New plan paused; review existing blocks before starting construction";
+    data.setDirty(); changed(); return true;
+  }
 
   /** The sole surface range: both nearby inventories and profession work use this boundary. */
   public int workRange() {
@@ -596,7 +629,7 @@ public class Station extends BlockEntity implements MenuProvider {
 
   @Override
   public Component getDisplayName() {
-    return Component.literal(isTotem() ? "Automaton Totem" : "Automaton Pedestal");
+    return Component.literal(customName.isBlank() ? isTotem() ? "Automaton Totem" : "Automaton Pedestal" : customName);
   }
 
   @Override
@@ -608,6 +641,7 @@ public class Station extends BlockEntity implements MenuProvider {
   protected void saveAdditional(CompoundTag n) {
     super.saveAdditional(n);
     n.putInt("DataVersion", 2);
+    n.putString("CustomName", customName);
     n.putInt("Purpose", purpose.ordinal());
     n.putInt("Orientation", orientation.get2DDataValue());
     n.putUUID("Identity", identity);
@@ -645,6 +679,7 @@ public class Station extends BlockEntity implements MenuProvider {
 
   @Override
   public void load(CompoundTag n) {
+    customName = n.getString("CustomName");
     super.load(n);
     purpose = WorksitePurpose.of(n.getInt("Purpose"));
     orientation = Direction.from2DDataValue(n.getInt("Orientation"));

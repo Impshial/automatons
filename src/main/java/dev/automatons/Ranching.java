@@ -19,16 +19,20 @@ import net.minecraftforge.fluids.capability.IFluidHandler.FluidAction;
 public final class Ranching {
   private final Lumberton worker;
   private UUID animal;
+  private BlockPos sitePosition;
   private long nextAction;
   public Ranching(Lumberton worker) { this.worker = worker; }
-  public CompoundTag save() { var n = new CompoundTag(); if (animal != null) n.putUUID("Animal", animal); return n; }
-  public void load(CompoundTag n) { animal = n.hasUUID("Animal") ? n.getUUID("Animal") : null; }
+  public CompoundTag save() { var n = new CompoundTag(); if (animal != null) n.putUUID("Animal", animal); if (sitePosition != null) n.putLong("Site", sitePosition.asLong()); return n; }
+  public void load(CompoundTag n) { animal = n.hasUUID("Animal") ? n.getUUID("Animal") : null; sitePosition = n.contains("Site") ? BlockPos.of(n.getLong("Site")) : null; }
   public void release() {
+    if (animal != null && sitePosition != null && worker.level() instanceof ServerLevel level && level.hasChunkAt(sitePosition)
+        && level.getBlockEntity(sitePosition) instanceof Station site && Objects.equals(site.owner, worker.owner)
+        && animal.equals(site.ranch.handling)) { site.ranch.handling = null; site.changed(); }
     if (worker.level() instanceof ServerLevel level && animal != null && level.getEntity(animal) instanceof Animal target) {
       if (target.getLeashHolder() == worker) target.dropLeash(true, true);
       AnimalTasks.release(target, worker.getUUID());
     }
-    animal = null;
+    animal = null; sitePosition = null;
   }
   public static List<Animal> stock(Station site, SiteLayout layout) {
     ServerLevel level = (ServerLevel)site.getLevel();
@@ -95,6 +99,7 @@ public final class Ranching {
     AnimalTasks.release(cow, worker.getUUID()); worker.playSound(SoundEvents.COW_MILK, 1, 1); return true;
   }
   public void tick(Station site) {
+    sitePosition = site.getBlockPos();
     ServerLevel level = (ServerLevel)worker.level(); if (site.project() == null) return;
     SiteLayout layout = new SiteLayout(site.project(), level); closeGate(layout);
     if (level.getGameTime() < nextAction) return;
