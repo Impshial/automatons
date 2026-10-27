@@ -1,0 +1,101 @@
+LUMBER YARD: OPEN TIMBER SHELTER
+
+Compact worksite with an open front and sides, enclosed rear wall, single-slope
+spruce slab roof, two double chests, a small decorative log rack and chopping stump.
+An item frame holding a stone axe identifies the front entrance.
+- Main foundation: 7 x 7. Roof/eave reservation: 9 x 9.
+- Schematic dimensions: 9 X x 6 Y x 9 Z. Front is negative Z.
+- Lean-to roof slopes from the high front toward the low back. It has no ridge.
+  Top surface: Y=5.5 at Z=0..2, Y=5 at Z=3..5, Y=4.5 at Z=6..8.
+  Perimeter infill closes support junctions. Maximum height is 5.5 blocks
+  including the foundation. Its two roof steps are each half a block.
+- Totem and paste/construction anchor: (4,1,7), exposed at rear-wall bottom center.
+- WEOffset=(-4,-1,-7); bury foundation at Y=0 so walking level Y=1 is flush.
+- Frame tile: (4,3,0), north-facing, attached to front beam at (4,3,1).
+- Two double chests: X=2 and X=6, Y=1, paired Z=5,6, facing toward the center.
+  Each has clear lid space and a neighboring access lane.
+- Main aisle: X=4, Z=1..6, with two full blocks clear under the front beam.
+- Log rack: (2,1,2), (2,1,3), (2,2,3); chopping stump: (6,1,3).
+  These are four placed oak logs, not four inventories or a new processing feature.
+- Two entrance lanterns plus two interior wall torches light the shelter.
+- No door is needed for the open front; the center aisle leads straight to the totem.
+- Additional chests may be placed within the current storage range, with access
+  kept clear. This starting layout supplies four chest items forming two doubles.
+- Requires Automatons for automatons:totem and block entity automatons:station.
+
+REQUIRED FINISHED ITEMS (excluding the existing totem)
+  4  Chest
+ 25  Cobblestone
+  1  Item Frame
+  2  Lantern
+ 38  Oak Log
+ 43  Oak Planks
+ 87  Spruce Slab
+  1  Stone Axe
+  2  Torch
+
+HARVESTING EXCLUSION
+The Network must register every building's actual structural block positions,
+including log frames, racks and stumps, and exclude them from Lumberton targets.
+Include reserved construction positions before the first block is placed, so
+workers cannot harvest a half-built structure. Keep this exclusion local to
+building contents/blueprints; do not protect the entire surrounding chunk or
+disable normal tree harvesting throughout the work radius. Other registered
+worksites need the same structural-log protection. The schematic itself cannot
+enforce this rule; it must be implemented in the mod's worksite/target validation.
+
+FORMAT AND IMPORT
+Minecraft Java 1.20.1, DataVersion 3465, Sponge Schematic v2.
+All coordinates below refer to the exported schematic, unless labeled body coordinates.
+Every building is anchored to the player-placed totem, which remains exposed
+and usable in the completed structure. All future buildings must follow this rule.
+The builder derives the footprint, entrance, floor and placements from that
+totem's position and the worksite's chosen orientation. Do not choose another
+center and then relocate the totem. Save orientation and reserved bounds before
+construction so retries cannot rotate or shift an existing project.
+WorldEdit origin is stored in WEOffset and Offset=(0,0,0). Foundation blocks go
+one block below normal walking level, so the entrance is flush with the ground.
+Load the file by its basename with //schem load, stand at the specified anchor,
+and use //paste on a disposable test site. Entity pasting must be enabled.
+Do not paste a template over an operational worksite or an assigned totem.
+
+ITEM FRAME
+The identifier is a real minecraft:item_frame entity in the schematic's Entities
+list, not a block or a block entity. It is north-facing, visible, removable,
+not invulnerable and contains one real item. It carries no fixed UUID.
+When importing this template into the mod's construction system, process its
+Entities list as well as blocks. Place the support block first; then create the
+frame and insert the displayed item, consuming one frame and one display item.
+Transform position, hanging tile, support and facing together when rotating.
+Do not double-charge or duplicate the frame or display item after retries or
+reload. Identification is cosmetic: changing the display must not change the
+totem's purpose. Do not take a worker's active tool to fill a display frame.
+Resource totals include the frame and its display item. Door halves consume
+one door item together. Each chest block consumes one chest item. Double slabs
+consume two slab items, and wall torches consume ordinary torch items.
+
+CONSTRUCTION
+Reserve the occupied site and approach, respect protection and existing work,
+and validate support, access and supplies before placing. Build from real
+inventory with persistent progress. Schematic air is not blanket permission to
+erase terrain, player buildings or containers. Preserve the current totem's
+identity, links, owner, purpose, upgrades, inventory and other saved data by
+skipping both block placement AND block-entity loading at the existing totem.
+Registered chest inventories are empty and contain no loot tables. Install
+supports before attached lights and frames. Supply the exact rotated chest
+facings and pairs. These files do not implement worker behavior or new items.
+
+VALIDATION
+Decoded the written NBT and compared every block, block entity, entity and
+anchor. Checked frame support and orientation data, chest pairs and lid air,
+roof coverage and central access where applicable. Source comparisons prove
+the warehouse has no structural changes and the mine adds only eight rear wall
+planks and one totem, preserving every original block.
+No Minecraft client paste, mob navigation or build-animation test was run here.
+Rendered previews use block data; chests, totem and framed item visuals are
+illustrative. The actual files contain their named registry IDs.
+
+ROOF REVISION CHECK
+All blocks below Y=4, the totem anchor, storage block entities and axe-frame
+entity match the previous version exactly. Roof coverage and its downward
+profile were checked. The other three building schematics are unchanged.

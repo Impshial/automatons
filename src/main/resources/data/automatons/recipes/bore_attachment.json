@@ -1,0 +1,29 @@
+{
+  "type": "automatons:bore",
+  "pattern": [
+    "DDD",
+    "FKF",
+    "ICI"
+  ],
+  "key": {
+    "F": {
+      "item": "automatons:machine_frame"
+    },
+    "D": {
+      "item": "minecraft:diamond_pickaxe"
+    },
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "K": {
+      "item": "automatons:magica_core"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    }
+  },
+  "result": {
+    "item": "automatons:bore_attachment",
+    "count": 1
+  }
+}

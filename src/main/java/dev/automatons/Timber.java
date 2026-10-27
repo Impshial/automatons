@@ -10,7 +10,6 @@ import net.minecraft.network.syncher.*;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.*;
 import net.minecraft.world.entity.*;
-import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.*;
@@ -32,6 +31,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       SynchedEntityData.defineId(Timber.class, EntityDataSerializers.COMPOUND_TAG);
   private static final EntityDataAccessor<Boolean> LAYOUT_READY =
       SynchedEntityData.defineId(Timber.class, EntityDataSerializers.BOOLEAN);
+  private static final EntityDataAccessor<Boolean> PLACED =
+      SynchedEntityData.defineId(Timber.class, EntityDataSerializers.BOOLEAN);
   public final List<BlockPos> sources = new ArrayList<>(), targets = new ArrayList<>();
   public final List<BlockState> wood = new ArrayList<>();
   public final Set<BlockPos> sweep = new HashSet<>();
@@ -43,8 +44,27 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   public int duration = 30;
   public boolean paused, segmented, rigidFall, placeOnLanding;
   public int processingTicks;
-  private long playerAction;
   private int abandonedTicks;
+  private float previousVisual, currentVisual;
+  private AABB timberBounds;
+
+  @Override
+  public void setPos(double x, double y, double z) {
+    super.setPos(x, y, z);
+    // Spawn/teleport packets rebuild Entity's default one-block box. The visible tree can be
+    // many blocks from its root, so keep the complete layout for culling and spatial queries.
+    if (sources != null) refreshBounds();
+  }
+
+  @Override
+  public AABB getBoundingBoxForCulling() {
+    return timberBounds == null ? super.getBoundingBoxForCulling() : timberBounds;
+  }
+
+  public float visualProgress(float partial) {
+    if (!level().isClientSide) return progress();
+    return net.minecraft.util.Mth.lerp(partial, previousVisual, currentVisual);
+  }
 
   public Timber(EntityType<? extends Timber> type, Level l) {
     super(type, l);
@@ -55,6 +75,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   protected void defineSynchedData() {
     entityData.define(LAYOUT, new CompoundTag());
     entityData.define(LAYOUT_READY, true);
+    entityData.define(PLACED, false);
     entityData.define(WORK_INDEX, -1);
     entityData.define(CRACK, -1);
     entityData.define(PROGRESS, 0);
@@ -72,6 +93,49 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
 
   public boolean layoutReady() {
     return entityData.get(LAYOUT_READY);
+  }
+
+  public boolean hasPlacedBlocks() {
+    return entityData.get(PLACED);
+  }
+
+  CompoundTag auditState() {
+    CompoundTag n = new CompoundTag();
+    n.putBoolean("Placed", hasPlacedBlocks());
+    n.putInt("Progress", progress());
+    n.put("Consumed", entityData.get(CONSUMED).copy());
+    n.put("Layout", entityData.get(LAYOUT).copy());
+    n.putBoolean("Ready", layoutReady());
+    return n;
+  }
+
+  public void applyAuditState(CompoundTag n) {
+    entityData.set(PLACED, n.getBoolean("Placed"));
+    entityData.set(PROGRESS, n.getInt("Progress"));
+    entityData.set(CONSUMED, n.getCompound("Consumed").copy());
+    entityData.set(LAYOUT, n.getCompound("Layout").copy());
+    entityData.set(LAYOUT_READY, n.getBoolean("Ready"));
+    refreshBounds();
+  }
+
+  private boolean ownsLog(int index) {
+    BlockPos at = targets.get(index);
+    return level().getBlockState(at).equals(TreeFinder.fallenState(wood.get(index), direction))
+        && !WorldData.get((ServerLevel) level()).placedLogs.contains(at.asLong());
+  }
+
+  /** Reconcile only this job's original blocks. Player replacements never become job cargo. */
+  void sweepPlacedLogs() {
+    if (!hasPlacedBlocks() || !(level() instanceof ServerLevel l)) return;
+    for (int i = 0; i < targets.size(); i++) {
+      if (consumed(i) || pendingLoot != null && pendingIndex == i) continue;
+      if (l.hasChunkAt(targets.get(i)) && !ownsLog(i)) mark(i);
+    }
+    if (finished()) {
+      for (ItemStack stack : crownLoot) Block.popResource(l, blockPosition(), stack.copy());
+      crownLoot.clear();
+      discard();
+    }
   }
 
   private boolean distinctTargets() {
@@ -142,6 +206,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   }
 
   public boolean dangerAt(AABB box) {
+    // Once landed, Minecraft's ordinary block collision handles the logs.
+    if (hasPlacedBlocks()) return false;
     if (progress() < duration)
       return sweep.stream().anyMatch(p -> box.intersects(new AABB(p).inflate(.08)));
     for (int i = 0; i < targets.size(); i++)
@@ -219,6 +285,23 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     // All source transfers occur on the server thread in one tick; no block loot is emitted here.
     List<BlockPos> crown = TreeFinder.fallFoliage(l, tree, landing);
     if (crown == null) return null;
+    if (worker != null
+        && java.util.stream.Stream.concat(tree.logs().stream(), crown.stream())
+            .anyMatch(p -> ForestryHelp.needsPickaxe(l.getBlockState(p)))) return null;
+    if (worker != null) {
+      List<BlockPos> owned = TreeFinder.exclusiveCrown(l, tree);
+      if (owned == null) return null;
+      Set<BlockPos> canopy = new HashSet<>(owned);
+      crown =
+          TreeFinder.loose(tree)
+              ? List.of()
+              : crown.stream()
+                  .filter(
+                      p ->
+                          !l.getBlockState(p).is(net.minecraft.tags.BlockTags.LEAVES)
+                              || canopy.contains(p))
+                  .toList();
+    }
     for (BlockPos p : crown)
       if (!Permissions.allowed(l, p, owner, Permissions.Action.CUT)) return null;
     Timber t = Automatons.TIMBER.get().create(l);
@@ -233,13 +316,16 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     t.sources.addAll(tree.logs());
     t.targets.addAll(landing.targets());
     t.sweep.addAll(landing.sweep());
+    Map<BlockPos, List<ItemStack>> immediateLeaves = new LinkedHashMap<>();
     for (BlockPos p : crown) {
       BlockState state = l.getBlockState(p);
       if (state.getBlock() instanceof DoublePlantBlock
           && state.getValue(DoublePlantBlock.HALF)
               == net.minecraft.world.level.block.state.properties.DoubleBlockHalf.UPPER
           && crown.contains(p.below())) continue;
-      t.crownLoot.addAll(Block.getDrops(state, l, p, null, actor, tool));
+      if (worker != null && state.is(net.minecraft.tags.BlockTags.LEAVES))
+        immediateLeaves.put(p, Block.getDrops(state, l, p, null, actor, ItemStack.EMPTY));
+      else t.crownLoot.addAll(Block.getDrops(state, l, p, null, actor, tool));
     }
     for (BlockPos p : tree.logs()) t.wood.add(l.getBlockState(p));
     t.setPos(Vec3.atBottomCenterOf(tree.root()));
@@ -249,14 +335,15 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     // vanilla physics and a second time through the owned crown ledger.
     for (BlockPos p : tree.logs()) l.setBlock(p, Blocks.AIR.defaultBlockState(), 18);
     for (BlockPos p : crown) l.setBlock(p, l.getFluidState(p).createLegacyBlock(), 18);
+    immediateLeaves.forEach((p, drops) -> drops.forEach(drop -> Block.popResource(l, p, drop)));
     Set<BlockPos> changed = new HashSet<>(tree.logs());
     changed.addAll(crown);
     for (BlockPos p : changed) {
       l.getBlockState(p).updateNeighbourShapes(l, p, 3);
       l.updateNeighborsAt(p, Blocks.AIR);
     }
-    // Shared canopy outside the swept corridor stays intact. Cleared foliage is paid once,
-    // with the existing timber ledger or the player's completed landing.
+    // Shared canopy outside the swept corridor stays intact. Worker-owned leaves drop now;
+    // non-leaf attachments retain the existing exact-once timber payout.
     return t;
   }
 
@@ -265,6 +352,14 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         || !layoutReady()
         || owner == null
         || (s != null && !TreeFinder.within(s, blockPosition()))) return false;
+    if (hasPlacedBlocks()) {
+      for (int i = 0; i < targets.size(); i++)
+        if (!consumed(i)
+            && (!l.hasChunkAt(targets.get(i))
+                || WorldData.get(l).protectedAt(targets.get(i))
+                || !(pendingLoot != null && pendingIndex == i) && !ownsLog(i))) return false;
+      return true;
+    }
     if (progress() < duration) {
       for (BlockPos p : sweep)
         if (!l.hasChunkAt(p)
@@ -295,8 +390,15 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   @Override
   public void tick() {
     super.tick();
+    if (level().isClientSide) {
+      previousVisual = currentVisual;
+      currentVisual += Math.max(0, Math.min(1.5f, (progress() - currentVisual) * .5f));
+      if (progress() >= duration && duration - currentVisual < .05f) currentVisual = duration;
+    }
     setDeltaMovement(Vec3.ZERO);
     if (!level().isClientSide) {
+      sweepPlacedLogs();
+      if (isRemoved()) return;
       repairLegacyLayout();
       if (worker != null) {
         var entity = ((ServerLevel) level()).getEntity(worker);
@@ -314,34 +416,24 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         for (Lumberton w : level().getEntitiesOfClass(Lumberton.class, getBoundingBox().inflate(1)))
           if (dangerAt(w.getBoundingBox())) w.moveClearOf(this);
       paused = !safe(null);
-      if (!paused && progress() < duration) {
-        boolean occupied = false;
-        ServerLevel l = (ServerLevel) level();
-        for (BlockPos p : sweep)
-          if (!l.getEntities(this, new AABB(p), e -> e instanceof LivingEntity).isEmpty()) {
-            occupied = true;
-            break;
-          }
-        if (!occupied) entityData.set(PROGRESS, progress() + 1);
-      }
-      if (!paused && placeOnLanding && progress() >= duration) placeLandedLogs();
+      if (!paused && progress() < duration) entityData.set(PROGRESS, progress() + 1);
+      if (!paused && !hasPlacedBlocks() && progress() >= duration) placeLandedLogs();
       if (finished()) discard();
     }
   }
 
-  /** Convert a player fall once; its sections are ordinary block states after landing. */
+  /** Finish the animation with actual sideways logs; retain only the worker's job ledger. */
   private void placeLandedLogs() {
     ServerLevel l = (ServerLevel) level();
     for (int i = 0; i < targets.size(); i++) {
-      if (consumed(i)) continue;
+      if (consumed(i) || pendingLoot != null && pendingIndex == i) continue;
       BlockPos at = targets.get(i);
-      if (reserves(l, at, this)
-          || !Permissions.allowed(l, at, owner, Permissions.Action.FALL)
-          || !l.getEntities(this, new AABB(at), e -> e instanceof LivingEntity).isEmpty()) return;
+      if (reserves(l, at, this) || !Permissions.allowed(l, at, owner, Permissions.Action.FALL))
+        return;
     }
     Map<BlockPos, BlockState> previous = new LinkedHashMap<>();
     for (int i = 0; i < targets.size(); i++) {
-      if (consumed(i)) continue;
+      if (consumed(i) || pendingLoot != null && pendingIndex == i) continue;
       BlockPos at = targets.get(i);
       previous.put(at, l.getBlockState(at));
       if (!l.setBlock(at, TreeFinder.fallenState(wood.get(i), direction), 18)) {
@@ -352,9 +444,9 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     WorldData data = WorldData.get(l);
     for (BlockPos from : sources) data.naturalLogs.remove(from.asLong());
     for (int i = 0; i < targets.size(); i++) {
-      if (consumed(i)) continue;
+      if (consumed(i) || pendingLoot != null && pendingIndex == i) continue;
       BlockPos at = targets.get(i);
-      mark(i);
+      if (placeOnLanding) mark(i);
       data.placedLogs.remove(at.asLong());
       data.placedPlants.remove(at.asLong());
       data.naturalLogs.add(at.asLong());
@@ -363,8 +455,11 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
       WorldEvents.changedNear(l, at);
     }
     data.setDirty();
-    for (ItemStack loot : crownLoot) Block.popResource(l, blockPosition(), loot.copy());
-    crownLoot.clear();
+    entityData.set(PLACED, true);
+    if (placeOnLanding) {
+      for (ItemStack loot : crownLoot) Block.popResource(l, blockPosition(), loot.copy());
+      crownLoot.clear();
+    }
   }
 
   public boolean claim(Lumberton w) {
@@ -381,7 +476,9 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   }
 
   public boolean process(int index, Lumberton w, Station s) {
+    sweepPlacedLogs();
     if (placeOnLanding
+        || !hasPlacedBlocks()
         || index < 0
         || index >= wood.size()
         || consumed(index)
@@ -389,15 +486,23 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
         || !safe(s)
         || !w.getUUID().equals(worker)
         || !Inventories.axe(w.activeTool())
+        || ForestryHelp.needsPickaxe(wood.get(index))
         || !w.inReach(targets.get(index))) return false;
     if (!Permissions.allowed(
         (ServerLevel) level(), targets.get(index), w.owner, Permissions.Action.PROCESS))
       return false;
     if (pendingLoot == null || pendingIndex != index) {
-      pendingLoot = new ArrayList<>(drops(index, w.activeTool(), w));
+      if (!ownsLog(index)) return false;
+      ServerLevel l = (ServerLevel) level();
+      List<ItemStack> harvested = new ArrayList<>(drops(index, w.activeTool(), w));
+      if (!l.destroyBlock(targets.get(index), false, w)) return false;
+      pendingLoot = harvested;
       pendingLoot.addAll(crownLoot);
       crownLoot.clear();
       pendingIndex = index;
+      WorldData.get(l).naturalLogs.remove(targets.get(index).asLong());
+      WorldData.get(l).setDirty();
+      WorldEvents.changedNear(l, targets.get(index));
     }
     // Persist rejected remainders; a large crown cannot deadlock a smaller cargo inventory.
     for (int i = 0; i < pendingLoot.size(); ) {
@@ -439,46 +544,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
 
   @Override
   public boolean isPickable() {
-    return !placeOnLanding;
-  }
-
-  @Override
-  public InteractionResult interact(Player p, InteractionHand hand) {
-    if (placeOnLanding || !Inventories.axe(p.getItemInHand(hand))) return InteractionResult.PASS;
-    if (!level().isClientSide && progress() >= duration && level().getGameTime() >= playerAction) {
-      for (int i = 0; i < targets.size(); i++)
-        if (!consumed(i)
-            && p.distanceToSqr(Vec3.atCenterOf(targets.get(i))) < 20
-            && Permissions.allowed(
-                (ServerLevel) level(), targets.get(i), p.getUUID(), Permissions.Action.PROCESS)) {
-          if (!safe(null)) break;
-          List<ItemStack> drops =
-              pendingLoot != null && pendingIndex == i
-                  ? pendingLoot
-                  : new ArrayList<>(drops(i, p.getItemInHand(hand), p));
-          if (pendingLoot == null || pendingIndex != i) drops.addAll(crownLoot);
-          crownLoot.clear();
-          mark(i);
-          if (pendingIndex == i) {
-            pendingLoot = null;
-            pendingIndex = -1;
-          }
-          for (ItemStack stack : drops) {
-            var item =
-                new net.minecraft.world.entity.item.ItemEntity(
-                    level(),
-                    targets.get(i).getX() + .5,
-                    targets.get(i).getY() + .5,
-                    targets.get(i).getZ() + .5,
-                    stack);
-            level().addFreshEntity(item);
-          }
-          p.getItemInHand(hand).hurtAndBreak(1, p, e -> e.broadcastBreakEvent(hand));
-          playerAction = level().getGameTime() + 10;
-          break;
-        }
-    }
-    return InteractionResult.sidedSuccess(level().isClientSide);
+    // Players target ordinary world logs after landing, never the animation's enclosing box.
+    return false;
   }
 
   private void refreshBounds() {
@@ -486,7 +553,8 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     for (BlockPos p : sources) bounds = bounds.minmax(new AABB(p));
     for (BlockPos p : targets) bounds = bounds.minmax(new AABB(p));
     for (BlockPos p : sweep) bounds = bounds.minmax(new AABB(p));
-    setBoundingBox(bounds.inflate(.1));
+    timberBounds = bounds.inflate(1);
+    setBoundingBox(timberBounds);
   }
 
   @Override
@@ -505,6 +573,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     n.putBoolean("Segmented", segmented);
     n.putBoolean("RigidFall", rigidFall);
     n.putBoolean("PlaceOnLanding", placeOnLanding);
+    n.putBoolean("PlacedBlocks", hasPlacedBlocks());
     n.putInt("ProcessingTicks", processingTicks);
     n.putInt("Direction", direction.get3DDataValue());
     n.putInt("Duration", duration);
@@ -538,6 +607,7 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
     segmented = n.getBoolean("Segmented");
     rigidFall = n.getBoolean("RigidFall");
     placeOnLanding = n.getBoolean("PlaceOnLanding");
+    entityData.set(PLACED, n.getBoolean("PlacedBlocks"));
     processingTicks = Math.max(0, n.getInt("ProcessingTicks"));
     direction = Direction.from3DDataValue(n.getInt("Direction"));
     duration = Math.max(20, n.getInt("Duration"));
@@ -576,5 +646,6 @@ public class Timber extends Entity implements IEntityAdditionalSpawnData {
   @Override
   public void readSpawnData(FriendlyByteBuf b) {
     readAdditionalSaveData(b.readNbt());
+    previousVisual = currentVisual = progress();
   }
 }

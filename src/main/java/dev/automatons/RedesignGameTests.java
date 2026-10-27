@@ -36,6 +36,7 @@ public final class RedesignGameTests {
     home.owner = p.getUUID();
     home.registerHome();
     totem.owner = p.getUUID();
+    WorksiteGameTests.readyFixture(totem, WorksitePurpose.LUMBER);
     p.moveTo(Vec3.atBottomCenterOf(home.getBlockPos().south()));
     return new Rig(p, home, totem);
   }
@@ -94,43 +95,141 @@ public final class RedesignGameTests {
     return n;
   }
 
+  @GameTest(template = "empty", timeoutTicks = 5000)
+  public static void lumberton_climbs_to_high_log_and_recovers_blocks_after_reload(
+      GameTestHelper h) {
+    Rig r = rig(h);
+    chest(h, r, new BlockPos(14, 1, 16));
+    BlockPos log = new BlockPos(19, 20, 14);
+    h.setBlock(log, Blocks.OAK_LOG);
+    Lumberton[] w = {worker(h, r, new BlockPos(17, 1, 14))};
+    w[0].setJob(1);
+    w[0].cargo.setStackInSlot(0, new ItemStack(Items.DIRT, 32));
+    boolean[] climbed = {false}, reloaded = {false};
+    h.onEachTick(
+        () -> {
+          if (h.getTick() % 200 == 0)
+            System.out.println(
+                "FORESTRY_CLIMB " + w[0].diagnostic() + " pillar=" + w[0].forestryAccess.save());
+          if (w[0].getY() > h.absolutePos(log).getY() - 3) climbed[0] = true;
+          if (!reloaded[0] && w[0].getY() > h.absolutePos(new BlockPos(0, 8, 0)).getY()) {
+            CompoundTag saved = w[0].saveWithoutId(new CompoundTag());
+            w[0].remove(net.minecraft.world.entity.Entity.RemovalReason.UNLOADED_TO_CHUNK);
+            Lumberton restored = Automatons.LUMBERTON.get().create(h.getLevel());
+            restored.load(saved);
+            h.getLevel().addFreshEntity(restored);
+            w[0] = restored;
+            reloaded[0] = true;
+          }
+          if (!h.getBlockState(log).isAir() || w[0].forestryAccess.active()) return;
+          h.assertTrue(climbed[0] && reloaded[0], "High wood was mined without climbing/reloading");
+          h.assertTrue(w[0].mining.carried(Items.DIRT) == 32, "Climbing blocks not conserved");
+          h.assertTrue(
+              w[0].getY() < h.absolutePos(log).getY() - 10, "Pillar recovery skipped descent");
+          w[0].setNoAi(true);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 1500)
+  public static void lumberton_fetches_saplings_from_storage_and_replants(GameTestHelper h) {
+    Rig r = rig(h);
+    var supply = chest(h, r, new BlockPos(14, 1, 16));
+    supply.setItem(0, new ItemStack(Items.OAK_SAPLING, 32));
+    Lumberton w = worker(h, r, new BlockPos(20, 1, 14));
+    w.setJob(1);
+    CompoundTag saved = w.saveWithoutId(new CompoundTag());
+    BlockPos stump = h.absolutePos(new BlockPos(20, 1, 14));
+    saved.putLong("Replant", stump.asLong());
+    w.load(saved);
+    boolean[] visited = {false};
+    h.onEachTick(
+        () -> {
+          if (w.inReach(supply.getBlockPos())) visited[0] = true;
+          if (!h.getLevel().getBlockState(stump).is(Blocks.OAK_SAPLING)) return;
+          h.assertTrue(visited[0] && w.inReach(stump), "Sapling transfer or planting was remote");
+          h.assertTrue(
+              count(supply, Items.OAK_SAPLING) + w.mining.carried(Items.OAK_SAPLING) == 31,
+              "Restocking/replanting lost or duplicated saplings");
+          h.assertTrue(w.mining.carried(Items.OAK_SAPLING) > 0, "No replacement saplings retained");
+          w.setNoAi(true);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 4000)
+  public static void lumberton_replants_carried_sapling_after_felling(GameTestHelper h) {
+    Rig r = rig(h);
+    BlockPos root = new BlockPos(18, 1, 14);
+    tree(h, root);
+    chest(h, r, new BlockPos(14, 1, 16));
+    Lumberton w = worker(h, r, new BlockPos(16, 1, 17));
+    w.setJob(1);
+    ItemStack supplied = new ItemStack(Items.OAK_SAPLING, 2);
+    supplied.setHoverName(net.minecraft.network.chat.Component.literal("Plant me"));
+    boolean[] suppliedDuringCut = {false};
+    h.onEachTick(
+        () -> {
+          if (!suppliedDuringCut[0] && w.status().equals("Chopping")) {
+            w.cargo.setStackInSlot(0, supplied.copy());
+            suppliedDuringCut[0] = true;
+          }
+          if (!h.getBlockState(root).is(Blocks.OAK_SAPLING)) return;
+          int remaining = 0;
+          for (int slot = 0; slot < w.cargo.getSlots(); slot++)
+            if (ItemStack.isSameItemSameTags(supplied, w.cargo.getStackInSlot(slot)))
+              remaining += w.cargo.getStackInSlot(slot).getCount();
+          h.assertTrue(
+              suppliedDuringCut[0] && remaining == 1,
+              "Supplied sapling was not consumed exactly once: " + w.cargo.serializeNBT());
+          h.assertTrue(w.inReach(h.absolutePos(root)), "Sapling was planted remotely");
+          w.setNoAi(true);
+          h.succeed();
+        });
+  }
+
   @GameTest(template = "empty", timeoutTicks = 40)
   public static void infusion_exact_cost_pause_competition_and_reload(GameTestHelper h) {
     Rig r = rig(h);
     BlockPos at = h.absolutePos(new BlockPos(4, 1, 3));
     h.getLevel().setBlock(at, Automatons.INFUSER.get().defaultBlockState(), 3);
     Infuser inf = (Infuser) h.getLevel().getBlockEntity(at);
-    r.player.moveTo(inf.corePosition().add(1, 0, 0));
-    Magica.add(r.player, 50);
-    inf.core = CoreItem.vessel(0);
-    inf.donor = r.player.getUUID();
-    for (int i = 0; i < 199; i++) inf.advance(r.player);
+    r.player.moveTo(inf.shardPosition(0).add(1, 0, 0));
+    Lumina.add(r.player, 25);
+    inf.shards[0] = new ItemStack(Automatons.LUMITE_SHARD.get());
+    inf.donors[0] = r.player.getUUID();
+    for (int i = 0; i < 99; i++) inf.advance(id -> r.player);
     h.assertTrue(
-        CoreItem.charge(inf.core) == 49 && Magica.balance(r.player) == 1, "Wrong transfer cadence");
+        LumiteShardItem.paid(inf.shards[0]) == 72 && Lumina.balance(r.player) == 1,
+        "Wrong transfer cadence");
     CompoundTag saved = inf.saveWithoutMetadata();
     Infuser loaded = new Infuser(at, inf.getBlockState());
     loaded.setLevel(h.getLevel());
     loaded.load(saved);
     h.assertTrue(
-        CoreItem.charge(loaded.core) == 49 && loaded.donor.equals(r.player.getUUID()),
+        LumiteShardItem.paid(loaded.shards[0]) == 72 && loaded.donors[0].equals(r.player.getUUID()),
         "Partial infusion did not save");
-    r.player.moveTo(inf.corePosition().add(8, 0, 0));
-    for (int i = 0; i < 40; i++) inf.advance(r.player);
-    h.assertTrue(Magica.balance(r.player) == 1, "Spent out of range");
-    inf.advance(null);
-    r.player.moveTo(inf.corePosition());
+    r.player.moveTo(inf.shardPosition(0).add(8, 0, 0));
+    for (int i = 0; i < 40; i++) inf.advance(id -> r.player);
+    h.assertTrue(Lumina.balance(r.player) == 1, "Spent out of range");
+    inf.advance(id -> null);
+    r.player.moveTo(inf.shardPosition(0));
     for (int i = 0; i < 4; i++) {
-      inf.advance(r.player);
-      loaded.advance(r.player);
+      inf.advance(id -> r.player);
+      loaded.advance(id -> r.player);
     }
     h.assertTrue(
-        Magica.balance(r.player) == 0
-            && CoreItem.charge(inf.core) + CoreItem.charge(loaded.core) == 99,
+        Lumina.balance(r.player) == 0
+            && LumiteShardItem.paid(inf.shards[0]) + LumiteShardItem.paid(loaded.shards[0]) == 147,
         "Competing infusers overspent");
     h.assertTrue(
-        inf.core.is(Automatons.MAGICA_CORE.get()) && !inf.transferring, "Completion not ready");
-    for (int i = 0; i < 40; i++) inf.advance(r.player);
-    h.assertTrue(CoreItem.charge(inf.core) == 50, "Full core changed");
+        (inf.shards[0].is(Automatons.INFUSED_LUMITE.get())
+            || loaded.shards[0].is(Automatons.INFUSED_LUMITE.get())),
+        "Completion not ready");
+    for (int i = 0; i < 40; i++) inf.advance(id -> r.player);
+    h.assertTrue(
+        LumiteShardItem.paid(inf.shards[0]) + LumiteShardItem.paid(loaded.shards[0]) == 147,
+        "Paid total changed after exhaustion");
     h.assertTrue(
         CoreItem.vessel(12).getMaxStackSize() == 1
             && CoreItem.vessel(0).getMaxStackSize() > 1
@@ -148,24 +247,27 @@ public final class RedesignGameTests {
     var block = inf.getBlockState();
     BlockHitResult hit = new BlockHitResult(Vec3.atCenterOf(p), Direction.UP, p, false);
     r.player.setItemInHand(InteractionHand.MAIN_HAND, ItemStack.EMPTY);
-    r.player.setItemInHand(InteractionHand.OFF_HAND, new ItemStack(Automatons.EMPTY_CORE.get(), 2));
+    r.player.setItemInHand(
+        InteractionHand.OFF_HAND, new ItemStack(Automatons.LUMITE_SHARD.get(), 2));
     h.assertTrue(
         block.use(h.getLevel(), r.player, InteractionHand.MAIN_HAND, hit) == InteractionResult.PASS,
         "Empty main hand swallowed offhand");
     block.use(h.getLevel(), r.player, InteractionHand.OFF_HAND, hit);
     block.use(h.getLevel(), r.player, InteractionHand.OFF_HAND, hit);
     h.assertTrue(
-        r.player.getOffhandItem().getCount() == 1 && !inf.core.isEmpty(),
+        r.player.getOffhandItem().getCount() == 1
+            && !inf.shards[InfuserBlock.corner(hit, r.player)].isEmpty(),
         "Repeated insert consumed twice");
     block.use(h.getLevel(), r.player, InteractionHand.MAIN_HAND, hit);
     h.assertTrue(
-        r.player.getMainHandItem().is(Automatons.EMPTY_CORE.get()) && inf.core.isEmpty(),
+        r.player.getMainHandItem().is(Automatons.LUMITE_SHARD.get())
+            && inf.shards[InfuserBlock.corner(hit, r.player)].isEmpty(),
         "Retrieve failed");
     block.use(h.getLevel(), r.player, InteractionHand.MAIN_HAND, hit);
     h.getLevel().destroyBlock(p, false);
     int count =
         h.getLevel().getEntitiesOfClass(ItemEntity.class, new AABB(p).inflate(2)).stream()
-            .filter(e -> e.getItem().is(Automatons.EMPTY_CORE.get()))
+            .filter(e -> e.getItem().is(Automatons.LUMITE_SHARD.get()))
             .mapToInt(e -> e.getItem().getCount())
             .sum();
     h.assertTrue(count == 1, "Break duplicated or lost core");
@@ -173,24 +275,24 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
-  public static void magica_orbs_do_not_grant_xp_or_mend(GameTestHelper h) {
+  public static void lumina_orbs_do_not_grant_xp_or_mend(GameTestHelper h) {
     Rig r = rig(h);
     ItemStack axe = new ItemStack(Items.IRON_AXE);
     axe.enchant(Enchantments.MENDING, 1);
     axe.setDamageValue(100);
     r.player.setItemInHand(InteractionHand.MAIN_HAND, axe);
     int xp = r.player.totalExperience;
-    MagicaOrb orb = Automatons.MAGICA_ORB.get().create(h.getLevel());
+    LuminaOrb orb = Automatons.LUMINA_ORB.get().create(h.getLevel());
     orb.setValue(7);
     orb.count = 2;
     h.getLevel().addFreshEntity(orb);
     orb.playerTouch(r.player);
     orb.playerTouch(r.player);
-    h.assertTrue(Magica.balance(r.player) == 7 && orb.count == 1, "Pickup delay ignored");
+    h.assertTrue(Lumina.balance(r.player) == 7 && orb.count == 1, "Pickup delay ignored");
     h.assertTrue(
-        r.player.totalExperience == xp && axe.getDamageValue() == 100, "Magica altered XP/Mending");
+        r.player.totalExperience == xp && axe.getDamageValue() == 100, "Lumina altered XP/Mending");
     CompoundTag n = orb.saveWithoutId(new CompoundTag());
-    MagicaOrb loaded = Automatons.MAGICA_ORB.get().create(h.getLevel());
+    LuminaOrb loaded = Automatons.LUMINA_ORB.get().create(h.getLevel());
     loaded.load(n);
     h.assertTrue(loaded.total() == 7, "Orb save changed value");
     orb.discard();
@@ -198,28 +300,28 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
-  public static void magica_categories_and_inclusive_zero_ranges(GameTestHelper h) {
+  public static void lumina_categories_and_inclusive_zero_ranges(GameTestHelper h) {
     Rig r = rig(h);
     BlockPos relative = new BlockPos(10, 1, 10), p = h.absolutePos(relative);
     tree(h, relative);
     h.assertTrue(
-        MagicaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).equals("logs"),
+        LuminaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).equals("logs"),
         "Natural log reward missing");
-    MagicaHarvest.markPlaced(h.getLevel(), p, h.getLevel().getBlockState(p));
+    LuminaHarvest.markPlaced(h.getLevel(), p, h.getLevel().getBlockState(p));
     h.assertTrue(
-        MagicaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).isEmpty(),
+        LuminaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).isEmpty(),
         "Construction loop pays");
     h.setBlock(relative, Blocks.DANDELION);
     WorldData.get(h.getLevel()).placedLogs.remove(p.asLong());
     WorldData.get(h.getLevel()).placedPlants.remove(p.asLong());
     h.assertTrue(
-        MagicaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).equals("flowers"),
+        LuminaHarvest.category(h.getLevel(), p, h.getLevel().getBlockState(p)).equals("flowers"),
         "Flower precedence wrong");
     h.assertTrue(
-        MagicaHarvest.category(h.getLevel(), p, Blocks.WHEAT.defaultBlockState()).isEmpty(),
+        LuminaHarvest.category(h.getLevel(), p, Blocks.WHEAT.defaultBlockState()).isEmpty(),
         "Immature crop pays");
     h.assertTrue(
-        MagicaHarvest.category(h.getLevel(), p, ((CropBlock) Blocks.WHEAT).getStateForAge(7))
+        LuminaHarvest.category(h.getLevel(), p, ((CropBlock) Blocks.WHEAT).getStateForAge(7))
             .equals("crops"),
         "Mature crop rejected");
     var random = net.minecraft.util.RandomSource.create(121);
@@ -249,26 +351,26 @@ public final class RedesignGameTests {
     h.getLevel().setBlock(q, Blocks.DANDELION.defaultBlockState(), 3);
     BlockEvent.BreakEvent event =
         new BlockEvent.BreakEvent(h.getLevel(), p, h.getLevel().getBlockState(p), real);
-    MagicaHarvest.broken(event);
-    MagicaHarvest.broken(event);
+    LuminaHarvest.broken(event);
+    LuminaHarvest.broken(event);
     h.getLevel().setBlock(p, Blocks.AIR.defaultBlockState(), 3);
     BlockEvent.BreakEvent canceled =
         new BlockEvent.BreakEvent(h.getLevel(), q, h.getLevel().getBlockState(q), real);
     canceled.setCanceled(true);
-    MagicaHarvest.broken(canceled);
-    MagicaHarvest.broken(
+    LuminaHarvest.broken(canceled);
+    LuminaHarvest.broken(
         new BlockEvent.BreakEvent(h.getLevel(), q, h.getLevel().getBlockState(q), r.player));
     h.getLevel().setBlock(q, Blocks.AIR.defaultBlockState(), 3);
     h.runAfterDelay(
         2,
         () -> {
           long value =
-              h.getLevel().getEntitiesOfClass(MagicaOrb.class, new AABB(p).inflate(2)).stream()
-                  .mapToLong(MagicaOrb::totalThirds)
+              h.getLevel().getEntitiesOfClass(LuminaOrb.class, new AABB(p).inflate(2)).stream()
+                  .mapToLong(LuminaOrb::totalThirds)
                   .sum();
           h.assertTrue(value >= 1 && value <= 2, "Duplicate or missing flower reward: " + value);
           h.assertTrue(
-              h.getLevel().getEntitiesOfClass(MagicaOrb.class, new AABB(q).inflate(1)).isEmpty(),
+              h.getLevel().getEntitiesOfClass(LuminaOrb.class, new AABB(q).inflate(1)).isEmpty(),
               "Canceled/fake break paid");
           h.succeed();
         });
@@ -293,7 +395,7 @@ public final class RedesignGameTests {
             && two.getCarried().isEmpty()
             && r.home.workers.size() == 1,
         "Two viewers duplicated assembly");
-    h.assertTrue(Magica.balance(r.player) == 0, "Assembly required Magica");
+    h.assertTrue(Lumina.balance(r.player) == 0, "Assembly required Lumina");
     h.succeed();
   }
 
@@ -490,7 +592,7 @@ public final class RedesignGameTests {
         if (choices.length == 0) continue;
         int slot = (i / width) * 3 + i % width;
         grid.setItem(slot, choices[0].copyWithCount(1));
-        if (choices[0].is(Automatons.MAGICA_CORE.get())) coreSlot = slot;
+        if (choices[0].is(Automatons.LUMINA_CORE.get())) coreSlot = slot;
       }
       h.assertTrue(
           recipe.matches(grid, h.getLevel())
@@ -505,7 +607,7 @@ public final class RedesignGameTests {
         int cores = 0, prior = 0;
         for (var ingredient : ingredients)
           for (ItemStack choice : ingredient.getItems()) {
-            if (choice.is(Automatons.MAGICA_CORE.get())) cores++;
+            if (choice.is(Automatons.LUMINA_CORE.get())) cores++;
             if (choice.getItem() instanceof UpgradeItem u && u.tier == 1) prior++;
           }
         h.assertTrue(
@@ -659,11 +761,15 @@ public final class RedesignGameTests {
     h.runAfterDelay(
         45,
         () -> {
-          h.assertTrue(
-              timber.progress() >= timber.duration, "Retained water blocked a non-mutating fall");
-          for (BlockPos at : wet)
+          h.assertTrue(timber.hasPlacedBlocks(), "Retained water blocked real log placement");
+          for (BlockPos at : wet) {
+            int logIndex = timber.targets.indexOf(at);
             h.assertTrue(
-                !h.getLevel().getFluidState(at).isEmpty(),
+                logIndex >= 0
+                    ? h.getLevel()
+                        .getBlockState(at)
+                        .equals(TreeFinder.fallenState(timber.wood.get(logIndex), timber.direction))
+                    : !h.getLevel().getFluidState(at).isEmpty(),
                 "Water changed after settling at "
                     + at
                     + " state="
@@ -672,6 +778,7 @@ public final class RedesignGameTests {
                     + h.getLevel().getBlockState(at.above())
                     + " below="
                     + h.getLevel().getBlockState(at.below()));
+          }
           h.assertTrue(
               h.getLevel()
                   .getEntitiesOfClass(
@@ -885,6 +992,7 @@ public final class RedesignGameTests {
       home.owner = old.player.getUUID();
       home.registerHome();
       totem.owner = old.player.getUUID();
+      WorksiteGameTests.readyFixture(totem, WorksitePurpose.LUMBER);
       r = new Rig(old.player, home, totem);
     }
     var c = chest(h, r, downhill ? new BlockPos(13, 4, 8) : new BlockPos(13, 1, 14));
@@ -896,6 +1004,22 @@ public final class RedesignGameTests {
     h.onEachTick(
         () -> {
           if (downhill ? w.getY() < baseY + 1.2 : w.getY() > baseY + 3.8) visited[0] = true;
+          if (h.getTick() % 500 == 0 && w.station() != null) {
+            Station site = w.station();
+            System.out.println(
+                "TERRACE "
+                    + downhill
+                    + " "
+                    + w.diagnostic()
+                    + " cursor="
+                    + site.cursor
+                    + " trees="
+                    + site.trees.keySet()
+                    + " reason="
+                    + site.scanReason
+                    + " complete="
+                    + site.scanComplete);
+          }
         });
     h.succeedWhen(
         () -> {
@@ -1011,7 +1135,7 @@ public final class RedesignGameTests {
                     && state.getValue(RotatedPillarBlock.AXIS) == t.direction.getAxis(),
                 "Landed log is not a real horizontal oak block");
             h.assertTrue(
-                MagicaHarvest.category(h.getLevel(), at, state).equals("logs"),
+                LuminaHarvest.category(h.getLevel(), at, state).equals("logs"),
                 "Natural log provenance lost at landing");
             h.getLevel().destroyBlock(at, true, p);
           }
@@ -1035,8 +1159,8 @@ public final class RedesignGameTests {
     BlockPos a = new BlockPos(20, 1, 13), b = new BlockPos(20, 1, 16);
     h.setBlock(a, Blocks.OAK_LOG);
     h.setBlock(b, Blocks.STRIPPED_BIRCH_LOG);
-    MagicaHarvest.markPlaced(h.getLevel(), h.absolutePos(a), h.getBlockState(a));
-    MagicaHarvest.markPlaced(h.getLevel(), h.absolutePos(b), h.getBlockState(b));
+    LuminaHarvest.markPlaced(h.getLevel(), h.absolutePos(a), h.getBlockState(a));
+    LuminaHarvest.markPlaced(h.getLevel(), h.absolutePos(b), h.getBlockState(b));
     var w = worker(h, r, new BlockPos(16, 1, 14));
     h.succeedWhen(
         () -> {
@@ -1065,7 +1189,7 @@ public final class RedesignGameTests {
         !TreeFinder.revalidate(h.getLevel(), job, r.totem, r.player.getUUID()),
         "Protected log became destructive work");
     WorldData.get(h.getLevel()).protection.clear();
-    BlockPos far = r.totem.getBlockPos().east(r.totem.lumberRange() + 1);
+    BlockPos far = r.totem.getBlockPos().east(r.totem.workRange() + 1);
     h.getLevel().setBlock(far, Blocks.OAK_LOG.defaultBlockState(), 3);
     h.assertTrue(
         TreeFinder.work(h.getLevel(), far, r.totem).tree() == null,
@@ -1155,67 +1279,67 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
-  public static void small_magica_exact_thirds_and_saved_balance(GameTestHelper h) {
+  public static void small_lumina_exact_thirds_and_saved_balance(GameTestHelper h) {
     Rig r = rig(h);
     int xp = r.player.totalExperience;
     for (int i = 0; i < 3; i++) {
-      r.player.getPersistentData().putLong("MagicaPickupAt", 0);
-      MagicaOrb orb = Automatons.MAGICA_ORB.get().create(h.getLevel());
+      r.player.getPersistentData().putLong("LuminaPickupAt", 0);
+      LuminaOrb orb = Automatons.LUMINA_ORB.get().create(h.getLevel());
       orb.setValue(1);
       orb.setSmall(true);
       h.getLevel().addFreshEntity(orb);
       h.assertTrue(orb.totalThirds() == 1, "Small orb was not one third");
       orb.playerTouch(r.player);
-      h.assertTrue(Magica.thirds(r.player) == i + 1, "Fractional pickup rounded away");
+      h.assertTrue(Lumina.thirds(r.player) == i + 1, "Fractional pickup rounded away");
     }
     h.assertTrue(
-        Magica.balance(r.player) == 1 && Magica.remainder(r.player) == 0,
+        Lumina.balance(r.player) == 1 && Lumina.remainder(r.player) == 0,
         "Three thirds did not become one point");
-    Magica.addThirds(r.player, 2);
+    Lumina.addThirds(r.player, 2);
     Ledger copy = Ledger.load(Ledger.get(h.getLevel().getServer()).save(new CompoundTag()));
     h.assertTrue(
-        copy.magica.get(r.player.getUUID()) == 1 && copy.magicaThirds.get(r.player.getUUID()) == 2,
+        copy.lumina.get(r.player.getUUID()) == 1 && copy.luminaThirds.get(r.player.getUUID()) == 2,
         "Saved remainder lost");
     h.assertTrue(
-        Magica.spend(r.player, 1) && Magica.thirds(r.player) == 2,
+        Lumina.spend(r.player, 1) && Lumina.thirds(r.player) == 2,
         "Whole-point spending consumed remainder");
-    h.assertTrue(!Magica.spend(r.player, 1), "Fraction paid for a whole point");
-    h.assertTrue(r.player.totalExperience == xp, "Small Magica changed XP");
-    Magica.clear(r.player);
-    h.assertTrue(Magica.thirds(r.player) == 0, "Clear retained fraction");
+    h.assertTrue(!Lumina.spend(r.player, 1), "Fraction paid for a whole point");
+    h.assertTrue(r.player.totalExperience == xp, "Small Lumina changed XP");
+    Lumina.clear(r.player);
+    h.assertTrue(Lumina.thirds(r.player) == 0, "Clear retained fraction");
     h.succeed();
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
-  public static void magica_drop_chances_sizes_and_legacy_orbs(GameTestHelper h) {
+  public static void lumina_drop_chances_sizes_and_legacy_orbs(GameTestHelper h) {
     int cropBig = 0, logBig = 0;
     for (int roll = 0; roll < 100; roll++) {
-      var crops = MagicaHarvest.drops("crops", 3, roll);
+      var crops = LuminaHarvest.drops("crops", 3, roll);
       cropBig += crops.stream().filter(d -> !d.small()).count();
-      var logs = MagicaHarvest.drops("logs", 6, roll);
+      var logs = LuminaHarvest.drops("logs", 6, roll);
       logBig += logs.stream().filter(d -> !d.small()).count();
       h.assertTrue(
-          logs.stream().filter(MagicaHarvest.Drop::small).count() == 2, "Logs need two small orbs");
+          logs.stream().filter(LuminaHarvest.Drop::small).count() == 2, "Logs need two small orbs");
       h.assertTrue(logs.stream().allMatch(d -> d.largeValue() == 6), "Large log value changed");
       h.assertTrue(
-          MagicaHarvest.drops("flowers", 2, roll).get(0).small()
-              && MagicaHarvest.drops("grass", 1, roll).get(0).small(),
+          LuminaHarvest.drops("flowers", 2, roll).get(0).small()
+              && LuminaHarvest.drops("grass", 1, roll).get(0).small(),
           "Flowers/grass dropped large orb");
     }
     h.assertTrue(cropBig == 10 && logBig == 40, "Incorrect size probabilities");
-    h.assertTrue(MagicaHarvest.drops("grass", 0, 0).isEmpty(), "Zero yield produced value");
-    MagicaOrb old = Automatons.MAGICA_ORB.get().create(h.getLevel());
+    h.assertTrue(LuminaHarvest.drops("grass", 0, 0).isEmpty(), "Zero yield produced value");
+    LuminaOrb old = Automatons.LUMINA_ORB.get().create(h.getLevel());
     CompoundTag n = old.saveWithoutId(new CompoundTag());
     n.remove("Small");
     n.putInt("Value", 7);
     old.load(n);
     h.assertTrue(!old.small() && old.totalThirds() == 21, "Old large orb value changed");
-    MagicaOrb small = Automatons.MAGICA_ORB.get().create(h.getLevel());
+    LuminaOrb small = Automatons.LUMINA_ORB.get().create(h.getLevel());
     small.setValue(7);
     small.setSmall(true);
     h.assertTrue(!old.merge(small), "Small/large kinds merged");
     CompoundTag saved = small.saveWithoutId(new CompoundTag());
-    MagicaOrb loaded = Automatons.MAGICA_ORB.get().create(h.getLevel());
+    LuminaOrb loaded = Automatons.LUMINA_ORB.get().create(h.getLevel());
     loaded.load(saved);
     h.assertTrue(loaded.small() && loaded.totalThirds() == 7, "Small orb save changed value/type");
     h.succeed();
@@ -1230,7 +1354,7 @@ public final class RedesignGameTests {
         new ItemEntity(h.getLevel(), at.x, at.y + .1, at.z, new ItemStack(Items.OAK_LOG, 5));
     logs.setDeltaMovement(Vec3.ZERO);
     h.getLevel().addFreshEntity(logs);
-    Vec3 outside = Vec3.atBottomCenterOf(r.totem.getBlockPos().west(r.totem.lumberRange() + 1));
+    Vec3 outside = Vec3.atBottomCenterOf(r.totem.getBlockPos().west(r.totem.workRange() + 1));
     ItemEntity excluded =
         new ItemEntity(
             h.getLevel(), outside.x, outside.y + .1, outside.z, new ItemStack(Items.BIRCH_LOG, 3));
@@ -1333,7 +1457,7 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 2200)
-  public static void worker_routes_around_virtual_timber_barrier(GameTestHelper h) {
+  public static void worker_routes_around_or_over_real_timber_barrier(GameTestHelper h) {
     Rig r = rig(h);
     var chest = chest(h, r, new BlockPos(13, 1, 14));
     Timber barrier = Automatons.TIMBER.get().create(h.getLevel());
@@ -1362,6 +1486,8 @@ public final class RedesignGameTests {
         () -> {
           if (w.getX() > barrier.getX() - .8 && (w.getZ() < edge || w.getZ() > edge + 13))
             wentAround[0] = true;
+          if (w.getX() > barrier.getX() - .8 && w.getY() >= barrier.getY() + .99)
+            wentAround[0] = true;
         });
     h.succeedWhen(
         () -> {
@@ -1370,7 +1496,7 @@ public final class RedesignGameTests {
               "Worker failed to route around timber: " + w.diagnostic());
           h.assertTrue(
               wentAround[0],
-              "Worker crossed virtual timber instead of finding a route: "
+              "Worker crossed through real timber instead of routing around or over it: "
                   + w.diagnostic()
                   + " bounds="
                   + barrier.getBoundingBox());
@@ -1456,9 +1582,17 @@ public final class RedesignGameTests {
     h.assertTrue(expected > 0, "Fixture missed all tall flowers");
     h.assertTrue(
         timber.crownLoot.stream()
-                .filter(v -> v.is(Items.SUNFLOWER))
-                .mapToInt(ItemStack::getCount)
-                .sum()
+                    .filter(v -> v.is(Items.SUNFLOWER))
+                    .mapToInt(ItemStack::getCount)
+                    .sum()
+                + h
+                    .getLevel()
+                    .getEntitiesOfClass(ItemEntity.class, new AABB(h.absolutePos(root)).inflate(12))
+                    .stream()
+                    .map(ItemEntity::getItem)
+                    .filter(v -> v.is(Items.SUNFLOWER))
+                    .mapToInt(ItemStack::getCount)
+                    .sum()
             == expected,
         "Tall flower loot lost or duplicated");
     h.runAfterDelay(
@@ -1496,7 +1630,7 @@ public final class RedesignGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 90)
-  public static void fall_trims_only_its_corridor_through_shared_natural_leaves(GameTestHelper h) {
+  public static void worker_fall_preserves_shared_leaves_and_uses_clear_landing(GameTestHelper h) {
     Rig r = rig(h);
     BlockPos root = new BlockPos(18, 1, 14);
     tree(h, root);
@@ -1510,7 +1644,15 @@ public final class RedesignGameTests {
     w.setNoAi(true);
     var found = TreeFinder.inspect(h.getLevel(), h.absolutePos(root), r.totem).tree();
     var plan = TreeFinder.landing(h.getLevel(), found, r.totem, w.owner, w);
-    h.assertTrue(plan != null, "Shared natural leaves blocked every falling direction");
+    h.assertTrue(plan == null, "Worker chose a landing occupied by neighboring leaves");
+    for (Direction d : Direction.Plane.HORIZONTAL)
+      h.assertTrue(
+          h.getBlockState(root.relative(d, 2)).is(Blocks.OAK_LEAVES),
+          "Planning removed shared leaves");
+    h.setBlock(root.north(2), Blocks.AIR);
+    plan = TreeFinder.landing(h.getLevel(), found, r.totem, w.owner, w);
+    h.assertTrue(
+        plan != null && plan.direction() == Direction.NORTH, "Clear landing was not selected");
     Timber timber = Timber.commit(h.getLevel(), found, plan, w, r.totem);
     h.assertTrue(timber != null, "Shared-leaf corridor failed commit");
     for (Direction d : Direction.Plane.HORIZONTAL) {
@@ -1518,15 +1660,26 @@ public final class RedesignGameTests {
           h.getBlockState(root.relative(d, 5).above(2)).is(Blocks.BIRCH_LOG),
           "Fell a neighboring log");
       BlockPos leaf = root.relative(d, 2);
-      if (!plan.sweep().contains(h.absolutePos(leaf)))
-        h.assertTrue(
-            h.getBlockState(leaf).is(Blocks.OAK_LEAVES),
-            "Removed shared leaves outside the fall corridor");
+      if (d != Direction.NORTH)
+        h.assertTrue(h.getBlockState(leaf).is(Blocks.OAK_LEAVES), "Removed neighboring leaves");
     }
     h.runAfterDelay(
         45,
         () -> {
-          h.assertTrue(timber.progress() >= timber.duration, "Trimmed fall did not settle");
+          h.assertTrue(
+              timber.progress() >= timber.duration,
+              "Trimmed fall did not settle: progress="
+                  + timber.progress()
+                  + " entityTicks="
+                  + timber.tickCount
+                  + " safe="
+                  + timber.safe(null)
+                  + " occupants="
+                  + h.getLevel()
+                      .getEntities(
+                          timber,
+                          timber.getBoundingBox(),
+                          e -> e instanceof net.minecraft.world.entity.LivingEntity));
           h.succeed();
         });
   }
@@ -1655,21 +1808,26 @@ public final class RedesignGameTests {
     Rig r = rig(h);
     var chest = chest(h, r, new BlockPos(13, 1, 14));
     BlockPos root = new BlockPos(18, 1, 18);
-    tree(h, root);
-    for (Direction d : Direction.Plane.HORIZONTAL)
-      for (int y = 0; y <= 10; y++) h.setBlock(root.relative(d, 4).above(y), Blocks.STONE);
+    List<BlockPos> blockedTrees = List.of(root, new BlockPos(18, 1, 8));
+    for (BlockPos blockedRoot : blockedTrees) {
+      tree(h, blockedRoot);
+      for (Direction d : Direction.Plane.HORIZONTAL)
+        for (int y = 0; y <= 10; y++)
+          h.setBlock(blockedRoot.relative(d, 4).above(y), Blocks.BEDROCK);
+    }
     var w = worker(h, r, new BlockPos(16, 1, 16));
-    boolean[] deferred = {false};
+    boolean[] deferred = {false, false};
     h.onEachTick(
         () -> {
-          if (r.totem.deferredFalls.getOrDefault(h.absolutePos(root).asLong(), 0L)
-              > h.getLevel().getGameTime()) deferred[0] = true;
+          for (int i = 0; i < blockedTrees.size(); i++)
+            if (r.totem.deferredFalls.getOrDefault(h.absolutePos(blockedTrees.get(i)).asLong(), 0L)
+                > h.getLevel().getGameTime()) deferred[i] = true;
         });
     h.runAfterDelay(180, () -> h.setBlock(new BlockPos(10, 1, 20), Blocks.BIRCH_LOG));
     h.succeedWhen(
         () -> {
           h.assertTrue(
-              deferred[0],
+              deferred[0] && deferred[1],
               "Impossible fall never entered shared retry cooldown: " + w.diagnostic());
           h.assertTrue(
               count(chest, Items.BIRCH_LOG) == 1,

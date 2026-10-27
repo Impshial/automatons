@@ -1,0 +1,69 @@
+{
+  "front": "row_1",
+  "width": 3,
+  "length": 4,
+  "height": 2,
+  "layers": [
+    {
+      "name": "BOTTOM LAYER",
+      "number": 1,
+      "rows": [
+        [
+          "02-frame",
+          "02-frame",
+          "02-frame"
+        ],
+        [
+          "01-track",
+          "02-frame",
+          "01-track"
+        ],
+        [
+          "01-track",
+          "02-frame",
+          "01-track"
+        ],
+        [
+          "01-track",
+          "02-frame",
+          "01-track"
+        ]
+      ]
+    },
+    {
+      "name": "TOP LAYER",
+      "number": 2,
+      "rows": [
+        [
+          "02-frame",
+          "03-attachment-mount",
+          "02-frame"
+        ],
+        [
+          "05-cargo-compartment",
+          "04-operator-station",
+          "05-cargo-compartment"
+        ],
+        [
+          "05-cargo-compartment",
+          "06-tank",
+          "05-cargo-compartment"
+        ],
+        [
+          "02-frame",
+          "07-lumina-engine",
+          "02-frame"
+        ]
+      ]
+    }
+  ],
+  "counts": {
+    "02-frame": 10,
+    "01-track": 6,
+    "03-attachment-mount": 1,
+    "05-cargo-compartment": 4,
+    "04-operator-station": 1,
+    "06-tank": 1,
+    "07-lumina-engine": 1
+  }
+}

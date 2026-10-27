@@ -1,0 +1,121 @@
+BUILDINGTON: BUILDER'S SHED
+
+This is the compact middle-ground design: ordinary oak framing and plank walls,
+a shallow stepped spruce slab roof, two front lanterns and a Hammer item frame.
+The hammer display replaces the proposed custom emblem; there is no outdoor
+workbench awning or added material pile.
+- Main building remains 7 wide x 7 deep, with a 5 x 5 interior.
+- The roof has a one-block eave around the body; reserve its 9 x 9 footprint.
+- Schematic size: 9 X x 7 Y x 9 Z; foundation at Y=0, entrance walking level Y=1.
+- Roof rises in half-block steps from Y=4 at the edges to Y=6 at the center;
+  total maximum structure height is 6.5 blocks including the foundation.
+- Front/back gables are closed. Full double slabs close roof-wall junctions.
+- Four floor-level double chests, two per side wall, use eight chest items.
+- Crafting table and stonecutter remain inside between the chest pairs.
+- Four interior wall torches remain; two exterior lanterns hang from oak supports.
+- Side windows have small cobblestone slab sills. Entry threshold is cobblestone.
+- Existing totem / paste anchor: (4,1,7), centered in the rear wall opposite the door.
+- WEOffset=(-4,-1,-7). Door lower half: (4,1,1).
+- Frame tile: (4,3,0), attached above the door to (4,3,1), facing north.
+- Center aisle: X=4, Z=2..6; access lanes X=3 and X=5.
+- Chest blocks: X=2 and X=6, Y=1, Z pairs (2,3) and (5,6).
+- Crafting table: (2,1,4). Stonecutter: (6,1,4).
+- Totem registry id: automatons:totem; block entity: automatons:station.
+- Display item id: automatons:hammer. This is the proposed new Hammer registry
+  id and MUST be implemented or mapped to the actual id by Codex before import.
+  Without that registered item Minecraft cannot preserve/show this Hammer.
+
+REQUIRED FINISHED ITEMS (excluding the existing totem)
+  1  Hammer
+  8  Chest
+ 25  Cobblestone
+  2  Cobblestone Slab
+  1  Crafting Table
+  6  Glass
+  1  Item Frame
+  2  Lantern
+  1  Oak Door
+ 34  Oak Log
+ 68  Oak Planks
+103  Spruce Slab
+  1  Stonecutter
+  4  Torch
+
+The Hammer listed above is the DISPLAY Hammer. The Buildington needs a separate
+usable Hammer in its tool inventory. The initial supply chest is also additional;
+place it within storage range but outside the 9 x 9 eaves and entrance approach.
+Hammer recipe and durability numbers are not settled by this schematic.
+
+CONFIRMED BUILDINGTON DIRECTION
+- Each totem has a selected purpose and a required building constructed around it.
+- The existing totem is the fixed construction anchor and stays exposed in a wall.
+- New worksite construction requests travel through The Network.
+- Multiple Buildingtons can share a Builder totem and work on separate projects.
+- Each builder stays with its accepted project until completion; shortages pause it.
+- Workers at the unfinished site wait for readiness. Existing ready sites keep working.
+- The first builder can construct its own shed from the starter supply chest.
+- A usable Hammer is required. The normal three tool slots can hold spare Hammers.
+- Requests for missing tools/supplies should be visible to the Network and Runningtons.
+
+DISCUSSION STILL NEEDED
+- Exact Hammer recipe, durability and construction speed.
+- Whether builders require all project materials before accepting a request or
+  may start with a partial supply. Progress must survive either choice.
+- Permitted terrain leveling and handling of slopes or blocked plots.
+- Farmingtons automatically tend existing farmland in the non-storage work region.
+  If none is found, they establish one shared 9 x 9 farm there; additional
+  Farmingtons help the same farm. They can apply supplied bone meal.
+- Recommended split: Buildington builds the shared Farmer's Shed; Farmingtons
+  prepare and maintain the shared field. Irrigation inputs, crop choices,
+  terrain preparation and bone-meal policy still need discussion.
+
+FORMAT AND IMPORT
+Minecraft Java 1.20.1, DataVersion 3465, Sponge Schematic v2.
+All coordinates below refer to the exported schematic, unless labeled body coordinates.
+Every building is anchored to the player-placed totem, which remains exposed
+and usable in the completed structure. All future buildings must follow this rule.
+The builder derives the footprint, entrance, floor and placements from that
+totem's position and the worksite's chosen orientation. Do not choose another
+center and then relocate the totem. Save orientation and reserved bounds before
+construction so retries cannot rotate or shift an existing project.
+WorldEdit origin is stored in WEOffset and Offset=(0,0,0). Foundation blocks go
+one block below normal walking level, so the entrance is flush with the ground.
+Load the file by its basename with //schem load, stand at the specified anchor,
+and use //paste on a disposable test site. Entity pasting must be enabled.
+Do not paste a template over an operational worksite or an assigned totem.
+
+ITEM FRAME
+The identifier is a real minecraft:item_frame entity in the schematic's Entities
+list, not a block or a block entity. It is north-facing, visible, removable,
+not invulnerable and contains one real item. It carries no fixed UUID.
+When importing this template into the mod's construction system, process its
+Entities list as well as blocks. Place the support block first; then create the
+frame and insert the displayed item, consuming one frame and one display item.
+Transform position, hanging tile, support and facing together when rotating.
+Do not double-charge or duplicate the frame or display item after retries or
+reload. Identification is cosmetic: changing the display must not change the
+totem's purpose. Do not take a worker's active tool to fill a display frame.
+Resource totals include the frame and its display item. Door halves consume
+one door item together. Each chest block consumes one chest item. Double slabs
+consume two slab items, and wall torches consume ordinary torch items.
+
+CONSTRUCTION
+Reserve the occupied site and approach, respect protection and existing work,
+and validate support, access and supplies before placing. Build from real
+inventory with persistent progress. Schematic air is not blanket permission to
+erase terrain, player buildings or containers. Preserve the current totem's
+identity, links, owner, purpose, upgrades, inventory and other saved data by
+skipping both block placement AND block-entity loading at the existing totem.
+Registered chest inventories are empty and contain no loot tables. Install
+supports before attached lights and frames. Supply the exact rotated chest
+facings and pairs. These files do not implement worker behavior or new items.
+
+VALIDATION
+Decoded the written NBT and compared every block, block entity, entity and
+anchor. Checked frame support and orientation data, chest pairs and lid air,
+roof coverage and central access where applicable. Source comparisons prove
+the warehouse has no structural changes and the mine adds only eight rear wall
+planks and one totem, preserving every original block.
+No Minecraft client paste, mob navigation or build-animation test was run here.
+Rendered previews use block data; chests, totem and framed item visuals are
+illustrative. The actual files contain their named registry IDs.

@@ -1,0 +1,2096 @@
+{
+  "version": 3,
+  "size": [
+    7,
+    7,
+    7
+  ],
+  "anchor": [
+    3,
+    1,
+    5
+  ],
+  "frames": [
+    {
+      "tile": [
+        3,
+        4,
+        0
+      ],
+      "item": "minecraft:stone_pickaxe"
+    }
+  ],
+  "blocks": [
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:cobblestone_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:cobblestone_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 5,
+      "state": "automatons:totem"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:cobblestone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:cobblestone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 1,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 6,
+      "z": 6,
+      "state": "minecraft:air"
+    }
+  ],
+  "materials": {
+    "minecraft:cobblestone": 59,
+    "minecraft:cobblestone_slab": 10,
+    "minecraft:cobblestone_stairs": 28,
+    "minecraft:item_frame": 1,
+    "minecraft:lantern": 4,
+    "minecraft:oak_log": 33,
+    "minecraft:oak_planks": 16,
+    "minecraft:stone_pickaxe": 1
+  },
+  "changes": [
+    "Removed mine hatch; open ladder access."
+  ]
+}

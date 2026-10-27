@@ -17,8 +17,8 @@ public final class Storage {
           net.minecraft.core.registries.Registries.BLOCK, Automatons.id("storage_chests"));
 
   public static boolean inRange(Station s, BlockPos p) {
-    return Math.abs(p.getX() - s.getBlockPos().getX()) <= s.storageRange()
-        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= s.storageRange()
+    return Math.abs(p.getX() - s.getBlockPos().getX()) <= s.workRange()
+        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= s.workRange()
         && Math.abs(p.getY() - s.getBlockPos().getY()) <= Balance.HEIGHT.get();
   }
 
@@ -36,6 +36,12 @@ public final class Storage {
   }
 
   public static IItemHandler handler(ServerLevel l, BlockPos p, Station station) {
+    if (!inRange(station, p)) return null;
+    BuildingProject warehouse = WorldData.get(l).buildings.get(station.identity);
+    if (warehouse != null
+        && warehouse.ready
+        && Objects.equals(warehouse.owner, station.owner)
+        && warehouse.chests(l).contains(p)) return warehouse.handler(l, p);
     if (!l.hasChunkAt(p) || !isChest(l, p) || !inRange(station, p)) return null;
     var s = l.getBlockState(p);
     if (s.getBlock() instanceof ChestBlock chest) {
@@ -54,6 +60,21 @@ public final class Storage {
     for (int i = 0; i < h.getSlots(); i++)
       if (h.insertItem(i, stack, true).getCount() < stack.getCount()) return true;
     return false;
+  }
+
+  /** Only this mine's four placed chest cells bypass the Totem surface range. */
+  public static IItemHandler depotHandler(ServerLevel l, BlockPos p, MinePlan mine) {
+    if (!mine.depotBuilt || !mine.depotCell(p) || !l.hasChunkAt(p)) return null;
+    var state = l.getBlockState(p);
+    if (!state.is(Blocks.CHEST) || state.getValue(ChestBlock.TYPE) == ChestType.SINGLE) return null;
+    BlockPos other = p.relative(ChestBlock.getConnectedDirection(state));
+    if (!mine.depotCell(other)
+        || !l.hasChunkAt(other)
+        || !mine.placedChests.contains(other.asLong())) return null;
+    Container container = ChestBlock.getContainer((ChestBlock) Blocks.CHEST, state, l, p, false);
+    return container == null || container.getContainerSize() != 54
+        ? null
+        : new net.minecraftforge.items.wrapper.InvWrapper(container);
   }
 
   public static boolean usable(Lumberton w, BlockPos p) {
@@ -77,11 +98,15 @@ public final class Storage {
       boolean relevant = false;
       if (supply) {
         for (int i = 0; i < h.getSlots(); i++)
-          if (Inventories.axe(h.extractItem(i, 1, true))) relevant = true;
+          if (w.job() == 2
+              ? w.mining.wants(h.extractItem(i, 64, true))
+              : Inventories.tool(w.job(), h.extractItem(i, 1, true))) relevant = true;
       } else {
         for (int i = 0; i < w.cargo.getSlots(); i++)
-          if (!w.cargo.getStackInSlot(i).isEmpty() && accepts(h, w.cargo.getStackInSlot(i)))
-            relevant = true;
+          if (!w.cargo.getStackInSlot(i).isEmpty()
+              && w.mining.carried(w.cargo.getStackInSlot(i).getItem())
+                  > w.cargoKeep(w.cargo.getStackInSlot(i))
+              && accepts(h, w.cargo.getStackInSlot(i))) relevant = true;
       }
       if (relevant && usable(w, p)) return p;
       if (w.pathDeferred) return null;
@@ -91,7 +116,7 @@ public final class Storage {
 
   public static boolean anyOutput(Station s, ServerLevel l) {
     return s.chests.stream()
-        .anyMatch(p -> (s.flags(p) & 1) != 0 && l.hasChunkAt(p) && isChest(l, p));
+        .anyMatch(p -> (s.flags(p) & 1) != 0 && inRange(s, p) && l.hasChunkAt(p) && isChest(l, p));
   }
 
   public static boolean anyOpenOutput(Station s, ServerLevel l) {
@@ -112,23 +137,36 @@ public final class Storage {
   public static void transfer(Lumberton w, Station s, BlockPos p) {
     if (!w.inReach(p)) return;
     IItemHandler h = handler((ServerLevel) w.level(), p, s);
+    transfer(w, s, p, h, (s.flags(p) & 1) != 0, (s.flags(p) & 2) != 0);
+  }
+
+  public static void transfer(
+      Lumberton w, Station s, BlockPos p, IItemHandler h, boolean output, boolean supply) {
+    if (!w.inReach(p)) return;
     if (h == null) return;
-    if ((s.flags(p) & 1) != 0) {
+    if (output) {
+      Map<Item, Integer> retained = new HashMap<>();
       for (int i = 0; i < w.cargo.getSlots(); i++) {
         ItemStack stack = w.cargo.getStackInSlot(i);
         if (stack.isEmpty()) continue;
-        ItemStack rest = stack.copy();
+        int keep =
+            Math.min(
+                stack.getCount(),
+                Math.max(0, w.cargoKeep(stack) - retained.getOrDefault(stack.getItem(), 0)));
+        retained.merge(stack.getItem(), keep, Integer::sum);
+        ItemStack rest = stack.copyWithCount(stack.getCount() - keep);
         for (int j = 0; j < h.getSlots() && !rest.isEmpty(); j++)
           rest = h.insertItem(j, rest, false);
+        if (keep > 0) rest = stack.copyWithCount(rest.getCount() + keep);
         w.cargo.setStackInSlot(i, rest);
       }
     }
-    if (w.job() == 1 && (s.flags(p) & 2) != 0) {
+    if (w.job() != 0 && w.job() != 3 && supply) {
       for (int slot = 0; slot < 3; slot++)
         if (w.tools.getStackInSlot(slot).isEmpty())
           for (int i = 0; i < h.getSlots(); i++) {
             ItemStack preview = h.extractItem(i, 1, true);
-            if (!Inventories.axe(preview)) continue;
+            if (!Inventories.tool(w.job(), preview)) continue;
             ItemStack actual = h.extractItem(i, 1, false);
             ItemStack rest = w.tools.insertItem(slot, actual, false);
             if (!rest.isEmpty()) {
@@ -137,6 +175,49 @@ public final class Storage {
             }
             break;
           }
+      if (w.job() == 2) {
+        for (int source = 0; source < h.getSlots(); source++) {
+          ItemStack preview = h.extractItem(source, 1, true);
+          int slot = w.mining.replacementSlot(preview);
+          if (slot < 0) continue;
+          ItemStack actual = h.extractItem(source, 1, false);
+          if (w.mining.replacementSlot(actual) != slot) {
+            ItemStack rest = h.insertItem(source, actual, false);
+            if (!rest.isEmpty()) w.spawnAtLocation(rest);
+            continue;
+          }
+          ItemStack old = w.tools.getStackInSlot(slot);
+          ItemStack rest = h.insertItem(source, old.copy(), true);
+          if (!rest.isEmpty()) {
+            rest = h.insertItem(source, actual, false);
+            if (!rest.isEmpty()) w.spawnAtLocation(rest);
+            continue;
+          }
+          rest = h.insertItem(source, old.copy(), false);
+          if (rest.isEmpty()) w.tools.setStackInSlot(slot, actual);
+          else {
+            rest = h.insertItem(source, actual, false);
+            if (!rest.isEmpty()) w.spawnAtLocation(rest);
+          }
+          break;
+        }
+        for (var need : w.mining.reserve().entrySet()) {
+          int missing = need.getValue() - w.mining.carried(need.getKey());
+          for (int i = 0; i < h.getSlots() && missing > 0; i++) {
+            ItemStack preview = h.extractItem(i, missing, true);
+            if (!preview.is(need.getKey())) continue;
+            int amount = preview.getCount() - Inventories.insert(w.cargo, preview, true).getCount();
+            if (amount <= 0) continue;
+            ItemStack actual = h.extractItem(i, amount, false);
+            ItemStack rest = Inventories.insert(w.cargo, actual, false);
+            if (!rest.isEmpty()) {
+              rest = h.insertItem(i, rest, false);
+              if (!rest.isEmpty()) w.spawnAtLocation(rest);
+            }
+            missing = need.getValue() - w.mining.carried(need.getKey());
+          }
+        }
+      }
     }
     w.selectTool();
     w.smile();

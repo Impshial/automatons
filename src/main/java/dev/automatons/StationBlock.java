@@ -74,7 +74,8 @@ public class StationBlock extends BaseEntityBlock {
   public InteractionResult use(
       BlockState s, Level l, BlockPos p, Player player, InteractionHand hand, BlockHitResult hit) {
     if (player.getItemInHand(hand).getItem() instanceof WandItem) return InteractionResult.PASS;
-    if (!l.isClientSide && l.getBlockEntity(p) instanceof Station station)
+    if (!l.isClientSide && l.getBlockEntity(p) instanceof Station station) {
+      station.recoverRetired(player);
       NetworkHooks.openScreen(
           (ServerPlayer) player,
           station,
@@ -82,6 +83,7 @@ public class StationBlock extends BaseEntityBlock {
             b.writeBoolean(false);
             b.writeBlockPos(p);
           });
+    }
     return InteractionResult.sidedSuccess(l.isClientSide);
   }
 

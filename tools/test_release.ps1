@@ -1,3 +1,4 @@
+param([switch]$Worksites, [switch]$Forestry, [switch]$Machine, [switch]$Mining, [switch]$Online)
 # Preserve the preceding test world because GameTest does not remove all out-of-template entities.
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -14,5 +15,14 @@ if (Test-Path -LiteralPath $worldPath) {
     New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
     Move-Item -LiteralPath $worldPath -Destination $destination
 }
-& .\gradlew.bat --offline --console=plain runGameTestServer build
+$gradleArguments = @('--console=plain')
+if (-not $Online) {
+    # ForgeGradle's online certificate preflight is unnecessary for a cache-only build.
+    $gradleArguments += @('--offline', '-Dnet.minecraftforge.gradle.check.certs=false')
+}
+if ($Worksites) { $gradleArguments += '-PworksiteTests' }
+if ($Forestry) { $gradleArguments += '-PforestryTests' }
+if ($Machine) { $gradleArguments += '-PmachineTests' }
+if ($Mining) { $gradleArguments += '-PminingTests' }
+& .\gradlew.bat @gradleArguments build runGameTestServer
 exit $LASTEXITCODE

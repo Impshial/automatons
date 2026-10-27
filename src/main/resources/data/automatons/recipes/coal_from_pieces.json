@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    },
+    {
+      "item": "automatons:coal_piece"
+    }
+  ],
+  "result": {
+    "item": "minecraft:coal",
+    "count": 1
+  }
+}

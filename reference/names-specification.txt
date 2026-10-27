@@ -1,0 +1,349 @@
+AUTOMATONS FOLLOW-UP: UNIQUE PERSONAL NAMES AND OVERHEAD LABELS
+
+Add permanent personal names to all Automatons in the existing Minecraft 1.20.1 Forge project. Use the embedded catalog of 640 first names, assign one randomly when a new Automaton is created, show the name above its head, and let its Automaton Pedestal toggle those overhead labels. The totem's worker list must display these names in place of its currently displayed worker IDs.
+
+Implement this incrementally alongside the already supplied mining and torch work. Read the current repository and applicable instructions, reuse existing worker identity and lifecycle systems, and preserve compatible ongoing changes.
+
+1. NAME CATALOG AND ASSIGNMENT
+
+The embedded UTF-8 JSON contains 640 distinct first-name spellings: 320 entries in masculine selections and 320 in feminine selections, organized into 32 naming traditions. These are broad usage groupings, not exclusive national origins. Some names are also used across genders or cultures. This metadata organizes the catalog; it does not assign a nationality, gender, appearance, voice, or job to the Automaton.
+
+Package the complete catalog as a data resource in the mod. Keep all 640 entries; do not replace the list with a short demonstration pool or download names at runtime. No new external service or runtime library is needed for the catalog.
+
+Flatten the catalog into one pool for random assignment. Each available individual name has equal selection probability. Any job can receive any name. Do not choose names according to the worker's occupation, owner's language, skin, or location.
+
+Assign the name on the server at the successful creation of the new Automaton item:
+- Use the same stable worker identity the mod already creates.
+- Commit naming together with the real output-take/assembly transaction.
+- Recipe previews, JEI displays, holograms, invalid output transfers, and cancelled crafts must not consume names.
+- Each successful creation, including shift-click or a batch, receives a separately reserved name and identity.
+- If actual identity initialization occurs at another authoritative lifecycle point in the current project, reconcile it so the completed named item has one identity and one name before being delivered.
+- Deployment uses that assigned name. It must not roll another one.
+
+Preserve the name through changing jobs, assigning or changing a totem, recalling/releasing, moving/rebinding home, unloading chunks, saving/restarting, transferring ownership where supported, Wrench packing, and redeployment.
+
+Use one canonical stored name for overhead labels, menus, items, and messages. Never reconstruct the name from the current order/index of the resource list. Resource reordering or a later catalog expansion cannot rename existing workers.
+
+2. WORLD-WIDE UNIQUENESS
+
+No two distinct Automatons may receive the same display name within the same saved world/server. This scope includes all players, pedestals, totems, and dimensions. Separate independent world saves can reuse the catalog.
+
+Maintain a persistent server-owned name registry, backed by world saved data and indexed by stable Automaton identity and canonical name key. All dimensions use that one registry.
+
+Keep names reserved for:
+- Deployed workers, whether loaded or unloaded.
+- Packed Automaton items, including those in inventories, chests, or unloaded storage.
+- Temporarily unassigned workers and workers with a missing/unloaded home or totem.
+- Retired/dead/lost workers, as a permanent issued-name record. Do not recycle issued names into the unused base-name pool.
+
+Packing changes the worker's physical representation, not the name reservation. A packed item and its deployed entity are the same worker identity, not two separately named creatures. Preserve the existing anti-duplication rules for stale or copied worker items. Distinct named worker items must not merge into one stack.
+
+Perform check-and-reserve atomically with creation on the authoritative server. Simultaneous crafting at multiple pedestals must not allocate the same name. Handle cancelled transactions so a name is reserved only for a committed worker.
+
+Use a stable, versioned canonical-name function shared by resource validation, runtime allocation, migration, and any supported rename operation:
+- Normalize Unicode consistently and compare case-insensitively using a locale-independent rule.
+- Strip combining accent marks for the uniqueness comparison, while preserving the original spelling for display.
+- Ignore spaces, hyphens, and apostrophes in that comparison.
+- Include explicit folds for Latin letters that do not decompose automatically: ł/l, ø/o, đ/d, ð/d, ı/i, æ/ae, œ/oe, þ/th, and ß/ss.
+- Do not use the machine's default locale. For example, Turkish dotted/dotless I must behave consistently on every server.
+- Keep equivalent composed/decomposed spellings, letter case, and punctuation variants from bypassing uniqueness.
+- Do not treat different names as duplicates merely because they are translations or have similar meanings. Seán and Sean collide; Giovanni and John are different.
+
+Names retain their UTF-8 display spelling and diacritics. Validate the bundled catalog with the same key function and report the exact conflicting entries if data becomes invalid. The supplied 640-name pool has no collisions under these comparison rules.
+
+Avoid indefinite random retry loops when the remaining pool is small. Select from available candidates or use a bounded random choice with a deterministic fallback search.
+
+Pool exhaustion:
+- Use every unissued base first name before introducing a compound.
+- Once all 640 base names have been issued, choose an unused two-name combination from the same catalog, for example "Amina-Lorcan".
+- The two components must differ; the complete combined name passes through the same uniqueness registry.
+- If all eligible combinations are exhausted, append a monotonically allocated numeric disambiguator to a compound and check it against all reserved names.
+- Persist the fallback allocation state. Never silently reuse a full name, loop forever, or stop crafting because the initial pool is exhausted.
+- Numeric disambiguators are an exhaustion fallback, not the standard appearance of normal names.
+
+If the project already allows manual renaming through name tags or a GUI, route those operations through the same registry. Reject a conflicting requested name without consuming the item/cost or changing the worker. A successful rename keeps the old issued name retired and reserves the new one. A no-op rename to the worker's existing canonical name must not collide with itself. This task does not require adding a new renaming screen.
+
+3. OVERHEAD NAME LABELS
+
+When enabled, render the Automaton's personal name above its head using Minecraft-style entity name-label presentation:
+- Minecraft font, readable light text, and a restrained translucent backing.
+- Camera-facing text placed above the actual head/bounding box so it follows walking, climbing, work animations, and ordinary pose changes.
+- Reasonable vanilla-style distance/culling behavior and readable placement for the current 1.5-block model.
+- Show only the personal name in the overhead label. Job and work status belong in the menus.
+- Use the normal entity-rendering/name-label hooks appropriate to the current implementation.
+- Prevent a second label from the entity's existing custom-name renderer.
+- Respect the game's existing UI/visibility behavior and avoid a new overlay that draws every worker through the whole world.
+- Do not require the player to aim at the Automaton for the enabled label to appear.
+
+The visibility toggle must fully control the mod's overhead name display. Turning it off must also suppress any duplicate/hover fallback label path that would otherwise reveal the name above the entity.
+
+Rendering is client-side presentation of server-synchronized identity and visibility. Keep renderer/font code out of dedicated-server initialization.
+
+4. AUTOMATON PEDESTAL TOGGLE
+
+Add a Minecraft-style toggle to the Automaton Pedestal GUI:
+
+"Show Automaton Names: ON"
+"Show Automaton Names: OFF"
+
+Default: ON.
+
+The setting belongs to that home pedestal and controls every Automaton whose home is that pedestal, across all jobs and assigned totems. Two pedestals can have different settings. A mixed-job totem does not override those individual home settings.
+
+Use the same ownership/edit permissions as the pedestal's other management controls. A valid change:
+- Saves the setting on the server.
+- Updates labels promptly for every relevant connected viewer.
+- Applies to currently loaded workers and to workers when they later load, deploy, or return from another dimension.
+- Applies to newly created workers linked to that pedestal.
+- Survives closing the GUI, world reload, and server restart.
+
+Use a saved pedestal identity rather than coordinates alone where the project supports one. Replacing a destroyed pedestal at the same coordinates must not silently seize another pedestal's workers or settings.
+
+An unloaded home is not a destroyed home. Cache or resolve the saved setting without force-loading chunks or making labels flicker. For a truly missing home, retain the worker's last known visibility until it is rebound; workers without any prior home visibility default to ON. An authorized home rebind adopts the new pedestal's setting.
+
+The toggle affects floating labels only. It never clears stored names or changes the visibility of names in totem lists, worker GUIs, pedestal rosters, item tooltips, or ordinary worker-related messages.
+
+5. REPLACE DISPLAYED IDS IN THE TOTEM LIST
+
+Replace the currently displayed Automaton IDs in the totem roster with personal names. This is a required part of the feature.
+
+Example rows:
+- "Amina" | Minington | Needs torches
+- "Cian" | Lumberton | Working
+- "Sakura" | Unassigned | Waiting
+
+Use the name as the row's primary label, with job and status in their existing appropriate fields. Preserve the roster's pagination, selection, actions, and mixed-job support.
+
+Use the same name in worker detail views and other normal player-facing worker lists. Named Automaton item tooltips should identify the stored worker, including while it is packed.
+
+Do not use the name as an internal key:
+- Stable UUIDs/worker IDs still back saved references, network actions, roster selection, ownership, path/task claims, and mine assignments.
+- A name change must not break links or make an action target the wrong row.
+- Ordinary player-facing rows and hover text must not reintroduce raw IDs as the visible identity.
+- Keep IDs available in developer diagnostics where needed.
+
+For long names or fallback compounds, fit the column with appropriate clipping/ellipsis and show the complete name on hover. Never append a raw UUID to solve a layout problem. Preserve Unicode glyphs in the actual Minecraft font pipeline.
+
+Existing alphabetical name sorting/searching, if available, must use these names. Do not introduce a new sort/search subsystem solely for this change.
+
+6. EXISTING-WORLD MIGRATION
+
+Give existing unnamed Automatons permanent names without replacing the workers or disturbing inventories, tools, jobs, home links, totem memberships, mine progress, or recall state.
+
+First reconcile the authoritative saved worker records and any existing custom names:
+- Preserve a legitimate existing unique personal name.
+- Register it so the random allocator cannot assign it to someone else.
+- If distinct legacy workers already share a personal name, retain the established authoritative reservation where one exists. Resolve remaining ties deterministically, then assign a fresh unique name to the other identities.
+- Report migration counts and conflicts in concise developer logs.
+- Populate the registry from existing saved identity records before ordinary new allocations, including known packed/unloaded workers.
+
+For genuinely unindexed legacy workers/items discovered later, reconcile their identity/name before showing a named roster row or allowing deployment. Resolve a name collision through the registry, never by allowing two active workers to share it. Do not claim that unseen third-party inventories were globally scanned if they were not.
+
+Do not force-load every chunk for naming. Preserve old packed-item metadata and upgrade it through the current item/entity migration paths. Repeated loads must not repeatedly rename an already registered worker.
+
+7. IMPLEMENTATION AND VERIFICATION
+
+Implement this through shared Automaton systems so it applies across jobs. The catalog ships locally with the mod; the server controls assignment and synchronization. Validate every menu request against owner permissions and its actual pedestal context.
+
+Persist the registry, worker names, issued-name history, fallback state, and pedestal setting. Reconcile world/entity/item records on load and mark authoritative changes dirty. Do not rely on an in-memory static set or a client-only random name generator.
+
+Verify:
+- Exactly 640 supplied entries, 32 groups, 320 masculine selections, and 320 feminine selections; no exact or canonical duplicates; valid UTF-8 JSON.
+- Crafting previews reserve nothing. Successful crafts allocate once. Failed output insertion/cancelled transactions do not consume names. Simultaneous creation at several pedestals remains unique.
+- Create the full 640-name pool without reuse, then create additional workers to exercise unique compound fallback. Test suffix fallback with a deliberately reduced test pool.
+- Packing, redeployment, job changes, totem changes, unloaded chunks, player logout, server restart, and cross-dimension workers retain names and reservations.
+- Dead/retired workers' names remain retired. Supported renames cannot create collisions.
+- Test normalization with Seán/Sean, composed/decomposed accents, I/İ/ı, Łukasz/Lukasz, and hyphenated/nonhyphenated Korean spellings.
+- In multiplayer, two home pedestals with different toggle states correctly control their own workers, even when both groups share one totem.
+- Toggle OFF hides overhead names while the totem list and worker details still show them. Reloaded/redeployed workers honor the saved setting.
+- The totem list shows names instead of IDs, and selecting or commanding a row still targets the correct stable worker identity.
+- Migration handles unnamed workers, unique custom names, duplicate legacy names, and legacy packed items without losing resources or assignments.
+- Inspect actual labels and menus at supported GUI scales, including accented names, long names, ladder movement, and mining animations. Check that there is only one label per entity.
+- Run the relevant current build/regression checks and dedicated-server startup. Document tests actually run.
+
+Update the player guide and changelog for automatic names, the pedestal toggle, named totem rows, and the exhaustion fallback. Follow the current project's established release workflow for this incremental addition.
+
+8. EMBEDDED NAME CATALOG
+
+Store this catalog as UTF-8 JSON. The masculine/feminine grouping is for the curated source list, not an enforced gender system. Some entries are unisex. Preserve all entries when flattening the runtime pool.
+
+BEGIN NAME CATALOG JSON
+{
+  "schema_version": 1,
+  "groups": [
+    {
+      "tradition": "English",
+      "masculine": ["Arthur","Henry","Oliver","Theodore","William","Edward","George","Samuel","Benjamin","Thomas"],
+      "feminine": ["Alice","Eleanor","Evelyn","Charlotte","Violet","Hazel","Florence","Beatrice","Harriet","Edith"]
+    },
+    {
+      "tradition": "Irish",
+      "masculine": ["Cian","Oisín","Fionn","Seán","Cillian","Tadhg","Eoin","Ronan","Darragh","Lorcan"],
+      "feminine": ["Aoife","Saoirse","Niamh","Siobhán","Aisling","Caoimhe","Orla","Clodagh","Róisín","Maeve"]
+    },
+    {
+      "tradition": "Welsh",
+      "masculine": ["Rhys","Dylan","Gareth","Geraint","Owain","Iwan","Llyr","Emrys","Caradog","Bedwyr"],
+      "feminine": ["Carys","Eleri","Ffion","Lowri","Seren","Angharad","Rhiannon","Eira","Gwenda","Nerys"]
+    },
+    {
+      "tradition": "French",
+      "masculine": ["Étienne","Lucien","Bastien","Olivier","Guillaume","Émile","Laurent","Pascal","Thierry","Rémy"],
+      "feminine": ["Amélie","Élodie","Colette","Delphine","Geneviève","Mireille","Solène","Manon","Océane","Yvette"]
+    },
+    {
+      "tradition": "German",
+      "masculine": ["Friedrich","Heinrich","Wolfgang","Klaus","Dieter","Günther","Uwe","Bernd","Holger","Manfred"],
+      "feminine": ["Adelheid","Hildegard","Gertrud","Ingrid","Brigitte","Gisela","Heike","Anneliese","Lieselotte","Waltraud"]
+    },
+    {
+      "tradition": "Dutch",
+      "masculine": ["Daan","Bram","Jeroen","Sjoerd","Koen","Wout","Henk","Maarten","Thijs","Teun"],
+      "feminine": ["Femke","Lotte","Anouk","Marieke","Floor","Sanne","Jasmijn","Lieke","Maaike","Bente"]
+    },
+    {
+      "tradition": "Italian",
+      "masculine": ["Alessandro","Lorenzo","Matteo","Giovanni","Giuseppe","Francesco","Riccardo","Vincenzo","Salvatore","Giacomo"],
+      "feminine": ["Giulia","Alessia","Chiara","Francesca","Giada","Ludovica","Valentina","Federica","Antonella","Fiorella"]
+    },
+    {
+      "tradition": "Spanish",
+      "masculine": ["Alejandro","Diego","Javier","Álvaro","Sergio","Gonzalo","Rodrigo","Iker","Raúl","Esteban"],
+      "feminine": ["Lucía","Carmen","Pilar","Rocío","Inés","Paloma","Consuelo","Aitana","Marisol","Montserrat"]
+    },
+    {
+      "tradition": "Portuguese",
+      "masculine": ["João","Afonso","Gonçalo","Duarte","Nuno","Diogo","Tiago","Joaquim","Lourenço","Baltasar"],
+      "feminine": ["Benedita","Leonor","Beatriz","Matilde","Mafalda","Filipa","Catarina","Conceição","Vitória","Graça"]
+    },
+    {
+      "tradition": "Swedish",
+      "masculine": ["Erik","Sven","Björn","Anders","Nils","Stellan","Torbjörn","Håkan","Rasmus","Sune"],
+      "feminine": ["Astrid","Freja","Sigrid","Linnea","Ebba","Malin","Annika","Gunilla","Pernilla","Ylva"]
+    },
+    {
+      "tradition": "Finnish",
+      "masculine": ["Juhani","Olavi","Antero","Tapani","Kalevi","Tapio","Matti","Ilmari","Pekka","Eero"],
+      "feminine": ["Aino","Kerttu","Helmi","Sisko","Liisa","Anneli","Kaarina","Marjatta","Annikki","Tuulikki"]
+    },
+    {
+      "tradition": "Polish",
+      "masculine": ["Wojciech","Krzysztof","Zbigniew","Przemysław","Mikołaj","Łukasz","Szymon","Bartosz","Leszek","Kazimierz"],
+      "feminine": ["Agnieszka","Małgorzata","Katarzyna","Jadwiga","Bożena","Zofia","Grażyna","Danuta","Urszula","Władysława"]
+    },
+    {
+      "tradition": "Czech",
+      "masculine": ["Václav","Jiří","Zdeněk","Vojtěch","Oldřich","Radek","Přemysl","Bohumil","Jindřich","Luboš"],
+      "feminine": ["Eliška","Tereza","Markéta","Šárka","Věra","Ludmila","Jitka","Milada","Blažena","Hana"]
+    },
+    {
+      "tradition": "Hungarian",
+      "masculine": ["László","Gábor","István","Zoltán","Balázs","Árpád","Sándor","Béla","Csaba","Tibor"],
+      "feminine": ["Erzsébet","Zsuzsanna","Réka","Boglárka","Hajnalka","Enikő","Ildikó","Tímea","Emese","Piroska"]
+    },
+    {
+      "tradition": "Romanian",
+      "masculine": ["Radu","Bogdan","Ștefan","Mihai","Doru","Florin","Sorin","Cătălin","Dragoș","Lucian"],
+      "feminine": ["Ioana","Andreea","Raluca","Oana","Doina","Luminița","Viorica","Ileana","Sorina","Nicoleta"]
+    },
+    {
+      "tradition": "Greek",
+      "masculine": ["Dimitrios","Georgios","Nikolaos","Vasilios","Panagiotis","Christos","Theodoros","Spyridon","Athanasios","Stavros"],
+      "feminine": ["Eleni","Despina","Katerina","Calliope","Eirini","Athina","Fotini","Evgenia","Anastasia","Kyriaki"]
+    },
+    {
+      "tradition": "Ukrainian",
+      "masculine": ["Bohdan","Dmytro","Oleksandr","Mykhailo","Andriy","Taras","Yaroslav","Volodymyr","Pavlo","Ostap"],
+      "feminine": ["Oksana","Iryna","Olena","Kateryna","Solomiya","Lesya","Lyudmyla","Halyna","Zoryana","Yaryna"]
+    },
+    {
+      "tradition": "Turkish",
+      "masculine": ["Emre","Burak","Barış","Kerem","Oğuz","Kaan","Alper","Çağrı","Tolga","Ertuğrul"],
+      "feminine": ["Elif","Zeynep","İrem","Aylin","Özge","Gökçe","Tuğçe","Aslı","Duygu","Şeyma"]
+    },
+    {
+      "tradition": "Arabic",
+      "masculine": ["Ahmad","Omar","Khalid","Yusuf","Ibrahim","Hassan","Hamza","Tariq","Bilal","Zayd"],
+      "feminine": ["Amina","Fatima","Layla","Salma","Maryam","Khadija","Zaynab","Huda","Samira","Amal"]
+    },
+    {
+      "tradition": "Persian",
+      "masculine": ["Arash","Babak","Dariush","Farhad","Kaveh","Mehran","Navid","Parsa","Shayan","Shahram"],
+      "feminine": ["Azadeh","Bahar","Delara","Farzaneh","Golnar","Mahsa","Nazanin","Parisa","Shirin","Yasaman"]
+    },
+    {
+      "tradition": "Hebrew",
+      "masculine": ["Eitan","Noam","Itai","Avner","Yoav","Oren","Lior","Yonatan","Shlomo","Zev"],
+      "feminine": ["Yael","Noa","Talia","Shira","Hadas","Avital","Michal","Hadassah","Meital","Tzipora"]
+    },
+    {
+      "tradition": "Armenian",
+      "masculine": ["Aram","Hayk","Tigran","Vahan","Vardan","Levon","Narek","Artak","Gagik","Ashot"],
+      "feminine": ["Anahit","Siranush","Hasmik","Lusine","Narine","Gayane","Armine","Tatevik","Shushanik","Zaruhi"]
+    },
+    {
+      "tradition": "Georgian",
+      "masculine": ["Giorgi","Davit","Levan","Irakli","Vakhtang","Zurab","Shota","Archil","Avtandil","Tornike"],
+      "feminine": ["Nino","Tamar","Ketevan","Tinatin","Rusudan","Salome","Darejan","Tekla","Lali","Mzia"]
+    },
+    {
+      "tradition": "Hindi / Sanskrit-derived usage",
+      "masculine": ["Arjun","Aditya","Rohan","Vivek","Kunal","Akshay","Rohit","Nikhil","Harish","Pranav"],
+      "feminine": ["Ananya","Kavya","Priya","Deepika","Shreya","Ishita","Pooja","Radhika","Vandana","Sunita"]
+    },
+    {
+      "tradition": "Japanese",
+      "masculine": ["Haruto","Yuto","Sota","Ren","Daiki","Kaito","Takumi","Hiroshi","Kenji","Tatsuya"],
+      "feminine": ["Sakura","Yui","Aoi","Hina","Akari","Nanami","Misaki","Haruka","Yuna","Riko"]
+    },
+    {
+      "tradition": "Korean",
+      "masculine": ["Minjun","Seo-jun","Do-yun","Ji-ho","Jun-seo","Hyun-woo","Ji-hun","Seong-min","Tae-hyun","Dong-hyun"],
+      "feminine": ["Seo-yeon","Ji-woo","Seo-hyun","Min-seo","Ha-eun","Su-bin","Ye-jin","Chae-won","Na-yeon","Bo-ra"]
+    },
+    {
+      "tradition": "Chinese / Mandarin romanization",
+      "masculine": ["Wei","Qiang","Jun","Yong","Jie","Hao","Tao","Liang","Ming","Zhi"],
+      "feminine": ["Xue","Mei","Ling","Yan","Fang","Jing","Lifen","Xiaohui","Lihua","Meiling"]
+    },
+    {
+      "tradition": "Vietnamese",
+      "masculine": ["Đức","Hùng","Dũng","Tuấn","Quang","Khải","Bảo","Hiếu","Phúc","Khoa"],
+      "feminine": ["Ngọc","Thảo","Hương","Trang","Tuyết","Yến","Phương","Như","Quỳnh","Diễm"]
+    },
+    {
+      "tradition": "Indonesian",
+      "masculine": ["Budi","Agus","Bambang","Joko","Eko","Dimas","Wahyu","Bayu","Bagus","Hendra"],
+      "feminine": ["Siti","Dewi","Putri","Ratna","Ayu","Wulan","Sekar","Kartika","Larasati","Indah"]
+    },
+    {
+      "tradition": "Swahili / East African usage",
+      "masculine": ["Juma","Jafari","Baraka","Bakari","Jabari","Omari","Hamisi","Rashidi","Salim","Suleiman"],
+      "feminine": ["Asha","Zawadi","Neema","Rehema","Tumaini","Pendo","Saada","Nuru","Imani","Furaha"]
+    },
+    {
+      "tradition": "Yoruba",
+      "masculine": ["Babatunde","Babajide","Olusegun","Adebayo","Adewale","Olalekan","Akintunde","Adekunle","Olawale","Oluwafemi"],
+      "feminine": ["Yetunde","Folake","Funmilayo","Titilayo","Aderonke","Bolanle","Temilade","Ronke","Abimbola","Modupe"]
+    },
+    {
+      "tradition": "Igbo",
+      "masculine": ["Chukwuemeka","Chinedu","Emeka","Obinna","Ikechukwu","Nnamdi","Chukwudi","Uchenna","Chigozie","Ifeanyi"],
+      "feminine": ["Adaeze","Chiamaka","Ifeoma","Ngozi","Chinwe","Amaka","Nkiru","Uju","Onyinye","Nneka"]
+    }
+  ]
+}
+END NAME CATALOG JSON
+
+REFERENCE NOTES
+
+The list is curated for broad international variety, not ranked by present popularity. Regional labels describe usage and can overlap. Spelling conventions include established romanizations for names normally written in other scripts.
+
+Reference spot-checks used while preparing the list:
+- Irish naming data and diacritics: https://www.cso.ie/en/releasesandpublications/ep/p-ibn/irishbabiesnames2024/mainresults/
+- Finnish Population Information System name statistics: https://nimipalvelu.dvv.fi/en/most-popular-forenames
+- Georgian usage: https://www.behindthename.com/names/usage/georgian
+- Armenian usage: https://www.behindthename.com/names/usage/armenian
+- Igbo name dictionary, including Ifeoma: https://myigboname.com/entries/ifeoma
+
+These references are development notes. They are not runtime dependencies or text to display in the game's UI.

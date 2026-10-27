@@ -1,0 +1,71 @@
+{
+  "checks": "Independent NBT decode; Java 1.20.1 block model lookup; accessible totems; supported frames; real display item stacks; valid chest pairing and lids; coarse two-block-high walking connectivity.",
+  "limitation": "Not imported or playtested in a Minecraft client. Actual entity rotation/paste, navigation, runtime protection and the new Hammer still need mod integration.",
+  "results": [
+    {
+      "site": "Runnington Warehouse",
+      "passed": true,
+      "non_air_cells": 236,
+      "double_chests": 8,
+      "display_item": "minecraft:chest",
+      "anchor": [
+        3,
+        1,
+        8
+      ],
+      "reachable_floor_cells": 23
+    },
+    {
+      "site": "Mine Entrance",
+      "passed": true,
+      "non_air_cells": 152,
+      "double_chests": 0,
+      "display_item": "minecraft:stone_pickaxe",
+      "anchor": [
+        3,
+        1,
+        5
+      ],
+      "reachable_floor_cells": 27
+    },
+    {
+      "site": "Builder's Shed",
+      "passed": true,
+      "non_air_cells": 235,
+      "double_chests": 4,
+      "display_item": "automatons:hammer",
+      "anchor": [
+        4,
+        1,
+        7
+      ],
+      "reachable_floor_cells": 17
+    },
+    {
+      "site": "Lumber Yard",
+      "passed": true,
+      "non_air_cells": 196,
+      "double_chests": 2,
+      "display_item": "minecraft:stone_axe",
+      "anchor": [
+        4,
+        1,
+        7
+      ],
+      "reachable_floor_cells": 34
+    },
+    {
+      "site": "Farmer's Shed",
+      "passed": true,
+      "non_air_cells": 219,
+      "double_chests": 2,
+      "display_item": "minecraft:stone_hoe",
+      "anchor": [
+        4,
+        1,
+        7
+      ],
+      "reachable_floor_cells": 25
+    }
+  ]
+}

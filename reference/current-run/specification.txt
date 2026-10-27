@@ -1,0 +1,555 @@
+AUTOMATONS: CURRENT RUN
+Fuel pieces, command removal, tree felling, slightly larger Lumite veins, optional JER integration, and the GuideME handbook
+Consolidated October 24, 2026
+
+Implement this run in the existing Automatons Minecraft Java 1.20.1 Forge project. Inspect the repository and its instructions, current code, recipes, assets, build configuration, and release workflow. Make a short staged plan, implement the requested changes, and complete the appropriate verification.
+
+The user has already modified the textures and supplied them to Codex. Texture creation, redesign, replacement, and the earlier texture-fix requests are excluded from this run. Use the supplied/current assets. Preserve their source files and prevent generated-resource tasks from overwriting the user's work. Guidebook illustrations and screenshots may be added as documentation assets without changing game textures.
+
+Complete Part A first, then write the handbook in Part B against the resulting implementation. This is one integrated run, not a standalone guidebook task. Existing behavior is authoritative except where Part A explicitly changes it. Do not rebuild the entire mod from the earlier design history.
+
+Preserve current Lumina/Lumite progression, balances, infusion, recipes, and save compatibility unless a requirement below specifically affects them. Preserve The Network, current profession behavior outside the felling changes, assigned workers, inventory, tool durability, building layouts, job-purpose ranges, and ordinary new-chunk ore generation except for the modest vein-size increase in A4. Upgrades remain out of active gameplay. Do not reintroduce them or earlier designs.
+
+PART A. GAMEPLAY AND INTEGRATION
+
+A1. PIECES OF COAL AND PIECES OF CHARCOAL
+
+Add two distinct ordinary items with the display names "Piece of Coal" and "Piece of Charcoal", using the project's registration, localization, recipe/data-generation, creative-tab, and asset conventions. Use the art already supplied for this run; where an item has no dedicated supplied asset, reuse an appropriate existing model/texture without starting a redesign task.
+
+Add exactly these four reversible crafting conversions:
+- One minecraft:coal -> eight Pieces of Coal.
+- Eight Pieces of Coal -> one minecraft:coal.
+- One minecraft:charcoal -> eight Pieces of Charcoal.
+- Eight Pieces of Charcoal -> one minecraft:charcoal.
+
+Use shapeless crafting. For each eight-piece recipe, require eight consumed ingredients using the real 1.20.1 recipe format. Do not mistake a single ingredient entry for eight items or allow one piece to recover a whole coal. Coal and charcoal remain separate; mixed pieces must not produce either full item.
+
+Make each piece usable as fuel with one-eighth of its parent item's ordinary furnace burn time, equivalent to one normal furnace smelt under vanilla conditions. Use the Forge/project-supported fuel hook. Check furnace, blast furnace, smoker, and compatible fuel consumers without promising unsupported third-party behavior. These conversion and fuel rules must not create fuel value through repeated crafting.
+
+Do not broadly tag a piece as a full coal ingredient in a way that lets it replace a whole coal in unrelated recipes, such as crafting torches or blocks. Add only intentional compatibility tags. Leave original coal/charcoal recipes and fuel values unchanged.
+
+Include normal recipe-book unlocks and recipe-viewer compatibility through the recipe system. Keep resource tooltips concise. The handbook should explain the conversions and what one piece can smelt.
+
+A2. REMOVE ALL AUTOMATONS COMMANDS
+
+Remove every command registered by this mod, including user, administrative, developer, diagnostic, alias, and debug commands. Inventory registrations in source before editing rather than removing just the visible root command.
+
+This includes /automaton regen and its status/pause/resume or other subcommands, plus every other Automatons-owned command tree or alias. Remove its registration, handlers that no longer have callers, argument suggestions, translations/help text, stale tests, and active documentation. Do not leave a configuration switch that restores the command registrations.
+
+Preserve unrelated Minecraft, Forge, and other mods' commands. GuideME is a separate dependency; its own commands are not Automatons-owned commands. The handbook must not rely on commands to perform normal gameplay.
+
+Preserve Lumite already generated and the existing world's saved data. Ordinary ore generation in genuinely new chunks must continue. Keep legacy history readable when needed for safe loading; removing a command must not delete world data or enable repeated generation. Any pending temporary retrogen job must no longer start or resume automatically after this removal. Cleanly stop its scheduler and release only its own loading resources without altering existing terrain or other chunk tickets. No replacement automatic retrogen is requested.
+
+A3. TREE FELLING CHANGES
+
+A. Do not wait for entities to clear the fall path.
+
+Once an otherwise valid tree felling action starts, it must not pause, cancel, repeatedly defer, or wait because a player or another automaton is standing in the expected fall path. Players and workers are responsible for moving out of the way.
+
+Find and remove the relevant entity-occupancy safety vetoes from the felling lifecycle, including checks that could pause an already-started fall. Preserve normal permissions, protected areas, tree identity, task ownership, world/block collision rules, and other legitimate validity checks. Do not add new crushing damage or change existing damage/collision mechanics as an incidental feature.
+
+Normal worker movement and navigation can still avoid occupied spaces. That must not turn back into a special "wait for everyone to leave before the tree falls" condition.
+
+B. Permit initiation from the lowest three trunk-log levels.
+
+A genuine tree may be felled by chopping a qualifying trunk log at the tree's base, one block above its base, or two blocks above its base. Do not require interaction with only the bottom log.
+
+Compute eligibility from the actual detected rooted trunk/base, not the player's feet, the worker's feet, arbitrary nearby logs, or the first log encountered in a scan. On a shorter trunk, allow only the eligible trunk blocks that exist. On supported wide-trunk trees, apply the rule coherently across the actual trunk footprint. Do not treat an unrelated branch at a similar elevation as an eligible base log.
+
+Use the shared tree-recognition and felling path where possible so player-triggered felling and Lumberton actions do not disagree. Apply this to whichever player/worker entry points the mod actually supports; do not add an entirely new felling mode.
+
+Preserve recognition of naturally generated trees and trees grown from player-planted saplings, including bonemeal-grown trees. Preserve safeguards against treating buildings, stored logs, or unrelated placed wood as trees. Higher logs outside the eligible three levels must not initiate whole-tree felling, though ordinary manual block breaking may still work according to current behavior.
+
+When felling starts from the second or third level, complete the intended whole-tree operation without leaving an unintended stump or floating upper tree. Preserve normal drops and tool wear without processing the initiating log twice. Keep existing automatic leaf cleanup and its normal leaf loot, including protection of neighboring trees and player-placed leaves as supported by the current implementation. No duplicate drops, experience, or Lumina rewards.
+
+Preserve the current Lumberton work selection, multi-worker coordination, storage checking, and unloading behavior. Do not reintroduce earlier dual-radius rules or rebalance worker speed.
+
+A4. SLIGHTLY LARGER LUMITE CLUSTERS
+
+Increase the default configured Lumite vein size from 6 to 8. The aim is a little more Lumite through slightly larger clusters, not a large abundance increase or more frequent placement attempts.
+
+- Apply the shared size setting to both regular and deepslate Lumite generation. Do not register an extra feature or run an additional pass.
+- Keep placement frequency unchanged at the existing eight attempts per chunk. Preserve the existing Overworld biome/replacement rules, air-exposure setting, and triangular height distribution from Y=-32 through Y=64, peaking around Y=16.
+- Preserve the actual ore-placement height limits, including vein extents. The larger size must not allow ore above Y=64 or below the configured lower bound.
+- Configured size 8 is a generation parameter, not a promise that every vein contains exactly eight blocks or that total ore abundance rises by an exact percentage.
+- Inspect the live settings before editing. The agreed baseline is size 6. If it differs in the current checkout, report the discrepancy and preserve the user's intent of a small increase rather than silently reducing an already larger value. Keep explicit user configuration overrides intact and report the effective tested value.
+- Apply this change to newly generated terrain only. Do not add, restore, or automatically run retrogen; do not refill existing mined areas or modify already generated chunks.
+- Keep drops, harvest tier, Fortune/Silk Touch behavior, Lumina rewards, and the user's supplied textures unchanged.
+- Update the authoritative generation definition and any generated data together. JER and the handbook must reflect the resulting setting rather than retain size 6 in a separate data source.
+
+A5. OPTIONAL JUST ENOUGH RESOURCES (JER) INTEGRATION
+
+Lumite must have useful ore-generation information in the compatible Minecraft 1.20.1 Forge version of Just Enough Resources, not merely appear as an item in JEI.
+
+Inspect the project's actual configured/placed features, biome modifiers, replacement targets, loot tables, and ore registrations. Check the compatible JER release's official source/API and use the supported registration mechanism. Pin compatible dependency versions in development and explain the tested combination. Do not copy APIs from modern Minecraft or invent registration calls.
+
+Requirements:
+- Keep JER optional. Automatons must compile as configured and load/run correctly when JER is absent.
+- Isolate client-side optional integration and guard class loading correctly. Dedicated servers must not resolve JER client classes.
+- Register the actual regular and deepslate Lumite ore variants, relevant dimensions, height limits, and distribution information.
+- Source information from the same generation definitions or a shared authoritative representation. Avoid a second independent set of hardcoded generation numbers that can drift from world generation.
+- Show enough information for the player to understand where Lumite is most likely to occur. Use the supported native JER distribution presentation when available.
+- Distinguish configured placement probability from measured ore blocks per layer. Terrain, replacement targets, and vein geometry can alter observed abundance. Do not manufacture sampled statistics or label a configured distribution as measurement.
+- Integrate relevant ore drops through the supported loot representation where possible, reflecting the actual raw-shard, Fortune, Silk Touch, and tool-tier rules. Do not replace loot tables with a separate reward path.
+- Validate with JER installed and absent, and ensure both ore variants appear where expected without duplicate registrations.
+- Reflect the modest vein-size increase in A4. Beyond that change, preserve frequency, vertical bounds, biome eligibility, drop rules, and zero world-light emission. JER integration must not alter generation itself.
+- If this JER release cannot display a requested detail through its supported API, provide the accurate supported integration, explain the specific limitation, and describe the missing detail accurately in the handbook. Do not substitute a guessed graph or claim complete integration without testing it.
+
+A6. IMPLEMENTATION ORDER AND GAMEPLAY VALIDATION
+
+Implement fuel items/recipes, remove commands, update tree felling, increase Lumite vein size, and complete JER integration before finalizing guide text and screenshots. Use focused tests where they catch real failure modes, then the project's normal build and release workflow.
+
+Verify at least:
+- All four fuel conversions consume and produce the correct quantities; mixed pieces fail; conversion loops preserve value; actual burn time matches the parent fraction.
+- Automatons-owned commands are absent from command registration and suggestions after startup/reload. Normal Minecraft and other mods' commands remain.
+- Existing saves with retrogen history and a previously pending job load without starting more retrogen; normal new-chunk Lumite generation still works.
+- Felling from each of the three valid trunk levels works, a fourth-level interaction does not initiate whole-tree felling, and planted/bonemeal-grown supported trees work.
+- Players and workers in the fall path do not cause felling to pause or defer. Test entity presence at initiation and during the fall.
+- Protected trees, ordinary wood structures, adjacent trees, leaves, multi-worker claims, loot, durability, and rewards retain their intended behavior.
+- Compare fresh-chunk generation before/after on several controlled seeds: the configured default is size 8 instead of 6, placement attempts and vertical distribution are unchanged, both ore variants generate correctly within the height bounds, and no feature is registered twice. Report observed cluster/ore counts without promising eight blocks in every vein or a fixed percentage increase. Existing chunks remain untouched.
+- JER presence/absence and dedicated-server startup are safe, and the installed compatible JER actually shows the registered Lumite information, including the revised generation setting.
+
+Use disposable test worlds/copies where appropriate. Do not run regeneration on a user's world as a test. Report checks that could not be executed rather than implying they passed.
+
+PART B. GUIDEME INSTRUCTION BOOK
+
+Build the handbook as part of this same run, using the following verified 1.20.1 guidance. Document the final behavior after Part A, including the new fuel pieces, felling changes, slightly larger Lumite veins, command-free gameplay, and optional JER information. Do not make additional unrelated gameplay changes just to simplify the documentation.
+
+B1. COMPATIBILITY AND DEPENDENCIES
+
+Use GuideME 20.1.15 for Minecraft 1.20.1 Forge. This release supports client and server. Its source specifies Java 17, Minecraft [1.20.1], and Forge [47.1.0,). The reported project version, Forge 47.4.10, satisfies that Forge requirement. Verify the actual project versions without upgrading Minecraft or changing loaders.
+
+Maven coordinates published by upstream:
+  org.appliedenergistics:guideme:20.1.15:api
+  org.appliedenergistics:guideme:20.1.15
+
+Use mavenCentral(). The API classifier is for compilation; the full artifact is required at runtime. Adapt dependency declarations to the project's existing Gradle plugin and mappings. For a conventional ForgeGradle project, the intended pattern is:
+
+  compileOnly fg.deobf("org.appliedenergistics:guideme:20.1.15:api")
+  runtimeOnly fg.deobf("org.appliedenergistics:guideme:20.1.15")
+
+Verify resolution in this project. Do not paste a modern NeoForge run configuration or migrate the project's build system. Do not shade GuideME into the mod. Do not add AE2 as a dependency. Standard guide recipes do not require JEI to be installed.
+
+For this implementation, make GuideME a declared required dependency on BOTH sides and document installation alongside the mod. Use the verified exact release in development; ensure the mods.toml dependency range includes the tested release and does not permit incompatible Minecraft branches. Keep client rendering classes out of common item and mod initialization paths. Test dedicated-server loading as well as the client.
+
+Important version boundary: parts of the upstream documentation, including some files in the 1.20.1 tag, contain examples from newer Minecraft versions. When documentation and source disagree, use the v20.1.15 implementation and Minecraft 1.20.1 APIs. In particular:
+  - Use new ResourceLocation(namespace, path), not copied modern Identifier APIs.
+  - Item metadata in this version uses NBT, not item data components.
+  - GuideME item tags use tag="{...}" SNBT, not components="...".
+  - The recipe rendering extension receives Recipe instances, not modern RecipeHolder instances.
+
+B2. REGISTER AND OPEN THE HANDBOOK
+
+Use a normal mod-owned item, suggested registry ID automatons:automaton_handbook, with display name "Automaton Handbook". Reuse the actual mod namespace and any existing handbook registration rather than creating duplicates. Use an appropriate existing or user-supplied book asset; a vanilla book model/texture is an acceptable initial fallback. Do not create or modify game textures in this run.
+
+Register one guide using the public API. Suggested guide ID: automatons:handbook.
+
+  import guideme.Guide;
+  import guideme.GuidesCommon;
+  import net.minecraft.resources.ResourceLocation;
+
+  public static final ResourceLocation HANDBOOK_ID =
+      new ResourceLocation("automatons", "handbook");
+
+  // Run once during normal mod initialization, not on every item use:
+  Guide.builder(HANDBOOK_ID).build();
+
+Have the item's use action call:
+  GuidesCommon.openGuide(player, HANDBOOK_ID);
+
+Use the existing project's Item.use and interaction-result conventions. Open once, preferably through the server-side use path with the public common API, rather than sending duplicate opens from both logical sides. The player keeps the book. Do not subclass guideme.internal.item.GuideItem or import GuideME internal implementation classes.
+
+To open a particular page from a future help button, the public API supports:
+  GuidesCommon.openGuide(player, HANDBOOK_ID,
+      guideme.PageAnchor.page(
+          new ResourceLocation("automatons", "network/totems.md")));
+
+This task does not require adding help buttons to every existing GUI.
+
+If the project has no handbook recipe, use an inexpensive implementation default: one vanilla book plus one item from minecraft:planks, shapeless, producing one handbook. Add a recipe-unlock advancement using the project's existing convention. Do not require an infused shard, diamond, or established Network just to read the instructions. Add the book to the appropriate creative tab. Do not introduce a first-login gift system as part of this task.
+
+B3. RESOURCE LAYOUT
+
+For guide ID automatons:handbook, GuideBuilder's default folder is guides/automatons/handbook. Put the default English pages at:
+
+  src/main/resources/assets/automatons/guides/automatons/handbook/
+
+The root page is index.md. Other page resource IDs are relative to this guide root, for example automatons:network/totems.md. Keep registry IDs and paths lowercase. Bundle pages, illustrations, and scene assets in the release JAR. Do not rely on a developer's local absolute path.
+
+Suggested contents, adapting file names and splitting long pages as needed:
+
+  index.md
+  getting-started.md
+  magic/index.md
+  magic/lumina.md
+  magic/lumite.md
+  magic/infusing-pedestal.md
+  magic/cores.md
+  network/index.md
+  network/automaton-pedestal.md
+  network/totems.md
+  network/automatons.md
+  network/wand.md
+  professions/index.md
+  professions/lumberton.md
+  professions/minington.md
+  professions/runnington.md
+  professions/buildington.md
+  professions/farmington.md
+  worksites/index.md
+  worksites/mine.md
+  worksites/warehouse.md
+  worksites/builders-shed.md
+  worksites/lumber-yard.md
+  worksites/farm.md
+  items/index.md
+  items/tools.md
+  items/materials.md
+  troubleshooting.md
+  assets/images/...
+  assets/structures/...
+
+Only include professions and features that actually exist in this checkout. Use the live names shown in the game. Consolidate sparse pages rather than shipping mostly empty chapters.
+
+Use Java registration for this implementation. A data-driven alternative also exists at assets/<namespace>/guideme_guides/<guide-path>.json, but do not register the same guide through both mechanisms.
+
+B4. AUTHORING RULES AND NAVIGATION
+
+Pages are Markdown with optional YAML frontmatter and GuideME's custom JSX-like tags. This is a Minecraft document renderer, not an HTML browser or a React runtime. Do not use arbitrary HTML/CSS, scripts, web fonts, iframes, or JavaScript expressions.
+
+Supported basic authoring includes headings, paragraphs, emphasis, strong emphasis, inline code, lists, links, images, blockquotes, horizontal rules, tables, and strikethrough. Keep most pages short enough to scan in-game. Explain the action first, then what the player should see, then how to resolve a failure. Avoid implementation jargon in player-facing content.
+
+Example frontmatter, replacing every item ID with a verified real registry ID:
+
+  ---
+  navigation:
+    title: Totems
+    parent: network/index.md
+    position: 20
+    icon: automatons:totem
+  item_ids:
+    - automatons:totem
+  categories:
+    - the_network
+  ---
+  # Totems
+
+  A totem manages its local worksite and assigned automatons.
+
+Frontmatter details:
+  - navigation.title is required when navigation is present.
+  - navigation.parent is a guide-root page ID in the current namespace, or a fully qualified page ID. It is not relative to the current page directory.
+  - navigation.position is an integer used for ordering.
+  - navigation.icon is an item ID.
+  - navigation.icon_nbt, when needed, is a quoted SNBT string.
+  - item_ids is a list of associated item IDs for item lookup and the guide hotkey.
+  - categories is a list used by CategoryIndex.
+  - Omit parent for a top-level navigation entry. Ensure every specified parent exists and there are no cycles.
+
+Normal Markdown links can be relative to the current page:
+  [Totems](network/totems.md)
+  [Lumina](../magic/lumina.md)
+  [Supplying tools](../professions/minington.md#supplies)
+
+Validate anchors in the actual renderer. For a stable explicit anchor, use:
+  <a name="supplies" />
+
+Associate every relevant mod item with a useful page. Own-namespace ItemLink entries need an indexed destination; do not leave broken ItemLink tags and assume they are harmless. Do not copy newer optional/fallback attributes onto ItemLink; those are not implemented by this release's compiler.
+
+B5. BUILT-IN TAG REFERENCE FOR 20.1.15
+
+The following is the built-in authoring surface checked in the tagged compiler source. Attributes are case-sensitive. Use quoted strings for IDs, vectors, integer coordinates, padding, and gap. Literal boolean attributes use ={true} or ={false}. Floating-point readers also accept numeric literals, but quoted numbers are a consistent safe style. These attribute forms do not enable arbitrary evaluated JavaScript.
+
+Text, layout, and navigation:
+
+  <div>...</div>
+    Groups document content. Do not assume browser CSS support.
+
+  <a name="supplies" />
+  <a href="network/totems.md" title="Totem help">Totems</a>
+    Explicit anchors and links. Markdown links usually read better in source.
+
+  <br />
+  <br clear="all" />
+    Line break; clear also supports left/right/none for floating content.
+
+  <Color color="#a96fe0">Lumina</Color>
+  <Color id="namespace:symbolic_color">Text</Color>
+    Use a literal color or a registered symbolic color. Do not invent symbolic IDs. Check readability in both guide themes. Color should not carry essential meaning on its own.
+
+  <Row gap="5" alignItems="start" fullWidth={true}>...</Row>
+  <Column gap="5" alignItems="center">...</Column>
+    gap is an integer. alignItems supports start, center, or end.
+
+  <SubPages />
+  <SubPages id="network/index.md" icons={true} alphabetical={false} />
+    Lists children of the current page or the specified navigation page.
+
+  <CategoryIndex category="the_network" />
+    Lists pages associated with the named frontmatter category.
+
+  <PlayerName />
+    Inserts the current player's display name.
+
+  <KeyBind id="key.jump" />
+    Displays a registered key binding. Use the actual key-binding ID for mod controls and let players rebind controls.
+
+Items and blocks:
+
+  <ItemLink id="automatons:totem" />
+    Inline item link to an indexed guide page. Replace the example ID if needed.
+
+  <ItemImage id="minecraft:iron_axe" scale="2" />
+    Renders an item. Optional tag contains SNBT; float supports layout positioning through the compiler's float helper.
+
+  <BlockImage id="minecraft:oak_log" p:axis="y" scale="2"
+      perspective="isometric-north-east" />
+    Renders a block state. p:<property> sets a valid block-state property. Supported perspective presets here are isometric-north-east and isometric-north-west. Optional float controls positioning.
+
+  <ItemGrid>
+    <ItemIcon id="minecraft:iron_pickaxe" />
+    <ItemIcon id="minecraft:iron_shovel" />
+    <ItemIcon id="minecraft:torch" />
+  </ItemGrid>
+    ItemIcon children accept item ID and optional SNBT tag. Do not assume undocumented grid-column options.
+
+Images:
+
+  ![Four infusion corners](../assets/images/infusion-corners.png)
+
+  <FloatingImage src="../assets/images/totem-storage.png"
+      align="right" title="Storage around a totem" />
+  Explanation beside the image.
+  <br clear="all" />
+
+    Image paths resolve from the page. FloatingImage supports left/right alignment. Use bundled PNG or JPG files. Handbook diagrams and screenshots can be larger than game textures so their labels and interfaces are legible. Leave supplied game textures unchanged. Size illustrations for the guide viewport and test scaling. Do not use web-hosted images as a required runtime dependency.
+
+Recipes:
+
+  <Recipe id="minecraft:iron_pickaxe" />
+    id is a recipe registry ID.
+
+  <RecipeFor id="minecraft:torch" />
+    id is a result item ID; shows a matching recipe.
+
+  <RecipesFor id="minecraft:torch" />
+    Shows matching recipes for the result item.
+
+    All three accept fallbackText. Use a useful explanation for a legitimately unavailable optional recipe; do not conceal broken required recipes with blank fallback text. Prefer recipe IDs when the intended process matters and an item can have multiple production routes.
+
+CommandLink also exists, with command, title, and close attributes. Do not use it in this handbook. The user has requested removal of the mod's commands, and every handbook workflow should be achievable through normal gameplay. Do not add or restore Automatons commands to support the book. GuideME's own separate dependency commands are outside this mod-command removal request.
+
+B6. RECIPES AND CUSTOM PROCESSES
+
+Read actual recipes through the renderer instead of drawing static crafting grids with copied counts. This keeps the handbook useful when a datapack changes a recipe. Provide surrounding text for requirements the recipe display cannot convey.
+
+The default mappings in GuideME 20.1.15 cover crafting, smelting, blasting, and smithing. Do not assume every vanilla recipe type or custom machine is automatically supported.
+
+If existing Automatons recipes use a custom RecipeType, implement a small renderer using the public extension:
+  guideme.compiler.tags.RecipeTypeMappingSupplier
+  RecipeTypeMappingSupplier.EXTENSION_POINT
+
+The source contract is:
+  void collect(RecipeTypeMappings mappings)
+
+Within that callback, mappings.add receives a RecipeType<T> and a function from the matching Recipe subtype to a LytBlock. The generics use Recipe<C> and Container. Register the supplier with GuideBuilder.extension before build(), or use the documented service-loader route when cross-guide availability is specifically needed. Do not do both without a reason.
+
+The service-loader filename, if used, is:
+  META-INF/services/guideme.compiler.tags.RecipeTypeMappingSupplier
+
+Infusing a shard with player Lumina may be stateful logic rather than a RecipeManager recipe. If so, explain the operation with a genuine illustration/scene and steps, or add a focused public custom tag that reads the existing rules. Do not create a fake crafting recipe, duplicate a recipe system, or hardcode a second authoritative balance value solely for the handbook.
+
+B7. INTERACTIVE BUILDING SCENES
+
+Use GuideME scenes where they explain spatial relationships better than text: an exposed totem in a worksite wall, access to storage, or the four infusion corners. Use screenshots for exact GUI button locations and labels.
+
+A valid basic scene shape is:
+
+  <GameScene zoom="2" padding="5" interactive={true} fullWidth={true}>
+    <Block id="minecraft:oak_log" x="0" y="0" z="0" p:axis="y" />
+    <BlockAnnotation x="0" y="0" z="0" color="#b678ed">
+      This is an example annotation. Replace it with a real worksite feature.
+    </BlockAnnotation>
+  </GameScene>
+
+Available scene elements and attributes:
+  - GameScene: zoom, padding, background, interactive, fullWidth.
+  - Block: id, x, y, z, and p:<block-state-property>.
+  - Entity: id, x, y, z, rotationY, rotationX, and data as SNBT.
+  - ImportStructure: src and optional pos="x y z".
+  - IsometricCamera: yaw, pitch, roll.
+  - BlockAnnotation: x, y, z, color; descriptive child content.
+  - BoxAnnotation: min="x y z", max="x y z", color, thickness, alwaysOnTop. The maximum corner is exclusive.
+  - LineAnnotation: from="x y z", to="x y z", color, thickness, alwaysOnTop.
+  - DiamondAnnotation: pos="x y z", color.
+  - BlockAnnotationTemplate: id and p:<property> filters, with annotation children applied to matching blocks already in the scene.
+  - RemoveBlocks: id and p:<property> filters. The tag is plural.
+
+An import example from a page in worksites/ is:
+  <GameScene zoom="1" interactive={true}>
+    <ImportStructure src="../assets/structures/warehouse.nbt" />
+  </GameScene>
+
+GuideME imports vanilla structure NBT or SNBT. Existing Sponge .schem files are not directly interchangeable. Explicitly convert existing schematic data if necessary, preserving block states and positions; renaming an extension is not conversion. Use the actual current structure data and the totem anchor offsets. Put annotation templates and removals after the structure they affect.
+
+Scenes must remain isolated presentation worlds. Do not trigger real building jobs, Network registration, inventory transfers, mining, or worker actions while displaying a page. Custom worker and block-entity renderers may need valid presentation-only data. If a renderer cannot safely display in a scene, use an accurate screenshot for that subject and report the limitation. Do not fabricate a GUI or building that differs from the game.
+
+B8. CONTENT FOR AUTOMATONS
+
+Use "Lumina" for magical energy and "Lumite" for its ore/crystal material. Use the current item display names for raw shards, infused shards, empty cores, and completed cores. Do not expose retired naming or abandoned design discussions to players.
+
+The opening walkthrough should show the actual progression in this checkout, from finding materials to crafting the infusing pedestal, infusing shards, crafting cores, assembling an automaton, placing it, choosing a job, giving tools, assigning a totem, providing worksite materials, and confirming that work has started. Verify recipe prerequisites so the sequence is possible in survival.
+
+Existing magic design to document and verify against the current implementation:
+  - Lumina is distinct from vanilla XP and has its own display and pickups.
+  - Lumite ore yields raw shards; verify the actual tool tier, Fortune/Silk Touch rules, height range, and configured distribution before documenting numbers.
+  - The infusing pedestal has four visible corners and holds up to four raw shards, one per corner.
+  - Each shard needs 25 Lumina, so four require 100 in total, provided the current code still implements these values.
+  - Infusion visibly transfers Lumina from the player to the floating shards.
+  - Explain partial progress, retrieval, and completion indications exactly as implemented.
+  - The pedestal's diamond requirement and the core's empty-core-plus-four-infused-shards recipe should be shown from live recipes, not copied pictures.
+
+Use The Network consistently:
+  - Automaton Pedestal: the Network's central coordinator, recording membership and handling network-wide controls.
+  - Totem: a local worksite controller, managing its assigned workers, local storage, and work planning.
+  - Worker: an individual automaton assigned a profession, carrying tools and inventory and performing assigned work.
+  - Action: a specific operation a worker performs, such as reaching a target, chopping, mining, placing, fetching, or unloading.
+
+Those definitions are player-facing roles, not a demand to redesign existing classes. Explain the actual relationships, ownership, pairing, shared workers, and recall/release controls. Describe the distinction between a totem's site purpose and a worker's changeable profession. A totem can have multiple assigned workers and must not be described as permanently limited to a single worker profession unless the actual current code imposes that restriction, in which case flag the discrepancy.
+
+For each implemented profession, cover:
+  - What it does and how to assign it.
+  - Required tools and supplies, with tool slots versus cargo clearly distinguished.
+  - The totem/worksite and initial building materials it needs.
+  - What happens to collected resources.
+  - How it shares work with other workers.
+  - Its visible waiting/error states, beacon meaning, and what resolves each state.
+  - Practical setup and troubleshooting examples based on existing behavior.
+
+Profession-specific subjects to verify and explain:
+  - Lumberton: tree recognition, closest-tree selection, reachable trees, planted trees, felling, leaf drops, cargo drop-off, storage availability, replacement axes, and protection rules.
+  - Minington: quarry and tunnel modes, shared mine registration, entrance/platform/ladder, pickaxes and shovels, torches, underground storage, and hazards.
+  - Runnington: backpack cargo capacity, worker supply requests, routing between totems, warehouse storage, and fetching tools and torches.
+  - Buildington: hammer, construction requests, site readiness, resource requirements, multiple builders, and commitment to an accepted construction job.
+  - Farmington: existing farmland, farm creation if supported, shared tending, seeds/replanting, crops, and bonemeal when implemented.
+
+Explain each real wand mode, including assignment, chunk protection/revocation, and wrench pickup if present. Describe the actual confirmation dialogs, preservation of worker metadata, dropped inventory, and boundary visualization. Do not invent controls from older mockups.
+
+Use current range semantics. Recent work consolidated work and storage into a single job-purpose range. Inspect the actual configuration and range checks; do not bring back an obsolete non-storage ring. Where values are configurable, distinguish default values from a player's active settings. Do not claim a static paragraph tracks server settings unless it actually does.
+
+Use the actual exposed-totem building layouts. Show the relationship between the totem anchor, entrances, storage, and worker access. Do not redesign the mine, warehouse, builder's shed, lumber yard, or farm structure in this task. Source material lists from actual construction requirements where possible.
+
+Include the coal/charcoal pieces, updated tree felling rules, revised Lumite vein size, and JER information implemented in Part A. Do not treat them as optional future documentation. Do not claim optional JER is required for the handbook. Do not restore removed upgrade pages or commands.
+
+The collector design checkpoint is recorded in Part C. Do not present it as an available gameplay feature unless it actually exists in the implementation. Its unfinished balance settings are not approved gameplay requirements.
+
+B9. PRESENTATION AND PLAYER EXPERIENCE
+
+Use GuideME's normal in-game reader and Minecraft rendering. Keep text and diagrams visually compatible with Minecraft. All sections should be readable immediately; this is a reference manual, not a quest progression system.
+
+Provide a clear table of contents, searchable headings, links between prerequisite topics, and useful item associations. Retain the built-in guide hotkey and let it be rebound. Verify its actual display name and default binding in this version rather than hardcoding a button throughout the book.
+
+At minimum provide useful visual explanations of The Network, the four-corner infusion process, and one worker/worksite setup. Cover other spatially confusing setups as implementation permits. A mixture of actual game screenshots, item/block renders, and isolated scenes is appropriate. Keep screenshots current with the final GUI state. Add concise captions explaining what the player should notice.
+
+Every topic should work offline with the installed mod and its declared dependency. External source or issue links may be supplemental, but essential instructions and images must be packaged locally. Do not put implementation file paths, code internals, debug commands, or development logs in player pages.
+
+B10. DEVELOPMENT, LOCALIZATION, AND MAINTENANCE
+
+Enable optional local live preview in an appropriate development-only run configuration. For the suggested guide ID, the properties are:
+
+  guideme.automatons.handbook.sources=<absolute path to the guide root>
+  guideme.automatons.handbook.sourcesNamespace=automatons
+
+Point sources at the directory containing index.md. Compute the development path from the project, not from a hardcoded machine-specific drive. Adapt the existing ForgeGradle run DSL. The packaged handbook must also work when these properties are absent.
+
+Default English pages live directly under the guide root. A translation mirrors the path under a language folder, for example:
+  _de_de/network/totems.md
+
+Translated assets follow the same pattern, with fallback to the default content when absent. Localize the handbook item name in the normal en_us.json. Prepare the structure for translation without generating unreviewed machine translations.
+
+Leave a concise developer authoring note in the repository's normal documentation location. Explain resource paths, item associations, navigation parents, recipe IDs versus item IDs, scene asset conversion, live preview, and how to verify the guide after changing a recipe or GUI. Link to the tagged source references below. Do not rely exclusively on the evolving online documentation.
+
+B11. VERIFICATION AND COMPLETION
+
+Run the project's required build/checks and meaningful handbook validation. At minimum verify:
+  - Dependency resolution and a successful release build with the target Java/Minecraft/Forge versions.
+  - The output JAR contains every referenced page, image, structure asset, localization entry, and item asset.
+  - Right-clicking the book opens the guide once and does not consume the item.
+  - The book is obtainable in survival and visible in the intended creative tab.
+  - Dedicated-server startup does not load client-only rendering classes through common registration.
+  - Normal multiplayer clients can open the guide after recipe synchronization.
+  - All navigation parents, page links, anchors, registry IDs, item associations, images, and recipe references resolve.
+  - Search and the item-tooltip guide hotkey reach useful pages; key rebinding is respected.
+  - Common GUI scales and both themes keep text, images, recipes, and scenes readable and inside the viewport.
+  - Scene imports render correctly without affecting a live Network or world.
+  - Recipe displays reflect actual registered recipes after a normal reload/reopen.
+  - Shipped guide pages describe implemented behavior and current GUI labels, not planned features.
+
+Use focused automated checks for broken resources/links where worthwhile, plus actual client inspection for rendering. Do not claim runtime or visual checks were performed if the environment cannot run them. Report exactly what was checked and any remaining limitation.
+
+Include the handbook dependency, item, chapters, image/scene coverage, and runtime results in the combined completion report in Part D.
+
+GUIDEME REFERENCE NOTES FOR THE IMPLEMENTER
+
+Primary sources used for this brief:
+
+Release and compatibility:
+  https://modrinth.com/mod/guideme/version/20.1.15
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/gradle.properties
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/mods.toml
+
+Public APIs and registration:
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/GuideBuilder.java
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/GuidesCommon.java
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/PageAnchor.java
+
+Authoring and tag implementation:
+  https://github.com/AppliedEnergistics/GuideME/tree/v20.1.15/docs/docs/30-authoring
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/compiler/Frontmatter.java
+  https://github.com/AppliedEnergistics/GuideME/tree/v20.1.15/src/main/java/guideme/compiler/tags
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/internal/extensions/DefaultExtensions.java
+
+Recipe extension and scenes:
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/src/main/java/guideme/compiler/tags/RecipeTypeMappingSupplier.java
+  https://github.com/AppliedEnergistics/GuideME/tree/v20.1.15/src/main/java/guideme/scene
+
+Live preview and translation:
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/docs/docs/40-live-preview.md
+  https://github.com/AppliedEnergistics/GuideME/blob/v20.1.15/docs/docs/60-translation.md
+
+General online documentation, useful for concepts but not the final authority for 1.20.1 signatures:
+  https://guideme.appliedenergistics.org/
+
+Additional verified compatibility notes:
+  - A generic guide item can be created through Guides.createGuideItem(guideId). In this release its guide identifier is stored as NBT string key guideId. Prefer the mod-owned book item above.
+  - The data-driven JSON definition in this release supports item_settings, default_language, and custom_colors. It does not expose every GuideBuilder option. The Java builder supports explicit folder, startPage, defaultNamespace, defaultLanguage, developmentSources, watchDevelopmentSources, itemSettings, extensions, and registration settings.
+  - defaultLanguage controls search-language behavior; player-selected language and translation folders control localized content.
+  - GuideBuilder registers a guide by default when built. Do not duplicate registration on each resource reload or item use.
+  - Some scene/image parameters depend on the concrete tag rather than being generic style attributes. Use the pinned tag compiler as the authority before adding an attribute not listed here.
+
+PART C. COLLECTOR DESIGN CHECKPOINT
+
+Preserve these confirmed design notes in the developer handoff for the next design discussion:
+- A passive collector gathers Lumina from flowers and plants planted around it.
+- Placing a bottle on the collector allows the bottle to fill.
+- Drinking the filled bottle transfers Lumina into the player's Lumina bar.
+
+Collection range, rate, plant eligibility, whether harvesting affects plants, internal storage, bottle capacity, recipe, partial-fill behavior, and extraction/empty-bottle handling still need decisions. Do not invent finalized values or silently implement a complete collector system during this run. If a collector already exists in the current checkout, preserve it and report its actual behavior alongside these open decisions. The handbook should describe only an implemented player-accessible feature, with real values and controls.
+
+PART D. COMBINED DELIVERY
+
+Deliver one integrated set of changes using the repository's normal build/release workflow:
+- Fuel pieces and all four recipes, fuel behavior, localization, and recipe unlocks.
+- Complete removal of Automatons-owned commands while preserving saves and ordinary new-chunk generation.
+- The two tree-felling changes with existing protection, loot, and coordination behavior preserved.
+- The modest Lumite vein-size increase from 6 to 8 for new terrain, with existing frequency and height distribution preserved.
+- Optional JER integration against a verified compatible version, reflecting the revised generation definition.
+- The GuideME handbook, dependency declaration, accessible book item/recipe, pages, bundled documentation images/scenes, item associations, and authoring notes.
+- The collector design checkpoint without presenting undecided mechanics as completed features.
+
+Do not alter or replace the user's supplied textures. Keep documentation images separate from game texture assets.
+
+Summarize implemented behavior, recipes added, dependency versions, optional integration behavior, and focused test/build/client results. Include the final artifact location using the project's established delivery convention. Explicitly identify any checks that were unavailable and any live-code/design discrepancies. Do not claim a feature works in-game solely because the project compiles.
+
+This prompt is the complete current-run handoff. No separate GuideME prompt is needed.
+

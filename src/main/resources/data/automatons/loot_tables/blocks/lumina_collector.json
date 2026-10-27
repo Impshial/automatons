@@ -1,0 +1,42 @@
+{
+  "type": "minecraft:block",
+  "pools": [
+    {
+      "rolls": 1,
+      "entries": [
+        {
+          "type": "minecraft:item",
+          "name": "automatons:lumina_collector",
+          "functions": [
+            {
+              "function": "minecraft:copy_nbt",
+              "source": "block_entity",
+              "ops": [
+                {
+                  "source": "Tank",
+                  "target": "BlockEntityTag.Tank",
+                  "op": "replace"
+                },
+                {
+                  "source": "Bottle",
+                  "target": "BlockEntityTag.Bottle",
+                  "op": "replace"
+                },
+                {
+                  "source": "MachineFuelThirds",
+                  "target": "BlockEntityTag.MachineFuelThirds",
+                  "op": "replace"
+                },
+                {
+                  "source": "MachineFuelFraction",
+                  "target": "BlockEntityTag.MachineFuelFraction",
+                  "op": "replace"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

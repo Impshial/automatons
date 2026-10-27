@@ -16,7 +16,8 @@ public class TimberRenderer extends EntityRenderer<Timber> {
   @Override
   public void render(
       Timber t, float yaw, float partial, PoseStack pose, MultiBufferSource buffers, int light) {
-    float progress = t.layoutReady() ? Math.min(1, (t.progress() + partial) / t.duration) : 0;
+    if (t.isRemoved() || t.hasPlacedBlocks() || t.finished()) return;
+    float progress = t.layoutReady() ? Math.min(1, t.visualProgress(partial) / t.duration) : 0;
     for (int i = 0; i < t.wood.size(); i++) {
       if (t.consumed(i)) continue;
       pose.pushPose();

@@ -1,0 +1,139 @@
+{
+  "replace": false,
+  "values": [
+    "minecraft:stone",
+    "minecraft:deepslate",
+    "minecraft:granite",
+    "minecraft:diorite",
+    "minecraft:andesite",
+    "minecraft:tuff",
+    "minecraft:calcite",
+    "minecraft:dripstone_block",
+    "minecraft:dirt",
+    "minecraft:coarse_dirt",
+    "minecraft:rooted_dirt",
+    "minecraft:grass_block",
+    "minecraft:podzol",
+    "minecraft:mycelium",
+    "minecraft:mud",
+    "minecraft:clay",
+    "minecraft:gravel",
+    "minecraft:sand",
+    "minecraft:red_sand",
+    "minecraft:sandstone",
+    "minecraft:red_sandstone",
+    "minecraft:netherrack",
+    "minecraft:end_stone",
+    "minecraft:soul_sand",
+    "minecraft:soul_soil",
+    "minecraft:basalt",
+    "minecraft:blackstone",
+    "minecraft:bedrock",
+    "minecraft:grass",
+    "minecraft:fern",
+    "minecraft:tall_grass",
+    "minecraft:large_fern",
+    "minecraft:snow",
+    "#forge:ores",
+    {
+      "id": "#minecraft:base_stone_overworld",
+      "required": false
+    },
+    {
+      "id": "#minecraft:base_stone_nether",
+      "required": false
+    },
+    {
+      "id": "#forge:stone",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:achoria",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:aquatrine_sand_ore",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:aquatrine_sandstone_ore",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:asphalt_pitch",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:bluestone",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:dripgrain",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:glance",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:jadestone",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:moonstone_uc",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:salt_block",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:scorchstone",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:shale",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:slime_achoria",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:sodalite",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:soulcrust",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:soulgrain",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:spice_mixed_sand",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:spice_sand",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:spice_sand_red_desert",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:spiced_sand",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:sunstone",
+      "required": false
+    },
+    {
+      "id": "blocksyouneed_luna:syenite",
+      "required": false
+    }
+  ]
+}

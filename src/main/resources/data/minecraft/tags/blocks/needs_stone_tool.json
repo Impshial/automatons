@@ -1,0 +1,13 @@
+{
+  "replace": false,
+  "values": [
+    "automatons:lumite_ore",
+    "automatons:deepslate_lumite_ore",
+    "automatons:machine_track",
+    "automatons:machine_frame",
+    "automatons:attachment_mount",
+    "automatons:operator_station",
+    "automatons:cargo_compartment",
+    "automatons:lumina_engine"
+  ]
+}

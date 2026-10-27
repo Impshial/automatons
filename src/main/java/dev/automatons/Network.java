@@ -14,9 +14,9 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class Network {
   public static final SimpleChannel CHANNEL =
-      NetworkRegistry.newSimpleChannel(Automatons.id("main"), () -> "2", "2"::equals, "2"::equals);
+      NetworkRegistry.newSimpleChannel(Automatons.id("main"), () -> "10", "10"::equals, "10"::equals);
 
-  public static void pickup(MagicaOrb orb, net.minecraft.world.entity.player.Player player) {
+  public static void pickup(LuminaOrb orb, net.minecraft.world.entity.player.Player player) {
     CompoundTag n = new CompoundTag();
     n.putInt("Orb", orb.getId());
     n.putInt("Player", player.getId());
@@ -35,6 +35,21 @@ public final class Network {
   private static final Map<UUID, Pending> pending = new HashMap<>();
 
   public static void init() {
+    MachineActions.register();
+    CHANNEL.registerMessage(
+        3,
+        TimberMaintenance.Query.class,
+        TimberMaintenance.Query::encode,
+        TimberMaintenance.Query::decode,
+        (message, context) -> {
+          var c = context.get();
+          c.enqueueWork(
+              () -> {
+                if (c.getSender() != null) TimberMaintenance.answer(c.getSender(), message);
+              });
+          c.setPacketHandled(true);
+        },
+        Optional.of(NetworkDirection.PLAY_TO_SERVER));
     CHANNEL.registerMessage(
         0,
         Mode.class,

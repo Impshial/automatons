@@ -18,14 +18,6 @@ public class UpgradeItem extends Item {
   @Override
   public void appendHoverText(
       ItemStack stack, Level level, List<Component> lines, TooltipFlag flag) {
-    String effect =
-        switch (family) {
-          case "storage" -> "+" + (tier * 4) + " storage radius";
-          case "lumber" -> "+" + (tier * 8) + " lumber radius";
-          case "speed" -> (tier == 1 ? "20%" : "36%") + " shorter chopping time";
-          default -> "Effective Efficiency " + tier + " (higher level wins)";
-        };
-    lines.add(Component.literal(effect));
-    lines.add(Component.literal("One upgrade per family. Install in a totem."));
+    lines.add(Component.literal("Retired item — no active effects"));
   }
 }

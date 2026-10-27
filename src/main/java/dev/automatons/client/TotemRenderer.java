@@ -42,6 +42,13 @@ public class TotemRenderer implements BlockEntityRenderer<Station> {
       pose.popPose();
       return;
     }
+    if (s.buildOutlineMin != null && s.buildOutlineMax != null)
+      outline(s, pose, buffers, s.buildOutlineMin, s.buildOutlineMax);
+    if (s.mine != null
+        && s.mine.entrance != null
+        && !s.mine.entranceComplete
+        && s.mine.stage == MinePlan.Stage.ARCH)
+      outline(s, pose, buffers, s.mine.entrance.offset(-3, 0, -3), s.mine.entrance.offset(4, 0, 4));
     if (s.alerts == 0) return;
     BeaconRenderer.renderBeaconBeam(
         pose,
@@ -59,7 +66,35 @@ public class TotemRenderer implements BlockEntityRenderer<Station> {
 
   @Override
   public boolean shouldRenderOffScreen(Station s) {
-    return s.alerts != 0;
+    return s.alerts != 0
+        || s.buildOutlineMin != null
+        || s.mine != null && s.mine.stage == MinePlan.Stage.ARCH;
+  }
+
+  private static void outline(
+      Station s,
+      PoseStack pose,
+      MultiBufferSource buffers,
+      net.minecraft.core.BlockPos min,
+      net.minecraft.core.BlockPos max) {
+    double x = min.getX() - s.getBlockPos().getX() - .12,
+        z = min.getZ() - s.getBlockPos().getZ() - .12;
+    double ex = max.getX() - s.getBlockPos().getX() + .12,
+        ez = max.getZ() - s.getBlockPos().getZ() + .12;
+    double y = min.getY() - s.getBlockPos().getY() + .07;
+    var out = buffers.getBuffer(RenderType.lightning());
+    for (double[] edge :
+        new double[][] {
+          {x, z, ex, z + .07}, {x, ez - .07, ex, ez}, {x, z, x + .07, ez}, {ex - .07, z, ex, ez}
+        }) {
+      for (double[] v :
+          new double[][] {
+            {edge[0], edge[1]}, {edge[0], edge[3]}, {edge[2], edge[3]}, {edge[2], edge[1]}
+          })
+        out.vertex(pose.last().pose(), (float) v[0], (float) y, (float) v[1])
+            .color(255, 221, 32, 230)
+            .endVertex();
+    }
   }
 
   @Override

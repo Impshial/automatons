@@ -1,0 +1,29 @@
+{
+  "edition": "Minecraft Java Edition",
+  "version": "1.20.1",
+  "sourceJar": "C:\\Users\\impsh\\curseforge\\minecraft\\Install\\versions\\1.20.1\\1.20.1.jar",
+  "files": [
+    {
+      "file": "stone.png",
+      "width": 16,
+      "height": 16,
+      "source": "assets/minecraft/textures/block/stone.png",
+      "sha256": "0096954ee757a2184f96e5e300953a6c41855ee49e8e5ad90aeeb0444953fd9d"
+    },
+    {
+      "file": "deepslate.png",
+      "width": 16,
+      "height": 16,
+      "source": "assets/minecraft/textures/block/deepslate.png",
+      "sha256": "fcba18a824b979157ccce4075b5bc26fd5c4dda6bc0003fc691ae7012856ba22"
+    },
+    {
+      "file": "deepslate_top.png",
+      "width": 16,
+      "height": 16,
+      "source": "assets/minecraft/textures/block/deepslate_top.png",
+      "sha256": "6756166657ca891a1463c60123de3e4bc23c21d78c61471dea0594250a4119b2"
+    }
+  ],
+  "method": "Original PNG bytes extracted without resizing or re-encoding."
+}

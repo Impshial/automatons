@@ -1,0 +1,13 @@
+{
+  "revision": "0.9.0",
+  "request": "Lighten many dark purple Lumite interior pixels so the ore does not look black underground.",
+  "method": "Built-in image generation edit of the existing cavity preview, followed by a masked palette import into the existing native textures.",
+  "generated_palette_source": "art/lumite-0.9.0/cavity-generated.png",
+  "baseline": "art/lumite-0.7.2",
+  "importer": "tools/import_lumite_machine.ps1",
+  "verification": "tools/validate_machine.py",
+  "native_size": [16, 16],
+  "changed_pixels_per_texture": 50,
+  "preserved": ["exact vanilla stone/deepslate backgrounds", "chipped rock rim", "existing pale highlights", "alpha", "block models", "glow mask", "raw and infused shard sprites"],
+  "preview": "Nearest-neighbor enlarged copies; the packaged ore PNGs remain 16x16."
+}

@@ -21,6 +21,9 @@ public final class Permissions {
     if (!level.hasChunkAt(pos) || level.isOutsideBuildHeight(pos)) return false;
     if (action == Action.MOVE || action == Action.INVENTORY) return true;
     if (WorldData.get(level).protectedAt(pos)) return false;
+    if (WorldData.get(level).mineProtected(pos, null)) return false;
+    if (WorldData.get(level).buildingProtected(level, pos)) return false;
+    if (WorldData.get(level).farmProtected(pos)) return false;
     // Claim mods that honor Forge's standard break event can veto destructive work.
     var actor = FakePlayerFactory.get(level, new GameProfile(owner, "[Automatons]"));
     return !MinecraftForge.EVENT_BUS.post(

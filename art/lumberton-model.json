@@ -1,9 +1,9 @@
 {
   "texture_size": [
-    64,
-    64
+    128,
+    128
   ],
-  "height_blocks": 1.5,
+  "height_blocks": 1.78125,
   "units_per_block": 16,
   "parts": [
     {
@@ -14,20 +14,22 @@
         0
       ],
       "from": [
-        -3,
-        -6,
-        -3
+        -4.5,
+        -8,
+        -4
       ],
       "size": [
-        6,
-        6,
-        6
+        9,
+        8,
+        8
       ],
+      "material": "plank",
+      "parent": null,
+      "job": 0,
       "uv": [
         0,
         0
-      ],
-      "material": "plank"
+      ]
     },
     {
       "name": "body",
@@ -37,25 +39,27 @@
         0
       ],
       "from": [
-        -4,
+        -4.5,
         0,
         -3
       ],
       "size": [
-        8,
+        9,
         9,
         6
       ],
+      "material": "plank",
+      "parent": null,
+      "job": 0,
       "uv": [
-        0,
-        14
-      ],
-      "material": "plank"
+        36,
+        0
+      ]
     },
     {
       "name": "right_arm",
       "origin": [
-        -5,
+        -4.5,
         7,
         0
       ],
@@ -69,16 +73,18 @@
         13,
         4
       ],
+      "material": "bark",
+      "parent": null,
+      "job": 0,
       "uv": [
-        32,
+        68,
         0
-      ],
-      "material": "bark"
+      ]
     },
     {
       "name": "left_arm",
       "origin": [
-        5,
+        4.5,
         7,
         0
       ],
@@ -92,11 +98,13 @@
         13,
         4
       ],
+      "material": "bark",
+      "parent": null,
+      "job": 0,
       "uv": [
-        48,
+        84,
         0
-      ],
-      "material": "bark"
+      ]
     },
     {
       "name": "right_leg",
@@ -115,11 +123,13 @@
         8,
         4
       ],
+      "material": "bark",
+      "parent": null,
+      "job": 0,
       "uv": [
-        32,
-        20
-      ],
-      "material": "bark"
+        100,
+        0
+      ]
     },
     {
       "name": "left_leg",
@@ -138,11 +148,13 @@
         8,
         4
       ],
+      "material": "bark",
+      "parent": null,
+      "job": 0,
       "uv": [
-        48,
-        20
-      ],
-      "material": "bark"
+        0,
+        19
+      ]
     },
     {
       "name": "neck",
@@ -161,11 +173,13 @@
         1,
         4
       ],
+      "material": "iron",
+      "parent": null,
+      "job": 0,
       "uv": [
-        0,
-        34
-      ],
-      "material": "iron"
+        16,
+        19
+      ]
     },
     {
       "name": "shoulder_r",
@@ -175,7 +189,7 @@
         0
       ],
       "from": [
-        -5,
+        -4.5,
         7,
         -2
       ],
@@ -184,11 +198,13 @@
         3,
         4
       ],
+      "material": "iron",
+      "parent": null,
+      "job": 0,
       "uv": [
-        0,
-        42
-      ],
-      "material": "iron"
+        34,
+        19
+      ]
     },
     {
       "name": "shoulder_l",
@@ -198,7 +214,7 @@
         0
       ],
       "from": [
-        4,
+        3.5,
         7,
         -2
       ],
@@ -207,11 +223,463 @@
         3,
         4
       ],
+      "material": "iron",
+      "parent": null,
+      "job": 0,
       "uv": [
-        12,
-        42
+        46,
+        19
+      ]
+    },
+    {
+      "name": "lumber_apron",
+      "origin": [
+        0,
+        0,
+        0
       ],
-      "material": "iron"
+      "from": [
+        -3,
+        2,
+        -4
+      ],
+      "size": [
+        6,
+        6,
+        1
+      ],
+      "material": "green",
+      "parent": "body",
+      "job": 1,
+      "uv": [
+        58,
+        19
+      ]
+    },
+    {
+      "name": "lumber_shoulder",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        0,
+        -3.5
+      ],
+      "size": [
+        2,
+        2,
+        7
+      ],
+      "material": "green",
+      "parent": "body",
+      "job": 1,
+      "uv": [
+        74,
+        19
+      ]
+    },
+    {
+      "name": "axe_belt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2,
+        6,
+        -4.5
+      ],
+      "size": [
+        2,
+        2,
+        1
+      ],
+      "material": "iron",
+      "parent": "body",
+      "job": 1,
+      "uv": [
+        94,
+        19
+      ]
+    },
+    {
+      "name": "miner_helmet",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -5,
+        -9,
+        -4.5
+      ],
+      "size": [
+        10,
+        3,
+        9
+      ],
+      "material": "helmet",
+      "parent": "head",
+      "job": 2,
+      "uv": [
+        0,
+        33
+      ]
+    },
+    {
+      "name": "miner_lamp",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        3,
+        2,
+        1
+      ],
+      "material": "lamp",
+      "parent": "head",
+      "job": 2,
+      "uv": [
+        40,
+        33
+      ]
+    },
+    {
+      "name": "miner_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        2,
+        -4
+      ],
+      "size": [
+        6,
+        6,
+        1
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 2,
+      "uv": [
+        50,
+        33
+      ]
+    },
+    {
+      "name": "backpack",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        0.5,
+        3
+      ],
+      "size": [
+        7,
+        8,
+        3
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        66,
+        33
+      ]
+    },
+    {
+      "name": "strap_right",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        0,
+        -4
+      ],
+      "size": [
+        1,
+        8,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        88,
+        33
+      ]
+    },
+    {
+      "name": "strap_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2.5,
+        0,
+        -4
+      ],
+      "size": [
+        1,
+        8,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        94,
+        33
+      ]
+    },
+    {
+      "name": "strap_top_right",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3.5,
+        -0.5,
+        -3
+      ],
+      "size": [
+        1,
+        1,
+        6
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        100,
+        33
+      ]
+    },
+    {
+      "name": "strap_top_left",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        2.5,
+        -0.5,
+        -3
+      ],
+      "size": [
+        1,
+        1,
+        6
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        0,
+        47
+      ]
+    },
+    {
+      "name": "parcel",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1.5,
+        3,
+        6
+      ],
+      "size": [
+        3,
+        3,
+        1
+      ],
+      "material": "parcel",
+      "parent": "body",
+      "job": 3,
+      "uv": [
+        16,
+        47
+      ]
+    },
+    {
+      "name": "builder_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        1,
+        -4
+      ],
+      "size": [
+        6,
+        7,
+        1
+      ],
+      "material": "leather",
+      "parent": "body",
+      "job": 4,
+      "uv": [
+        26,
+        47
+      ]
+    },
+    {
+      "name": "builder_belt",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4.5,
+        6,
+        -4
+      ],
+      "size": [
+        9,
+        2,
+        1
+      ],
+      "material": "strap",
+      "parent": "body",
+      "job": 4,
+      "uv": [
+        42,
+        47
+      ]
+    },
+    {
+      "name": "builder_buckle",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -1,
+        6,
+        -5
+      ],
+      "size": [
+        2,
+        2,
+        1
+      ],
+      "material": "iron",
+      "parent": "body",
+      "job": 4,
+      "uv": [
+        64,
+        47
+      ]
+    },
+    {
+      "name": "farmer_brim",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -6,
+        -8.5,
+        -5.5
+      ],
+      "size": [
+        12,
+        1,
+        11
+      ],
+      "material": "straw",
+      "parent": "head",
+      "job": 5,
+      "uv": [
+        72,
+        47
+      ]
+    },
+    {
+      "name": "farmer_crown",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -4,
+        -10.5,
+        -3.5
+      ],
+      "size": [
+        8,
+        2,
+        7
+      ],
+      "material": "straw",
+      "parent": "head",
+      "job": 5,
+      "uv": [
+        0,
+        61
+      ]
+    },
+    {
+      "name": "farmer_apron",
+      "origin": [
+        0,
+        0,
+        0
+      ],
+      "from": [
+        -3,
+        1,
+        -4
+      ],
+      "size": [
+        6,
+        7,
+        1
+      ],
+      "material": "green",
+      "parent": "body",
+      "job": 5,
+      "uv": [
+        32,
+        61
+      ]
     }
   ]
 }

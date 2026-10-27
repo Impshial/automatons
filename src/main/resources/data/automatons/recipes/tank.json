@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "GGG",
+    "GEG",
+    "GGG"
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:glass"
+    },
+    "E": {
+      "item": "automatons:empty_magica_core"
+    }
+  },
+  "result": {
+    "item": "automatons:tank",
+    "count": 1
+  }
+}

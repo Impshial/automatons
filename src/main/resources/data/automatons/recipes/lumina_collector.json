@@ -1,0 +1,23 @@
+{
+  "type": "automatons:collector",
+  "pattern": [
+    "SCS",
+    "CTC",
+    "SCS"
+  ],
+  "key": {
+    "S": {
+      "item": "minecraft:stone"
+    },
+    "C": {
+      "item": "automatons:magica_core"
+    },
+    "T": {
+      "item": "automatons:tank"
+    }
+  },
+  "result": {
+    "item": "automatons:lumina_collector",
+    "count": 1
+  }
+}

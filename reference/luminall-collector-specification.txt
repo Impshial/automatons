@@ -1,0 +1,126 @@
+Implement a **Lumina Collector** and **Luminall fluid** in the existing Automatons mod.
+
+First inspect the project’s current Minecraft/Forge version, Lumina system, Infused Core items, producer detection, block registration, rendering, and fluid infrastructure. Reuse existing systems and conventions. Complete the implementation, including assets, recipes, persistence, and validation.
+
+**Purpose**
+
+The Lumina Collector is a passive, single-block generator placed amongst flowers, pumpkins, melons, crops, trees, and anything else the mod recognizes as a Lumina producer.
+
+It slowly draws Lumina from nearby producers and condenses it into **Luminall**, the liquid form of Lumina. Collection leaves the surrounding plants intact.
+
+The collector requires no fuel or external power. Its expensive crafting recipe is the investment required for ongoing production. Players can install multiple collectors to increase production across a larger area.
+
+**Crafting**
+
+The recipe must include **four Infused Cores**.
+
+Use the existing infused/charged core item in the project. Do not substitute Infused Shards or empty cores, and do not create a duplicate item if the correct core already exists under a different registry name.
+
+Choose appropriate existing materials for the remaining recipe slots and report the completed recipe.
+
+**Collection range**
+
+Use a **4×4-block horizontal collection footprint**. This means four blocks wide by four blocks long.
+
+Because the footprint has even dimensions, anchor it consistently relative to the collector and document the exact offsets. The displayed boundary must match the positions actually scanned.
+
+Vertical reach has not been finalized. Use a modest, configurable default that allows nearby trees and plants at different elevations to contribute, and report the chosen value.
+
+Looking at a collector while holding the Automaton Wand should display its collection boundary. Integrate this with any existing range visualization system.
+
+**Lumina production**
+
+Use the mod’s existing definition of Lumina-producing blocks wherever possible. Keep producer eligibility and output extensible through the project’s existing configuration or data-driven conventions.
+
+Flowers, pumpkins, melons, crops, and living trees must be supported. Recognize planted vegetation as well as naturally generated vegetation. Reuse existing tree recognition where available so wooden buildings do not function as living trees.
+
+More eligible producers should increase output, up to a configurable maximum collection rate. Crop maturity can affect contribution where the existing producer system supports it.
+
+For overlapping collectors, share each producer’s available output between collectors. Placing additional collectors around the same plant must not multiply that plant’s production. A collector that cannot accept more fluid should not prevent another collector from using the available production.
+
+Run collection on the server. Cache or periodically refresh producer information instead of scanning the entire collection volume every tick. Do not force-load surrounding chunks.
+
+**Internal reservoir**
+
+Give the collector an internal Luminall tank.
+
+It continues collecting without a bottle until the tank is full. It resumes when space becomes available through bottle filling, bucket collection, or pipe extraction.
+
+Persist the tank contents and bottle state across saves, chunk unloading, and server restarts. Synchronize the information needed for client rendering.
+
+Choose a useful, configurable tank capacity.
+
+**Bottle placement and drinking**
+
+Right-clicking the collector with a glass bottle places one bottle physically on top of the block.
+
+The bottle must be visible in the world and visibly fill with Luminall. Use actual stored fluid for filling and deduct the corresponding amount from the collector.
+
+Right-clicking with an empty hand retrieves the bottle. Handle partial filling consistently, preserving its fluid value when the bottle is removed or the collector is broken.
+
+A full **Luminall Bottle** is drinkable. Drinking it adds a fixed, configurable amount of Lumina to the player’s existing Lumina bank and returns an empty glass bottle.
+
+Use the existing Lumina storage, synchronization, and capacity rules. Drinking must work regardless of hunger.
+
+Choose and document a fixed fluid volume per bottle. Keep that volume consistent across all filling and consumption paths. Partially filled bottles must not grant the benefit of a full bottle.
+
+**Fully registered Luminall fluid**
+
+Luminall must be a complete registered fluid with:
+
+- A source form and a flowing form.
+- A placeable fluid block.
+- A Luminall Bucket holding the standard 1,000 mB.
+- Working bucket placement and source pickup.
+- Still and flowing textures, appropriate tinting, and localization.
+- Compatibility with standard Forge fluid containers, tanks, and transfer systems.
+
+Disable infinite-source regeneration. Moving, placing, collecting, or bottling Luminall must conserve fluid quantity.
+
+Use the project’s established registration and client rendering patterns.
+
+**Fluid extraction and automation**
+
+Expose the collector’s reservoir through the standard Forge fluid capability so compatible pipes can pump Luminall into external tanks or machines.
+
+Allow extraction from the sides and bottom, keeping the top available for the visible bottle.
+
+Support manual bucket collection when at least 1,000 mB is available.
+
+Pipe extraction, bucket collection, and bottle filling must use consistent server-side accounting. Simultaneous interactions must not duplicate fluid, produce negative amounts, or consume more than is available.
+
+**Appearance and interaction**
+
+Create a Minecraft-appropriate block model with a stone base, copper details, a visible Luminall reservoir, and a clear bottle position.
+
+Use **16×16-style texture density per full block face**, matching the mod’s vanilla-scale assets. Larger texture atlases are acceptable when needed for the model, but individual surfaces must retain the intended pixel scale.
+
+Use the mod’s established Lumina colors for the fluid and effects.
+
+While actively collecting, show occasional Lumina particles traveling from contributing producers toward the collector. Keep the particle count restrained, and stop collection effects when the reservoir is full.
+
+The reservoir and bottle should provide useful visual feedback without requiring a GUI. If an interface is necessary, follow the mod’s existing vanilla-style GUI conventions.
+
+Tooltips should describe function concisely. Crafting instructions belong in recipe displays.
+
+**Balance and configuration**
+
+The following values have not been finalized:
+
+- Vertical collection reach.
+- Internal tank capacity.
+- Production rate and maximum collection rate.
+- Fluid volume per bottle.
+- Lumina restored by drinking a full bottle.
+
+Choose conservative starting values after inspecting the existing Lumina economy, expose them through the project’s configuration system, and report them clearly.
+
+Preserve the intended progression: four Infused Cores are a substantial upfront expense, and a maintained garden with multiple collectors can generate a considerable supply over time.
+
+**Validation and completion**
+
+Build the mod and run appropriate available checks. Verify the exact collection footprint, producer recognition, overlapping collectors, full-tank behavior, bottle filling and drinking, bucket operations, fluid extraction, and persistence.
+
+Check that removing a bottle, breaking a collector, and simultaneous extraction cannot duplicate or silently destroy stored items or fluid. Follow existing machine conventions for retaining or recovering tank contents when the block is broken.
+
+When finished, report the implemented behavior, recipe, configuration defaults, build results, and anything that still requires in-game testing. Distinguish checks actually performed from tests that remain outstanding.

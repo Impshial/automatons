@@ -13,13 +13,14 @@ public final class CoreItem extends Item {
   }
 
   public static int charge(ItemStack stack) {
-    return stack.is(Automatons.MAGICA_CORE.get())
+    return stack.is(Automatons.LUMINA_CORE.get())
         ? CAPACITY
-        : Math.min(CAPACITY - 1, Math.max(0, stack.hasTag() ? stack.getTag().getInt("Magica") : 0));
+        : Math.min(
+            CAPACITY - 1, Math.max(0, stack.hasTag() ? LegacyMagic.coreCredit(stack.getTag()) : 0));
   }
 
   public static ItemStack vessel(int charge) {
-    if (charge >= CAPACITY) return new ItemStack(Automatons.MAGICA_CORE.get());
+    if (charge >= CAPACITY) return new ItemStack(Automatons.LUMINA_CORE.get());
     ItemStack s = new ItemStack(Automatons.EMPTY_CORE.get());
     if (charge > 0) s.getOrCreateTag().putInt("Magica", Math.min(CAPACITY - 1, charge));
     return s;
@@ -32,7 +33,35 @@ public final class CoreItem extends Item {
 
   @Override
   public void appendHoverText(ItemStack s, Level l, List<Component> lines, TooltipFlag flag) {
-    lines.add(Component.literal(charge(s) + "/50 Magica"));
+    if (charge(s) > 0)
+      lines.add(Component.literal("Legacy infusion credit: " + charge(s) + " Lumina"));
+  }
+
+  @Override
+  public net.minecraft.world.InteractionResultHolder<ItemStack> use(
+      Level level,
+      net.minecraft.world.entity.player.Player player,
+      net.minecraft.world.InteractionHand hand) {
+    ItemStack stack = player.getItemInHand(hand);
+    int credit = charge(stack);
+    if (credit == 0 || !stack.is(Automatons.EMPTY_CORE.get()))
+      return net.minecraft.world.InteractionResultHolder.pass(stack);
+    if (!level.isClientSide && player instanceof net.minecraft.server.level.ServerPlayer p) {
+      if (!stack.getTag().hasUUID("CreditOwner")
+          || !stack.getTag().getUUID("CreditOwner").equals(p.getUUID())) {
+        p.displayClientMessage(
+            Component.literal(
+                "Legacy infusion credit preserved; a matching donor identity is required"),
+            true);
+      } else if (Lumina.thirds(p) <= Integer.MAX_VALUE * 3L + 2 - credit * 3L) {
+        stack.getTag().remove("Magica");
+        stack.getTag().remove("CreditOwner");
+        if (stack.getTag().isEmpty()) stack.setTag(null);
+        Lumina.addThirds(p, credit * 3L);
+        p.displayClientMessage(Component.literal("Recovered " + credit + " Lumina"), true);
+      }
+    }
+    return net.minecraft.world.InteractionResultHolder.sidedSuccess(stack, level.isClientSide);
   }
 
   @Override

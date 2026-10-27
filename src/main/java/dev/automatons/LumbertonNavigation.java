@@ -26,6 +26,7 @@ public final class LumbertonNavigation extends GroundPathNavigation {
           }
         };
     nodeEvaluator.setCanPassDoors(true);
+    nodeEvaluator.setCanOpenDoors(true);
     return new PathFinder(nodeEvaluator, maximumNodes);
   }
 }

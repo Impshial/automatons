@@ -54,18 +54,18 @@ final class InfusionCategory implements IRecipeCategory<InfusionCategory.Display
     builder
         .addSlot(RecipeIngredientRole.INPUT, 26, 16)
         .setStandardSlotBackground()
-        .addItemStack(CoreItem.vessel(0));
+        .addItemStack(new ItemStack(Automatons.LUMITE_SHARD.get()));
     builder
         .addSlot(RecipeIngredientRole.OUTPUT, 130, 16)
         .setOutputSlotBackground()
-        .addItemStack(CoreItem.vessel(CoreItem.CAPACITY));
+        .addItemStack(new ItemStack(Automatons.INFUSED_LUMITE.get()));
   }
 
   @Override
   public void draw(Display recipe, IRecipeSlotsView slots, GuiGraphics g, double x, double y) {
     AssemblyCategory.arrow(g, 74, 23);
     var font = Minecraft.getInstance().font;
-    Component cost = Component.translatable("jei.automatons.infusion.cost", CoreItem.CAPACITY);
+    Component cost = Component.translatable("jei.automatons.infusion.cost", LumiteShardItem.COST);
     g.drawString(font, cost, (170 - font.width(cost)) / 2, 46, 0xff6d408d, false);
     g.drawWordWrap(
         font,

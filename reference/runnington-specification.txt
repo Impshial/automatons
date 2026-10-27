@@ -1,0 +1,180 @@
+IMPLEMENT RUNNINGTONS, SHARED LOGISTICS, AUTOMATON VISUALS, AND THE REVISED MINE ENTRANCE
+
+Work in the existing Automatons mod for Minecraft Java 1.20.1. Inspect the current repository, its instructions, save formats, menus, AI, tests, and asset authoring tools before changing anything. Retain the project's current loader and Java setup. This is an additive implementation request against the latest code, not a rewrite from an older specification. Preserve the separately requested mining changes already being implemented. Do not revert existing behavior to earlier prompts.
+
+Implement this request fully, run the relevant checks, produce the normal build and editable assets, and report what was actually verified. Do not stop at a proposal or a collection of TODOs. All new GUIs must match vanilla Minecraft menus and the existing mod's conventions.
+
+1. REVISED MINE ENTRANCE
+
+Use the accompanying Automatons-Rustic-Minehead.schem as the authoritative new entrance template. This file is Sponge Schematic version 2 for Minecraft 1.20.1, DataVersion 3465. Import it into the existing structure/template workflow rather than introducing a runtime dependency on WorldEdit.
+
+The entrance has a closed roof: the angled cobblestone slopes and oak ridge continue between both ends. It uses ordinary oak logs throughout, with four hanging lanterns, one at each corner. Never request stripped logs for this structure.
+
+Exact dimensions are 7 X by 7 Y by 7 Z, including the buried foundation. The central landing is 3 by 3 with four full blocks of clear headroom under the roof. The four approaches remain at least three blocks wide and three blocks high. Local hatch position is (3,0,3); the standing/origin anchor is (3,1,3).
+
+Ground placement is essential: the SURFACE ENTRANCE must be level with the surrounding ground. If G is the Y coordinate of the existing top ground block, excavate the foundation footprint one block deep, place the foundation at block Y=G, and leave its walking surface at Y=G+1. Do not place the foundation on top of the ground, and do not sink the entrance's walking surface below the terrain. This instruction does not relocate the underground chamber or change the current mine depth.
+
+Placed materials from the exported file:
+- 59 cobblestone
+- 33 ordinary oak logs
+- 28 cobblestone stairs
+- 10 cobblestone slabs
+- 8 oak planks
+- 4 lanterns
+- 1 oak trapdoor
+Total: 143 non-air placements. Derive and verify material accounting from the palette, including stair/slab items and the hatch. These counts are placed items, not raw crafting ingredients.
+
+Reserve and validate the entire site before excavation. Respect protection, existing structures, containers, and the current building permission rules. Preserve the existing mine-site selection and safety behavior. Consume real supplies once per successful placement, build supports before lanterns, and resume interrupted construction without charging for completed blocks again. Rotate log axes, stairs, and the hatch with the template. Connect the hatch to the existing shaft system. Keep one shared mine per totem. Use the new entrance for new construction; do not automatically demolish existing mines.
+
+2. AUTOMATON FACE AND WIDTH
+
+Remove the mouth from every expression texture, including the smile and frown. Give the automatons expressive white-and-purple eyes, using lids, eye shape, brow position, and blinking for idle, happy, focused, worried, angry, and waiting states. Do not replace the mouth with another dark opening. Keep the wooden face and the established automaton identity.
+
+Increase the HEAD width and TORSO width by exactly one model pixel each, total, not one pixel on each side. Keep their other dimensions and the automaton's 24-pixel/1.5-block standing height unless the current repository has an intentional newer baseline. Center each widened part. A half-unit pivot or origin used to center an odd-width box is fine; texture density must remain one source pixel per model unit, or 16 pixels per block.
+
+Make each eye two source pixels wider than its current normal open-eye design, keeping a visible gap between the eyes. In the earlier asset log, the normal eyes were one pixel wide and the head six pixels wide; that would give a seven-pixel head with two three-pixel eyes separated by one pixel. Use the newly available mouth area for expressions and retain clear top/bottom wood framing. Check the CURRENT assets before applying these deltas. Do not stretch existing textures or fake wider eyes through blurred resampling.
+
+The earlier log documents a 0.7 by 1.5-block collision box, a 6x6x6 head, and an 8x9x6 torso. Those are historical reference values, not proof of the current geometry. Measure the actual entity registration, runtime scale, collision dimensions, model, and animation extents before editing. Report the current and resulting values.
+
+Preserve one-block passage navigation. Increasing a rendered head or torso does not require expanding the entity collision box. Keep the existing collision dimensions if they are already suitable. Adjust shoulder overlap, arm pivots, arm poses, and accessories so the larger torso does not push the whole silhouette out into corridor walls. Do not globally shrink the model to hide a problem. Check straight corridors, corners, a single wooden doorway, ladders, and the mine's current tunnels. Distinguish collision clearance from visible arm/tool clipping when reporting results.
+
+Update the authoritative editable geometry, Blockbench source, texture generator, all expression atlases, packed-item model/rendering, and runtime renderer together. Retain pixel-art density and nearest-neighbor sampling. Blocks and item sprites remain 16x16; a larger entity atlas only supplies layout space.
+
+3. VISIBLE JOB IDENTITY
+
+Implement a recognizable appearance for each currently playable job. A held tool alone is insufficient, since workers also need to be identifiable when idle or empty-handed. Keep the same generic wooden automaton underneath the accessories.
+
+- Unassigned: the base model without job equipment.
+- Lumberton: a small green shoulder/apron detail and a compact axe motif or belt detail.
+- Minington: a simple miner's helmet with a small lamp detail and a work apron.
+- Runnington: a clearly modeled backpack attached to the torso, with visible shoulder straps and a small parcel motif. It appears whenever the automaton has the Runnington job and represents its doubled cargo capacity.
+
+Use restrained Minecraft pixel-art colors and modest cuboids. The miner's lamp is a visual accessory, not a replacement for required world lighting. The runner's backpack has the functional effect of doubling cargo capacity, implemented through one authoritative inventory rather than a separate container with duplicate contents. Keep the backpack narrow, attach it to the torso animation, and check its depth during turning, ladder use and doorway traversal. Keep gear within the passage constraints and preserve face visibility and held-item animations. Use shape as well as color to distinguish jobs.
+
+Job changes must update visuals immediately on all relevant clients and survive saving, unloading, packing, and redeployment. Keep identity, name, home pedestal, and totem assignments intact according to the existing job-change rules. Extend the appearance mapping for any other jobs already implemented, without adding new future jobs in this task. Preserve name labels and the existing pedestal toggle; totem lists continue to show names rather than raw IDs.
+
+4. RUNNINGTON ROLE AND SETUP
+
+Runnington is a selectable job on the existing generic Automaton. It belongs to its existing home pedestal and is assigned to a normal, job-agnostic totem using the existing assignment workflow. Any mix of worker jobs can still share a totem.
+
+A runner's assigned totem is its warehouse anchor. Multiple runners may share that totem and cooperate on ONE warehouse and ONE logistics queue. They do not each build a warehouse or each demand a separate set of 16 chests. The warehouse should be placed in the home pedestal area, with the player choosing the anchor totem's location. If the project already defines a home-area limit, use it; do not silently relocate the pedestal or totem to make a site fit.
+
+When idle, runners wait at safe standing positions around their home pedestal, leaving its interaction area and paths clear. They receive stock reports and requests from totems belonging to that same home-pedestal network. While working, they physically travel between those totems, worker locations, mine depots, and the warehouse. They return to the pedestal area when there is no actionable work.
+
+The backpack doubles the normal cargo slot count. With the current nine cargo slots, a Runnington has EIGHTEEN cargo slots, displayed as a vanilla 2x9 grid. Its three equipment/tool slots remain unchanged; the backpack doubles cargo capacity, not tools or stack limits. Derive the capacity as twice the current base cargo count rather than maintaining an unrelated constant. Preserve the capacities of other jobs. All slots must belong to the runner's one actual persistent inventory, including save/load, menus, capability access, insertion simulation, death drops and wrench packing. Do not maintain a second independent backpack item store. The job supplies the backpack automatically; no separate backpack recipe or equip-item requirement is introduced here. Retain the existing movement-speed baseline for this pass and expose runner balance in the existing configuration system; do not quietly retune all other automatons.
+
+When switching away from Runnington, first consolidate cargo into the normal capacity if possible, preserving stack metadata and limits. If it still does not fit, leave the current job and backpack active and show 'Unload backpack before changing job'. Never truncate, hide, duplicate or automatically discard overflow. Coordinate outstanding delivery reservations with this transition. Once cargo fits and the job change commits, remove the backpack model and return to normal capacity. Packing a Runnington follows the existing inventory-drop behavior for ALL eighteen cargo slots exactly once, while preserving its job and identity metadata; redeploying it restores the correct backpack model and capacity.
+
+Cargo can include any item being transported, including axes, pickaxes, shovels, fishing rods, swords, and torches. Transporting an item does not equip it or make it an appropriate work tool for the runner. Keep the distinction between delivery cargo and equipped construction tools. Preserve damage, enchantments, names, and all item metadata.
+
+5. WAREHOUSE GEOMETRY AND CHESTS
+
+Use the accompanying Automatons-Runnington-Warehouse.schem as the authoritative warehouse blueprint, alongside the mine entrance schematic. It is a 7 X by 7 Y by 8 Z Sponge v2 schematic for Minecraft 1.20.1, with no roof overhang beyond that footprint. It contains sixteen empty chest blocks, a door, four wall torches, and the actual automatons:totem block at (3,1,7). The clipboard origin is that totem cell. During construction, skip placement and block-entity loading at the anchor and preserve the already assigned totem and all its data. Confirm the current mod registry mapping when importing; do not paste a fresh, unowned totem over the player's existing one.
+
+Build a modest, enclosed warehouse, primarily oak, with a floor, four walls, a closed wooden roof, a wooden door, interior lighting, and the existing totem integrated into the back wall. Use readily available materials. Give it a simple pitched roof and restrained cobblestone footings; avoid costly decorative ingredients.
+
+Resolve the dimensions as FIVE blocks across the front and SIX blocks from front to back on the inside. That gives two opposing six-block-long side walls, an odd-width front with a centered single door, and an odd-width rear with a centered totem. The outside wall footprint is 7 blocks wide by 8 deep, slightly larger than the 7x7 mine entrance. Any roof overhang must be included in the site reservation and material calculation.
+
+Use these local coordinates before rotating the blueprint:
+- Foundation/floor blocks: Y=0. Standing level: Y=1.
+- Interior: X=1..5, Z=1..6.
+- Left wall: X=0. Right wall: X=6.
+- Front wall: Z=0. Back wall: Z=7.
+- Interior clear height: Y=1..4. The first roof material over the room starts at Y=5, so the underside is four full blocks above the walking surface.
+- Centered door: X=3, Z=0, lower half Y=1 and upper half Y=2.
+- Existing warehouse totem: X=3, Y=1, Z=7, occupying the center block of the rear wall opposite the door. Orient its accessible face toward the room if relevant to the current model.
+- Preserve the totem block entity, identity, inventory, upgrades, links, and ownership. Build around it; do not replace it with a template placeholder.
+
+The initial 16 ordinary chest items become EIGHT double chests total, FOUR on each six-block-long wall. Four double chests would not fit along a six-block wall in a single row, so use two doubles per row in two vertical rows on each wall.
+
+Exact chest cells:
+- Left bank: X=1, facing east toward the center aisle.
+- Right bank: X=5, facing west toward the center aisle.
+- On each bank, double-chest pairs occupy Z=1 and 2, and Z=5 and 6.
+- Repeat those two pairs at Y=1 and at Y=3.
+- This is 2 sides x 2 pairs x 2 levels x 2 chest blocks = 16 chest blocks.
+
+Leave the block space above the lower chests at Y=2 clear, and the space above upper chests at Y=4 clear. Do not insert solid shelves over lids. Keep chest halves paired only with their intended neighbor. Make every double chest face inward, open normally, and remain reachable from the aisle. Validate the actual chest behavior in Minecraft rather than relying only on coordinates. Leave the center route X=3 from the door to the totem unobstructed. Side access lanes X=2 and X=4 also remain clear at walking height. Interior lights must not obstruct lids or movement.
+
+Import the supplied schematic as the authoritative warehouse build template in the repository and verify its complete bill of materials from actual block states. The supplied file requires 105 oak planks, 46 ordinary oak logs, 32 oak stairs, 16 oak slabs, 26 cobblestone, 12 glass blocks, 16 chests, 4 torches and 1 oak door, excluding the already placed totem. Correctly count the two door cells as one door item and each chest block as one chest item. Show the required and missing materials before work begins. The player supplies the full initial kit through runner cargo and/or nearby recognized staging chests; do not require an impossible number of simultaneous equipment slots.
+
+Register all eight double chests through the warehouse's explicit container record, including its front containers beyond a base totem's normal scan radius. The starter warehouse must work without a radius upgrade. This registration applies only to the verified warehouse containers, preserves permissions, and does not expand ordinary chest discovery everywhere. Deduplicate both halves and reconcile changed or removed containers.
+
+The first runner claims a warehouse site tied to the totem before placing blocks. Subsequent runners join that site and share material and block-placement reservations. Verify all needed materials and the full site before starting, then consume supplies as placements succeed. Construction uses walking, reachable interactions, visible work animations, and real block placement. Safe temporary access may be planned and paid for if necessary; remove temporary access after use without duplicating drops. Do not allow a runner to place a roof from arbitrary range or trap itself behind a wall.
+
+Keep the floor flush with the chosen terrain. Only clear the approved construction area under existing protection rules. Do not bulldoze unrelated player buildings or containers. If blocked, explain the obstruction and pause. Persist blueprint orientation, anchor, material accounting and completed positions. Resume after saves and chunk reloads. Check existing blocks before consuming more materials. Never overwrite a changed block or rebuild a removed warehouse automatically without a valid repair/construction instruction.
+
+6. SHARED NETWORK COMMUNICATION
+
+Add a server-authoritative logistics service associated with each home pedestal's stable network identity. Reuse existing ownership and network identifiers where available. Separate networks by actual home identity and dimension, not by proximity or similar coordinates. No cross-player access without the existing explicit sharing/permission rules, and no automatic cross-dimensional item transport.
+
+Totems relay inventory and worker-demand information to the network. Relayed information is telemetry, not an item inventory that can be extracted from remotely. Runners receive decisions at the pedestal or while already en route; they do not need to return home to learn that a request changed.
+
+Inventory reports include canonical container identity, dimension and position, availability/loading status, content revision, available item counts, and usable capacity. Deduplicate both halves of a double chest. Reuse the existing storage discovery rules, including multiple chests and range upgrades.
+
+Integrate the registered storage/depot containers associated with a totem's mine, including containers outside the surface totem's ordinary chest radius. Use the existing mine record as the association; do not invent a second mine or indiscriminately scan the whole underground area. Runners must be able to physically descend to these depots and return by the mine's established route.
+
+Workers publish structured demand when a resource shortage prevents work or when the existing restock target requires supply. Support at least:
+- Appropriate usable tool needed.
+- Torches needed.
+- Construction materials needed.
+- Output storage needs emptying.
+- Collectible output available.
+
+Use item predicates, job/tool compatibility, quantities, target counts, priority, worker/totem references, and a stable request ID. Tool examples include axes, pickaxes, shovels, rods and swords, according to jobs actually supported by the code. Do not implement those jobs merely to demonstrate requests. A broken tool is not a usable replacement, and a cargo item should not satisfy an equipment requirement until properly delivered.
+
+Update or cancel the same outstanding request as its shortage changes. Do not create a fresh request every tick. Reconcile when the player supplies items, a worker changes jobs, a chest changes, a worker is packed or removed, or a totem is reassigned. Existing local restocking must continue to work without a runner.
+
+Missing trees or other lack of work is not an item delivery request. Preserve those existing worker states. A supply beacon clears only when the actual shortage is resolved under the existing rules, not merely because a runner has accepted the request.
+
+Use event-driven invalidation where possible, bounded inventory scans, and periodic reconciliation. Do not scan every slot of every chest for every runner each tick. Unloaded containers are unavailable, not empty or destroyed. Do not force-load an entire route or network; follow any existing authorized chunk-loading policy and otherwise defer until the necessary areas are loaded.
+
+7. DELIVERIES, COLLECTION AND RESERVATIONS
+
+Prioritize deliveries that unblock workers, then relieving full work-site storage, then routine resource collection. Include aging/fairness so repeated urgent requests do not permanently starve other work. Prefer compatible errands along a route when practical, but keep the first implementation deterministic and recoverable.
+
+Acquire supplies from the warehouse or other eligible network containers with unreserved surplus. Deliver the exact requested type and quantity. Honor the existing job-specific tool checks and established restock targets; use configurable stock targets for resources that lack them. Keep operational reserves at work sites for tools, torches and planned building materials. Do not sweep those supplies away as output. Do not treat warehouse storage as ordinary collection output and create circular transfers between warehouses.
+
+For urgent worker resupply, prefer a safe, reachable direct handoff to the named worker using its existing validated inventory/restock logic. Otherwise deliver to the designated totem/depot supply chest that the worker can actually use. A direct handoff requires the runner to be within normal interaction range and cannot bypass tool-slot restrictions. A chest delivery is not complete until the intended items really enter the designated inventory. Integrate workers' pickup behavior so delivered supplies can resolve the request.
+
+For resource collection, walk to the work totem's associated chests or mine depot, extract eligible output into cargo, carry it back to the warehouse in the pedestal area, and insert into available warehouse chests. This is not a remote transfer. Runners may leave with a partial load when the current errand or available output warrants it. At the warehouse, try all eligible destinations rather than stopping after the first full chest.
+
+Before pickup, reserve a job, an exact available quantity at its source, and compatible destination capacity. Reservations must be shared across runners. They cannot reserve the same units twice or count the same chest twice. Revalidate actual inventories and slot acceptance at every interaction. Stale reports and player interference may reduce or invalidate a reservation. Use real insertion/extraction results, preserve leftovers, and account for partial transfers.
+
+Distinguish queued, reserved, traveling-to-source, carrying, traveling-to-destination, delivering, blocked and completed states. Record the real item owner at every step. Never remove items from a source until the runner can accept them. Never delete cargo merely because a destination was changed, filled, destroyed or unloaded. Completion and delivered quantities must match actual successful transfers. Persist enough state to reconcile after restart without recreating delivered items.
+
+If a request is canceled while cargo is in transit, reroute it to another compatible active request or return it safely to warehouse storage. If storage is full, retain the items, show a recoverable status, and retry available alternatives. Never spill valuable cargo automatically just to clear a queue.
+
+Multiple runners may build and operate one warehouse and serve the same work totems. Use per-job, per-container and per-placement reservations as appropriate. Release or reclaim abandoned reservations when a runner is removed, changes jobs, is packed, loses its assignment, or cannot continue. Do not free an in-transit parcel as though it still existed at the source. Avoid permanent deadlocks from a runner disappearing or an unloaded chunk.
+
+8. MOVEMENT, LIFECYCLE AND USER CONTROLS
+
+Reuse safe walking/pathfinding, interaction reach, door handling and vertical mine access. Runners must traverse the actual warehouse doorway, reach both levels of chests from the aisle, descend and climb the mine route, and return with cargo. They do not teleport supplies or walk through solid blocks. Open and close the warehouse door without trapping another runner. Avoid blocking the ladder, doorway or worker access positions while waiting.
+
+Respect existing pedestal Call Home and Release behavior. Call Home safely suspends errands and returns runners with their actual cargo; Release resumes valid work after reconciliation. Packing, death, job switching and redeployment must follow the existing inventory/identity rules, with cargo dropped or retained exactly as those rules specify and never duplicated. Returning to the pedestal should deposit safe unreserved cargo when a valid destination is available, without losing supplies reserved for a suspended delivery.
+
+If the assigned totem is genuinely removed, release its assignments and return to the home pedestal under existing rules. An unloaded totem must not be mistaken for a broken one. If the home pedestal is missing, enter a recoverable state using the project's existing missing-home behavior. Do not silently join a different pedestal network.
+
+Expose concise player-facing status in vanilla-style menus:
+- Runner: current task, named recipient/work totem, cargo, warehouse assignment, and reason for waiting.
+- Totem: warehouse construction/material status where applicable, assigned named runners, stock, and outstanding supply requests.
+- Pedestal: network overview with named workers/runners, outstanding shortages and useful delivery progress.
+
+Use the existing menu and synchronization patterns. Prefer concise descriptions such as 'Needs an axe', 'Collecting ore', 'Delivering torches', 'Warehouse full', or 'Waiting for route'. Keep raw IDs, transaction internals, coordinates dumps, and debugging prose out of normal player-facing labels. Localize added text. Only authorized players can change assignments, construction settings, or requests.
+
+9. VERIFICATION AND DELIVERY
+
+Add focused tests and actual-client checks covering the behaviors introduced here:
+- Closed mine roof, all four supported lanterns, ordinary-log bill of materials, unobstructed landing and passages, and entrance foundation one block below the walking surface.
+- Warehouse interior dimensions, four-block headroom, centered door/totem, exactly 16 chest blocks forming eight independent doubles, usable chest lids, reachable upper storage, lighting and door/aisle navigation.
+- Two runners claiming one warehouse without duplicate placement/material charges, interruption/reload during construction, and blocked/protected sites.
+- A worker exhausts an appropriate tool or torches, reports once, receives physical delivery, resumes work, and clears its shortage only when supplied.
+- Collection from a registered underground mine depot and return to the warehouse through the real route.
+- Two runners compete for limited supplies and destination capacity without duplicate pickup or lost cargo.
+- Player changes a source/destination, partial insertion, all chests full, a route becomes unavailable, chunks unload, or a worker is resupplied manually during a delivery.
+- Save/reload during pickup and delivery; job switching, removal, packing and redeployment with cargo and outstanding reservations.
+- Network and ownership isolation; unauthorized client requests cannot transfer items or alter assignments.
+- Backpack doubles nine cargo slots to eighteen while keeping three tool slots; extra slots work in menus and item handlers, survive reloads, and are included exactly once in drops. Job changes with overflowing cargo are blocked safely and succeed after unloading. Backpack visibility and capacity follow job changes, packing and redeployment.
+- Mouth removed in every state; wider eyes/head/torso remain at one-to-one pixel density; job accessories change immediately; names remain intact; corridor/door/ladder tests distinguish physical fit from rendering, including the backpack's depth.
+
+Inspect the current implementation first so tests target new failure modes rather than duplicating established coverage. Run the repository's required build, server tests and client checks. Report which checks passed and which could not be performed. Include actual client views of the revised face, each supported job appearance, the completed mine entrance at ground level and the warehouse interior. Keep editable asset sources and generated resources synchronized. Summarize final dimensions, collision width, warehouse materials, cargo capacity and any remaining limitations.

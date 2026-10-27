@@ -32,3 +32,4 @@ forge-mdk.zip
 
 # Python authoring/helper bytecode
 __pycache__/
+.codex-remote-attachments/

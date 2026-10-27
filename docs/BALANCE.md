@@ -1,120 +1,52 @@
-# Recipes and provisional balance — 0.2.4
+# Recipes and provisional balance — 0.6.0
 
-This is the single design reference for initial recipes and configurable values. Server configuration is `serverconfig/automatons-server.toml` inside each world. Recipes, source tags and species definitions live in the mod data pack. All values are provisional.
+For the 0.9.0 Machine, see [Machine assembly and balance](MACHINE.md). `MachineRules` keeps its 48-block whole-footprint radius, 108 cargo slots, 10,000-Lumina capacity, 30-tick startup, 12-tick moves/turns/shutdown, four-tick cutting cadence and one-third-point action costs together. Refueling uses existing Luminall bottle volume/reward settings rather than equating mB with Lumina. Blade harvests use existing eligibility and rewards; Bore work pays no Lumina.
+
+Server settings live in `serverconfig/automatons-server.toml` inside each world. Current data files are authoritative. See the [before/after recipe table](RECIPE-CHANGES-0.6.md).
 
 ## Survival recipes
 
-Every recipe produces one item. `—` is an empty crafting-grid slot. All charged cores are consumed; partial cores cannot substitute. The Infusing Pedestal and empty core use only vanilla materials.
+All outputs are one item. Dots are empty cells; slashes separate rows. Logs retain the existing Overworld log/wood tag.
 
-### Automaton
-
-At the Automaton Pedestal: Head above; Arm / Automaton Torso / Arm across the middle; two Legs below. Take one Automaton result after inserting all six components. No extra Magica cost.
-
-### Automaton Arm
-
-Shaped vertical: Log above Iron Ingot. Fits all six 1×2 placements in the 3×3 grid.
-
-### Automaton Torso
-
-| Left | Center | Right |
+| Output | Shaped layout | Key |
 | --- | --- | --- |
-| Log | Iron Ingot | Log |
-| Full Magica Core | Redstone | Full Magica Core |
-| Log | Iron Ingot | Log |
+| Empty Core | `.G. / GSG / .G.` | G glass; S raw uncharged Lumite Shard |
+| Infusing Pedestal | `I.I / DSD / BBB` | I iron ingot; D polished diorite; S diamond; B polished deepslate |
+| Lumina Core | `.I. / IEI / .I.` | I Infused Lumite Shard; E Empty Core without legacy credit |
+| Arm | `L / I` | L log; I iron ingot |
+| Leg | `L / P / I` | L log; P planks; I iron ingot |
+| Head | `LPL / NRN / LIL` | L log; P planks; N iron nugget; R redstone; I iron ingot |
+| Automaton Torso | `LIL / CRC / LIL` | L log; I iron ingot; C Lumina Core; R redstone |
+| Home pedestal | `SCS / IGI / SCS` | S stone bricks; C Lumina Core; I iron ingot; G gold ingot |
+| Totem | `.C. / ILI / .S.` | C Lumina Core; I iron ingot; L log; S stone bricks |
+| Wand | `..C / .S. / S..` | C Lumina Core; S stick |
+| Hammer | `CIC / .S. / .S.` | C cobblestone; I iron ingot; S stick |
 
-### Automaton Head
+One Head, one Torso, two Arms and two Legs assemble into one Automaton at its home pedestal, with no extra Lumina payment. The torso remains a distinct component.
 
-| Left | Center | Right |
-| --- | --- | --- |
-| Log | Planks | Log |
-| Iron Nugget | Redstone | Iron Nugget |
-| Log | Iron Ingot | Log |
+All five upgrade families (Totem Range, Lumber Range, Mining Range, Speed and Efficiency), both tiers, and the Upgrade Plate are deferred. The plate has no surviving non-upgrade dependency. Hidden legacy registrations prevent item loss; they grant no bonuses and cannot be installed.
 
-### Automaton Leg
+## Shard infusion and first setup
 
-Shaped vertical: Log above Planks above Iron Ingot. Fits any of the three columns.
+Four independent physical corners each accept one raw shard. Completion costs 25 Lumina (75 exact thirds). Partial shards are nonstackable and retain paid energy through retrieval, reinsertion and saves. All corners share three thirds every four ticks. The four-block radius is measured from each shard to its live owner. Four shards cost 100 Lumina and take 400 active ticks (20 seconds at 20 TPS); one takes 100 ticks. Unloaded time grants no catch-up. Crafting a core consumes four completed shards and an Empty Core, without another payment.
 
-### Efficiency 1
+A first setup requires six Lumina Cores: two in the home pedestal, one in the Totem, one in the Wand and two in the torso. Total: 600 Lumina, 24 infused shards, 6 raw shards for Empty Cores and 24 glass, plus other recipe materials. One pedestal completes those 24 infusions in 120 active seconds. Its bootstrap recipe requires one diamond. Existing completed cores remain usable without retroactive payment.
 
-Shapeless: 1 × Upgrade Plate, 1 × Book, 2 × Lapis Lazuli, 1 × Amethyst Shard, 1 × Magica Core.
+## Lumite generation
 
-### Efficiency 2
+Current settings: separate stone and deepslate features, each with eight attempts per chunk, vein size eight and zero air-discard probability. Stone uses triangular Y=-32..64 with peak 16; deepslate uses Y=-64..0 with peak -32. Actual extents clip to each range and owning chunk. Matching replacement tags and eligible Overworld biomes constrain placement. Vein size is not a guaranteed block count. Prior measured terrain results are versioned in VERIFICATION.md.
 
-Shapeless: 1 × Efficiency 1, 1 × Book, 2 × Lapis Lazuli, 2 × Amethyst Shard, 1 × Diamond, 2 × Magica Core.
+Both ores require stone-tier pickaxes or better. Loot is uniformly 1–3 shards, then normal Fortune ore bonuses; Silk Touch yields the matching ore block. Wrong tools yield no ore loot. Ore emits no world light, XP or extra Lumina; only its vein layer is emissive.
 
-### Empty Magica Core
+## Tools and construction
 
-| Left | Center | Right |
-| --- | --- | --- |
-| — | Glass | — |
-| Glass | Amethyst Shard | Glass |
-| — | Glass | — |
+Hammer has 2,000 durability and retains its recipe, Buildington eligibility and two-tick construction action interval. Player mining speed is a positive 0.5, with wooden-pickaxe harvest eligibility. Survival stone measured 90 work ticks versus 23 with a wooden pickaxe under identical conditions. Higher-tier ores still break but yield no drops or mining XP. Normal player modifiers and one durability charge apply.
 
-### Infusing Pedestal
+Minington work is `ceil(hardness × 30 / effectiveToolSpeed)`, minimum one tick. Effective speed is the real stack's speed plus `efficiency² + 1` when base speed exceeds one and its actual enchantment is positive. No retired upgrade supplies a bonus. Unenchanted stone takes 12/8/6 work ticks with stone/iron/diamond picks, excluding travel, lighting and service.
 
-| Left | Center | Right |
-| --- | --- | --- |
-| Iron Ingot | — | Iron Ingot |
-| Polished Diorite | Amethyst Shard | Polished Diorite |
-| Polished Deepslate | Polished Deepslate | Polished Deepslate |
+Buildingtons retain one placement every two ticks within reach with supplies and valid survival/permission checks. Door halves cost one operation. Five blueprint costs including displays are in the Build List and `reference/worksites`. New mines have no trapdoor, descend twenty blocks and use nineteen ladders plus four chests for two underground double chests.
 
-### Lumber 1
-
-Shapeless: 1 × Upgrade Plate, 1 × Compass, 4 × Overworld log / wood (including stripped), 1 × Magica Core.
-
-### Lumber 2
-
-Shapeless: 1 × Lumber 1, 1 × Compass, 2 × Iron Ingot, 2 × Amethyst Shard, 2 × Magica Core.
-
-### Pedestal
-
-| Left | Center | Right |
-| --- | --- | --- |
-| Stone Bricks | Magica Core | Stone Bricks |
-| Iron Ingot | Gold Ingot | Iron Ingot |
-| Stone Bricks | Magica Core | Stone Bricks |
-
-### Speed 1
-
-Shapeless: 1 × Upgrade Plate, 4 × Sugar, 2 × Redstone, 1 × Magica Core.
-
-### Speed 2
-
-Shapeless: 1 × Speed 1, 2 × Sugar, 2 × Redstone, 1 × Diamond, 2 × Magica Core.
-
-### Storage 1
-
-Shapeless: 1 × Upgrade Plate, 1 × Chest, 1 × Compass, 1 × Magica Core.
-
-### Storage 2
-
-Shapeless: 1 × Storage 1, 1 × Chest, 2 × Iron Ingot, 2 × Amethyst Shard, 2 × Magica Core.
-
-### Totem
-
-| Left | Center | Right |
-| --- | --- | --- |
-| — | Magica Core | — |
-| Iron Ingot | Overworld log / wood (including stripped) | Iron Ingot |
-| — | Stone Bricks | — |
-
-### Upgrade Plate
-
-Shapeless: 2 × Iron Ingot, 2 × Redstone, 1 × Amethyst Shard.
-
-### Wand
-
-| Left | Center | Right |
-| --- | --- | --- |
-| — | — | Magica Core |
-| — | Stick | — |
-| Stick | — | — |
-
-## World infusion
-
-An Empty Magica Core holds 0–49 points; 50 converts it to the distinct completed Magica Core item. Empty and completed cores stack; partial cores do not. One point transfers each four server ticks, within a four-block radius from the displayed core, with an online living donor in the same dimension. Fifty points require 200 active ticks at the default cadence. Partial progress persists; unloaded time grants no catch-up.
-
-## Magica yields and orb sizes
+## Lumina yields and orb sizes
 
 | Category | Large value min | Large value max |
 | --- | ---: | ---: |
@@ -127,24 +59,27 @@ An Empty Magica Core holds 0–49 points; 50 converts it to the distinct complet
 | leaves | 0 | 1 |
 | grass | 0 | 1 |
 
-One inclusive uniform large-value roll per completed eligible player break. A small orb stores exactly one-third of that roll. Flowers/grass produce one small orb; crops produce one orb with a 10% large chance; logs produce two small orbs plus a 40% chance of one large orb. Fruit, berries, stems and leaves keep their earlier rewards. A zero roll produces no entities. Small orbs render at half the large diameter and merge only with matching size/value. Existing saved orbs stay large. Whole points plus a saved 0–2 thirds remainder preserve exact fractions across reloads; infusion still consumes 50 whole points. Numeric bar labels show only whole points, without rounding fractions into spendable points. A reversed configured range is corrected by raising its maximum to its minimum, with a log entry. Ordinary XP and Mending are unaffected. Display levels use the vanilla XP level curve, but all costs and stored balances are exact independent points.
+One inclusive uniform large-value roll per completed eligible player break. A small orb stores exactly one-third of that roll. Flowers/grass produce one small orb; crops produce one orb with a 10% large chance; logs produce two small orbs plus a 40% chance of one large orb. Fruit, berries, stems and leaves keep their earlier rewards. A zero roll produces no entities. Small orbs render at half the large diameter and merge only with matching size/value. Existing saved orbs stay large. Whole points plus a saved 0–2 thirds remainder preserve exact fractions across reloads; each shard consumes exactly 75 thirds (25 points). Numeric bar labels show only whole points, without rounding fractions into spendable points. A reversed configured range is corrected by raising its maximum to its minimum, with a log entry. Ordinary XP and Mending are unaffected. Display levels use the vanilla XP level curve, but all costs and stored balances are exact independent points.
 
 ## Server settings
 
 | Key under `provisional` | Default | Meaning |
 | --- | --- | --- |
-| `storageRadius` | 4 | Outward horizontal distance; 9×9 base square |
 | `storageHeight` | 4 | Vertical chest allowance ±4 |
-| `lumberRadius` | 16 | Root-center square; 33×33 base footprint |
-| `rootHeight` | 16 | Separate root-height allowance ±16 |
+| `lumberRadius` | 32 | Lumber Totem work and chest range; 65×65 square |
+| `farmRadius` | 32 | Farm Totem work and chest range; 65×65 square |
+| `mineSurfaceRadius` | 6 | Mine entrance work and chest range; 13×13 square |
+| `builderRadius` | 8 | Builder Totem work and chest range; 17×17 square |
+| `warehouseRadius` | 8 | Warehouse Totem work and chest range; 17×17 square |
+| `rootHeight` | 32 | Separate root-height allowance ±32 |
 | `cargoSlots` | 9 | New worker cargo capacity, 1–27; existing larger inventories are retained |
 | `walkingAttribute` | .215 | Measured flat-ground default ≈1.996 blocks/second |
 | `ironAxePreparationTicksPerBaseLog` | 80 | Baseline before the additional 20 Stone/Iron ticks; final Iron preparation is 5 seconds |
 | `ironAxeProcessingTicks` | 40 | Baseline before the additional 20 Stone/Iron ticks; final Iron processing is 3 seconds |
-| `fallAnimationTicks` | 30 | 1.5-second visual fall, separate from work upgrades |
+| `fallAnimationTicks` | 30 | 1.5-second visual fall, independent of work timing |
 | `serverScanBudgetPerTick` | 4096 | Shared scan/validation units |
 | `totemScanBudgetPerTick` | 256 | Incremental tree-search cells per visit |
-| `infusionTicksPerPoint` | 4 | Active ticks per exact transferred Magica point |
+| `infusionTicksPerPoint` | 4 | Active ticks per exact transferred Lumina point |
 | `infusionRange` | 4 | Donor radius in blocks |
 | `retainMagicaOnDeath` | true | Retain independent balance on death |
 | `logWorkTransitions` | false | Optional transition/skip diagnostics, at most one message/second/worker |
@@ -154,13 +89,13 @@ One inclusive uniform large-value roll per completed eligible player break. A sm
 | `displayBobAmplitude` | .04 | Gentle vertical bob |
 | `displayHeight` | 1.4 | Display center above pedestal origin |
 
-Magica minima/maxima live under `magicaYields.<category>.minimum/maximum`. Numeric ranges are validated by Forge. Old worlds preserve existing configured scan budgets rather than silently replacing user settings.
+Lumina minima/maxima live under `magicaYields.<category>.minimum/maximum`. Numeric ranges are validated by Forge. Old worlds preserve existing configured scan budgets rather than silently replacing user settings.
 
-## Upgrades and work formula
+## Base work settings
 
-Storage Range I/II adds 4/8 total blocks; default radii become 8/12 (17×17 and 25×25). Lumber Range I/II adds 8/16 total blocks; radii become 24/32 (49×49 and 65×65). Neither changes vertical allowances. One installed item per family affects every compatible assigned worker. Duplicate family slots are rejected.
+One surface work/chest range: Lumber/Farm 32, Mine 6, Builder/Warehouse 8 blocks. No inner exclusion or installed bonus. Underground mining extent defaults to 32 independently of the small entrance area.
 
-Unenchanted work time is `baseTicks × 6 / toolSpeed + extraTicks`. Extra ticks are 10 for Diamond/Netherite tier, 20 for Stone/Iron tier, and zero for Wood/Gold. Efficiency scales this by `toolSpeed / (toolSpeed + efficiencyBonus)`, and Speed I/II by 0.8/0.6. `efficiencyBonus` is zero at Efficiency 0, otherwise `effectiveEfficiency² + 1`; effective Efficiency is the larger of enchantment and totem tier. The result rounds to the nearest five-tick work interval with a ten-tick minimum. Preparation repeats that duration for each required base cut.
+Forestry work time is `baseTicks × 6 / toolSpeed + extraTicks`. Extra ticks: 10 for Diamond/Netherite, 20 for Stone/Iron, zero for Wood/Gold. Actual tool Efficiency scales this by `toolSpeed / (toolSpeed + efficiencyBonus)`; the bonus is zero at Efficiency 0, otherwise `efficiency² + 1`. Round to five-tick intervals, minimum ten. Preparation repeats for each base cut.
 
 | Axe | Preparation per base log | Fallen/loose log processing |
 | --- | ---: | ---: |
@@ -171,7 +106,7 @@ Unenchanted work time is `baseTicks × 6 / toolSpeed + extraTicks`. Extra ticks 
 | Netherite | 3.25 s (65 ticks) | 1.75 s (35 ticks) |
 | Gold | 2.00 s (40 ticks) | 1.00 s (20 ticks) |
 
-These defaults assume 20 TPS, no enchantments or upgrades, and exclude walking, dispatch and the 30-tick fall animation. Workers keep support for all six vanilla axe materials. Player-triggered natural tree felling requires stone tier or higher (wood/gold excluded). One durability action is charged per base cut and processed log; Unbreaking remains normal. Loose/placed logs use processing time directly, with no preparation or falling animation.
+These defaults assume 20 TPS, no enchantments, and exclude walking, dispatch and the 30-tick fall animation. Workers keep support for all six vanilla axe materials. Player-triggered natural tree felling requires stone tier or higher (wood/gold excluded). One durability action is charged per base cut and processed log; Unbreaking remains normal. Loose/placed logs use processing time directly, with no preparation or falling animation.
 
 
 ## Dispatch, recovery and safety budgets
@@ -180,12 +115,16 @@ Discovery checks closer columns and all configured root heights before releasing
 
 A route search considers all valid work positions around a target together. Workers check actual movement every 20 ticks; after 40 stalled ticks they invalidate the route and avoid its next node for 80 ticks. Unsafe timber is deferred after 60 ticks; an unreachable timber approach is deferred after 100 ticks, with a 200-tick job cooldown. They can work on another reachable log during that interval. Idle workers can unload cargo while the area scan continues.
 
-Global navigation attempts are capped at 32 per tick, fall plans at two, and conversions at one. Deferred work stays neutral. Successful and unsuccessful approaches have short caches, with bounded retries and world-change invalidation. Chest scans inspect up to 64 cells per totem visit, finish a fresh pass before confirming missing/full storage, and recheck current handlers during every actual transfer. No chunks are force-loaded.
+Global navigation attempts are capped at 32 per tick, fall plans at two, and conversions at one. Deferred work stays neutral. Successful and unsuccessful approaches have short caches, with bounded retries and world-change invalidation. Chest scans inspect up to 64 cells per totem visit, finish a fresh pass before confirming missing/full storage, and recheck current handlers during every actual transfer. Ordinary workers do not force-load chunks.
 
-Species JSON bounds normal trees by height/spread/log count. Associated foliage ownership checks preserve shared crowns. Connected falls try four directions at the lowest safe common resting height, up to eight blocks above or below the root. The tree keeps its original trunk and branch spacing; some sections can bridge gaps while other sections rest on solid terrain or obstacles. Planned cells cannot duplicate another section or an active timber job. If the complete layout cannot fit, no source blocks are transferred. Older stacked jobs pause and replan without losing their remaining ledger. The entire model rotates continuously into its final block orientation. Player-triggered falls turn into real blocks at landing; Lumberton-triggered falls retain their persistent processing ledger. Dropped log stacks inside the work range use bounded nearest-first, line-of-sight and reachable-path searches every 40 ticks; collecting items requires no chopping time.
+Species JSON bounds normal trees by height/spread/log count. Associated foliage ownership checks preserve shared crowns. Connected falls try four directions at the lowest safe common resting height, up to eight blocks above or below the root. The tree keeps its original trunk and branch spacing; some sections can bridge gaps while other sections rest on solid terrain or obstacles. Planned cells cannot duplicate another section or an active timber job. If the complete layout cannot fit, no source blocks are transferred. Older stacked jobs pause and replan without losing their remaining ledger. The entire model rotates continuously into its final block orientation. All falls turn into real sideways log blocks at landing; Lumberton jobs retain a hidden persistent processing ledger for those exact blocks. Removed/replaced blocks are reconciled without extra loot, and pending inventory remainders survive reloads. Workers preflight falls before travel and can clear up to 128 permitted obstructing blocks in the least-disruptive valid plan. Failed standing-tree approaches are deferred for 400 ticks. Harvest deliveries happen between trees at 128 output items or 1,200 ticks with partial output; supply reserves do not count. Client/server timber audits run every 100 ticks in batches of 32 known identities. Dropped log stacks inside the work range use bounded nearest-first, line-of-sight and reachable-path searches every 40 ticks; collecting items requires no chopping time.
 
-## Survival dependency total
+## Logistics and compatibility
 
-Before optional upgrades, a first full setup needs six completed cores (300 Magica): two in the home pedestal, one in the Totem, one in the Wand, and two in the Automaton Torso body component. Crafting axes is separate. All component and upgrade recipes fit the ordinary 3×3 grid except the explicitly documented six-part pedestal assembly.
+Runningtons retain 18 default cargo slots, a 0.215 walking attribute and their backpack. Reports reconcile every forty ticks, sampling 512 slots per home network; batches cap at 256 items. Overlapping ranges share physical containers. Tools, Hammers, torches and saplings remain in chests for local workers.
 
-Connected-fall clearance accepts non-colliding plants and natural, unplaced leaves. Their loot joins the existing foliage ledger. Both halves of tall plants are removed together with one drop calculation. Other solid blocks remain obstacles. A failed fall is deferred after 60 ticks and shared across the Totem for 400 ticks; changes to the work area invalidate this retry delay.
+Lumbertons retain up to sixteen saplings per type and a stack of dirt or planks for climbing. Paused miners hold position. Quarry starts at the platform edge; tunnel miners claim separate branches. Construction now allows one successful action every two ticks, half the previous placement rate; forestry and mining speeds remain unchanged. Each building also uses one temporary chest item, recovered during cleanup.
+
+Serialized configuration keys `retainMagicaOnDeath` and `magicaYields`, old reward tag paths and core/orb registry IDs remain deliberate compatibility aliases. Player-facing names are Lumina; existing settings and items are preserved.
+
+Forestry pickaxe assistance is bounded to 256 pending obstacle cells per Network. Requests expire after five minutes without renewal, survive saves, and are cancelled if the original block is replaced, the tree is removed, or its worksite is removed. Only active, unpaused Miningtons from the same owner/home/dimension accept them; claims renew while working. One helper owns each cell. Tool tier, cargo capacity, protection, fluid and falling-material checks precede real removal; ordinary player-equivalent mining duration and one durability action apply. Unreachable work backs off for 20 seconds; one assistance attempt is capped at two minutes. Mine cursors and tunnel assignments remain intact. New forestry climbing supports use dirt or planks, never cobblestone.

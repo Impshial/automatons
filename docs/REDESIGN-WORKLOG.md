@@ -111,3 +111,67 @@ The saved two-Lumberton setup contained no Timber entities: both workers were wa
 All 73 required server GameTests passed in `revision-0.2.4-tests-3.log`. The reported forest fixture restores both workers' pending roots and positions; both timber jobs finish and all six oak plus seven birch logs are accounted for. Fixture alignment and timing mistakes from earlier diagnostic runs were corrected and those logs are preserved. Asset validation and the release build passed. No new client session was needed for this server-only behavior change.
 
 Installed 0.2.4 after the user confirmed the game was saved and closed. The 375,935-byte JAR has SHA-256 `F4A06588A7E920561E66817B09DCD74817C3229CE42A0492C0CD5270EA8E9088`. The previous JAR remains in `.automatons-release-backups/20261022-201837-334`. Saved-world entity and block data were not edited. Updated history, documentation, source archive, release manifest and diagnostic/final logs are preserved in `F:\Minecraft\Automatons`.
+
+
+## 0.3.0 implementation and release checks
+
+Implemented the adopted Minington and torch specifications, personal-name catalog and lifecycle, user-requested Find button, larger expressive heads and client timber collision/fall fixes. The existing worker identity, storage, home, Totem and permission systems remain shared across jobs. Imported the supplied entrance schematic and retained the user's character reference with editable model and atlas sources.
+
+The dedicated server passed all **96 required GameTests**, including physical mining/return/resumption, two-miner partial-build takeover, a real-supply ladder repair, lighting conservation, canonical-name allocation/migration/exhaustion, home toggles and earlier regressions. The packaged Lab client completed and exited 0; final screenshots show actual menus, labels, mine work, the new face and landed timber. Its actual movement collision check passed with 106 monotonic fall samples. Assets and the release build passed. Details and limitations are recorded in `VERIFICATION.md`.
+
+Development exposed and corrected closed-trapdoor ascent, route selection for uncompleted tunnel lanes, deep-quarry return/resumption, standing beneath headroom blocks with the larger model, lighting-update timing and torch relocation persistence. The name-message change also exposed an old assignment cancellation check tied to display text; cancellation now uses the actual selection context. Final visual fixtures corrected camera yaw and head/body orientation before taking the face portrait. Earlier diagnostic logs remain in the project; only passing final runs are described as release verification.
+
+Installed **0.3.0** with matching build/instance SHA-256 `BC02CAE4F446278C24FEA85A2FCFC6F270F72E3433EDE18C9A48E2AD2501BFEF`. The previous 0.2.4 release is backed up in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261022-224246-972`. No saved-world or custom configuration data was edited. The release, working-tree source snapshot, editable assets and verification evidence are mirrored in `F:\Minecraft\Automatons`.
+
+
+## 0.3.1 underground storage, hazard recovery and player tool timing
+
+Implemented the user's follow-up: twenty-block new shafts, four-item chest gating, two ordinary underground double chests, underground cargo unloading, safe-distance falling-material excavation, platform-based fluid detours and normal player-equivalent break times. Saved mine depth preserves existing excavation. Route direction, rejected wet directions, depot ownership and installed chest cells are persisted. Surface storage stays available for real supply trips.
+
+All 101 required server tests pass in `mining-0.3.1-final-tests.log`. Tests reproduced a falling-column timing race and now require exact gravel/flint accounting, no health loss and settling before frontier advancement. Other checks require no construction with only three chests, real twenty-block construction, second-pair hauling, both fluid types, vanilla tool/upgrade timing and deep quarry recall/resumption. The final asset checks and reobfuscated build passed. Client/deployment evidence follows in `VERIFICATION.md`.
+
+The packaged client completed and exited 0, confirming the four-chest depot at depth 20 and both visible double chests. Installed **0.3.1**, SHA-256 `DD98A896FE71E65BC7BD4F20EEF95413E07CCA9D7E2425CEE15D32B5BD8B0C92`, with 0.3.0 backed up in `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261023-054228-924`. The tested source, current documentation, editable assets and evidence are archived in `F:\Minecraft\Automatons`.
+
+## 0.4.0 implementation
+
+Imported both supplied Sponge v2 schematics and verified their palettes/materials. Added shared warehouse construction and saved journals, home-scoped telemetry/requests/reservations, physical couriers, eighteen-slot persistence/capability/menu/drop behavior, and expanded job appearances. The previous intentional 26-pixel baseline is retained. New tests exercise warehouse interruption, owner isolation, exact metadata, narrow routes, shortage resolution, depot recall and full-storage recovery. Failed test runs exposed and corrected placement footing, reload yielding, mutable-stack transfer counting and premature moving-recipient fallback. Final evidence follows in VERIFICATION.md.
+
+Final verification: **113 required GameTests passed** in `runnington-tests-16.log`; the packaged client completed the north warehouse exit, narrow wooden doorway/corner and real tool handoff, then exited 0 in `runnington-client-9.log`. Installed **0.4.0**, SHA-256 `A1BCBF36359B0B843979E13F059817C530C71B5D61FC19AB6518FEE09424692B`, with 0.3.1 backed up at `C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester\.automatons-release-backups\20261023-085915-330`. The release library includes both original schematics, imported templates, full editable assets and diagnostic evidence.
+
+
+## 23 October 2026 — 0.4.1 construction and continued work
+
+Imported the user's replacement warehouse, versioned older approved plans, reconciled only blueprint cells, increased construction cadence, cleared soft terrain and evacuated recognized staging chests. Added real material lists, placement sounds and outside-wall yellow boundaries. Removed the mine hatch, persisted entrance completion, defaulted new quarries to the platform edge and repaired unloading/restocking continuation and ladder clearance. Added inventory-backed sapling replanting after trunk processing, with bounded scan waiting so forestry neither unloads between nearby trees nor retains cargo indefinitely during an incomplete scan.
+
+Reworked professions into a dropdown, Apply Job and confirmation, moved Totem work settings to a larger tabbed popup, made all chests input/output, removed Rebind and pedestal result text, lowered the Magica panel and corrected the floating model's UVs. Registered popup bounds with JEI to avoid overlay overlap.
+
+All 119 server tests passed. Final packaged client completed its door/corner/handoff scenario and visual capture session. Installed 0.4.1 with the previous version backed up; see VERIFICATION.md and the versioned release manifest for evidence and hashes.
+
+## 23 October 2026 — 0.4.2 forestry, mining and supply rules
+
+Implemented the additional GUI cleanup, first-job confirmation exception, larger miner helmet and Logistics activity/request list. Expanded forestry discovery to a default 32-block vertical band, added inventory-backed climb/recovery journals and physical sapling restocking. Couriers leave worker supplies in chest inventories, including construction staging chests; mine depots remain eligible pickup points when a warehouse shares their Totem. Warehouse build lists exclude chest torches, which must be supplied in runner cargo.
+
+Tunnel miners retain independent branch journals across unloading, pausing and reloads. Quarry work avoids repeated temporary-floor lighting and unnecessary face yielding. Regression investigation also corrected long-travel timeout handling and lighting detours through neighboring tunnel walls. Successful and diagnostic release evidence is recorded in VERIFICATION.md and the versioned manifest.
+
+Final 0.4.2 verification: all **123 required GameTests passed**, asset checks passed, and the isolated packaged client exited **0** with its first-job and physical-passage assertions. Installed SHA-256 `F64E206D6620E60B4CD3421B60C4AA4CCE3927B378EFF0AACF33AB45891EE37F`; 0.4.1 and the three changed default forestry-height settings are backed up under `.automatons-release-backups/20261023-162417-413`.
+
+
+## 24 October 2026 — 0.5.0 The Network
+
+Implemented the approved five-worksite milestone using the existing identity, journal and logistics services. Added Buildington/Hammer and Farmington with shared fields, purpose/facing setup, real display frames, exact build lists, persistent construction claims and physical first-builder bootstrap. Imported the latest five-building bundle and Farmer's Shed notes; exported the requested mine-hatch removal and Builder chest adjustment.
+
+Applied the user's overrides: one horizontal Totem range for work and chests, no inner exclusion, purpose-specific defaults, unchanged fast construction and Magica, and no Hammer/tool/torch/sapling courier withdrawals. Leaves owned by a felled tree resolve immediately with ordinary leaf loot; neighboring foliage and non-leaf attachment ownership remain protected. Exact verification results are recorded in VERIFICATION.md and the release manifest.
+
+All **133 required server tests passed**, asset validation passed, and the final isolated packaged client exited **0** with 17 captures. Installed the verified 0.5.0 JAR in Rackworks Tester after the user closed the game; preserved 0.4.2 under `.automatons-release-backups/20261024-020313-576`. Installation changed no saved-world or server configuration data.
+
+
+## 24 October 2026 — 0.6.0 Lumina and Lumite
+
+Implemented the approved Lumina overhaul while retaining existing energy fractions, reward behavior and Network identities. Added both Lumite ores, deterministic normal generation, four physical infusion corners, persistent shard progress, exact costs and the revised crafting progression. Retired all ten upgrades and the unused plate, with one-time inventory-safe legacy extraction. Redrew the native Hammer and retained builder behavior while adding slower wooden-tier player harvesting.
+
+The complete 143-test server suite passed. Three generated seeds yielded 911 ore blocks across 36 chunks. The disposable retrogen world completed its single interrupted/resumed pass over all eligible FULL chunks; a post-restart audit retained exactly 3,402 saved coordinates and every original generation stage. Earlier ticket-related failures are retained in diagnostic evidence. Sixteen final packaged-client captures were inspected, including zero-light emissive veins, paid four-corner infusion, Hammer views and the reflowed GUI. Release and installation hashes are in the 0.6.0 manifest; no live-world retrogen or configuration migration was performed.
+
+
+## 0.7.0 current run
+
+Completed fuel pieces, command removal with inert retained history, three-level rooted-trunk felling, size-8 new-chunk Lumite, optional JER and the required GuideME handbook. The latest builder fix moves construction to a reachable supported position outside the footprint, removing temporary access-hole demolition and per-block navigation. All 153 required server tests pass, with preserved old terrain/history and packaged client checks. See VERIFICATION.md for measurements, source/API discrepancies and the three unavailable checks. User-supplied art remains unchanged; the collector is a design checkpoint only.

@@ -19,20 +19,34 @@ import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
     value = Dist.CLIENT)
 public final class ClientSetup {
   public static final Set<Long> protectedChunks = new HashSet<>();
-  public static int magica, magicaThirds;
+  public static int lumina, luminaThirds;
   public static String protectionDimension = "";
 
   @SubscribeEvent
   public static void setup(FMLClientSetupEvent e) {
-    e.enqueueWork(() -> MenuScreens.register(Automatons.MENU.get(), WorkScreen::new));
+    e.enqueueWork(
+        () -> {
+          MenuScreens.register(Automatons.MENU.get(), WorkScreen::new);
+          MenuScreens.register(MachineParts.MENU.get(), MachineScreen::new);
+          if (net.minecraftforge.fml.ModList.get().isLoaded("jeresources"))
+            dev.automatons.compat.jer.AutomatonsJerPlugin.initialize();
+        });
+  }
+
+  @SubscribeEvent
+  public static void guides(RegisterClientReloadListenersEvent e) {
+    // Register before the first resource reload prepares its guide list. Client setup can run
+    // later.
+    Handbook.register();
   }
 
   @SubscribeEvent
   public static void renderers(EntityRenderersEvent.RegisterRenderers e) {
-    e.registerEntityRenderer(Automatons.MAGICA_ORB.get(), MagicaOrbRenderer::new);
+    e.registerEntityRenderer(Automatons.LUMINA_ORB.get(), LuminaOrbRenderer::new);
     e.registerBlockEntityRenderer(Automatons.INFUSER_BE.get(), InfuserRenderer::new);
     e.registerEntityRenderer(Automatons.LUMBERTON.get(), LumbertonRenderer::new);
     e.registerEntityRenderer(Automatons.TIMBER.get(), TimberRenderer::new);
+    e.registerEntityRenderer(MachineParts.ENTITY.get(), MachineRenderer::new);
     e.registerBlockEntityRenderer(Automatons.STATION.get(), TotemRenderer::new);
   }
 
@@ -45,6 +59,8 @@ public final class ClientSetup {
     var mc = Minecraft.getInstance();
     CompoundTag n = message.data();
     if (n == null) return;
+    if (message.kind() == 6 && mc.player != null && mc.player.containerMenu instanceof MachineMenu menu && menu.containerId == message.menu()) menu.snapshot = n;
+    if (message.kind() == 5) TimberSweep.receive(n);
     if (message.kind() == 0
         && mc.player != null
         && mc.player.containerMenu instanceof WorkMenu menu
@@ -57,14 +73,14 @@ public final class ClientSetup {
     if (message.kind() == 4 && mc.level != null) {
       var orb = mc.level.getEntity(n.getInt("Orb"));
       var player = mc.level.getEntity(n.getInt("Player"));
-      if (orb instanceof MagicaOrb && player instanceof net.minecraft.world.entity.player.Player)
+      if (orb instanceof LuminaOrb && player instanceof net.minecraft.world.entity.player.Player)
         mc.particleEngine.add(
             new net.minecraft.client.particle.ItemPickupParticle(
                 mc.getEntityRenderDispatcher(), mc.renderBuffers(), mc.level, orb, player));
     }
     if (message.kind() == 3) {
-      magica = Math.max(0, n.getInt("Magica"));
-      magicaThirds = Math.max(0, Math.min(2, n.getInt("Thirds")));
+      lumina = Math.max(0, n.getInt("Lumina"));
+      luminaThirds = Math.max(0, Math.min(2, n.getInt("Thirds")));
     }
     if (message.kind() == 2) {
       Screen previous = mc.screen;

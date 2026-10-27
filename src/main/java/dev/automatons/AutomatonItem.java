@@ -1,6 +1,7 @@
 package dev.automatons;
 
 import java.util.List;
+import java.util.UUID;
 import net.minecraft.core.*;
 import net.minecraft.nbt.CompoundTag;
 import net.minecraft.network.chat.Component;
@@ -12,6 +13,21 @@ import net.minecraft.world.item.context.UseOnContext;
 import net.minecraft.world.level.Level;
 
 public final class AutomatonItem extends Item {
+  @Override
+  public void initializeClient(
+      java.util.function.Consumer<net.minecraftforge.client.extensions.common.IClientItemExtensions>
+          consumer) {
+    consumer.accept(
+        new net.minecraftforge.client.extensions.common.IClientItemExtensions() {
+          private dev.automatons.client.PackedAutomatonRenderer renderer;
+
+          public net.minecraft.client.renderer.BlockEntityWithoutLevelRenderer getCustomRenderer() {
+            if (renderer == null) renderer = new dev.automatons.client.PackedAutomatonRenderer();
+            return renderer;
+          }
+        });
+  }
+
   public AutomatonItem() {
     super(new Properties().stacksTo(1));
   }
@@ -35,6 +51,11 @@ public final class AutomatonItem extends Item {
       data.putString("State", "Packed");
     } else {
       data = ledger.workers.get(stored.getUUID("Id"));
+      // Unindexed legacy items are adopted once; the generation ledger then rejects copies.
+      if (data == null && stored.hasUUID("Owner") && stored.getInt("Version") <= 2) {
+        data = stored.copy();
+        data.putString("State", "Packed");
+      }
       if (data == null
           || !data.getString("State").equals("Packed")
           || data.getLong("Generation") != stored.getLong("Generation")) {
@@ -71,7 +92,8 @@ public final class AutomatonItem extends Item {
     stack.shrink(1);
     p.displayClientMessage(
         Component.literal(
-            "Automaton placed. Choose a job, add tools, then assign a totem or Start Work."),
+            worker.getDisplayName().getString()
+                + " placed. Choose a job, add tools, then assign a totem or Start Work."),
         true);
     return InteractionResult.CONSUME;
   }
@@ -79,11 +101,44 @@ public final class AutomatonItem extends Item {
   @Override
   public void appendHoverText(ItemStack s, Level l, List<Component> lines, TooltipFlag flag) {
     CompoundTag n = s.hasTag() ? s.getTag().getCompound("Automaton") : new CompoundTag();
-    lines.add(Component.literal(n.getInt("Job") == 1 ? "Job: Lumberton" : "Job: Unassigned"));
+    String name = WorkerNames.recordName(n);
+    if (!name.isEmpty()) lines.add(Component.literal(name));
+    lines.add(Component.literal("Job: " + WorkerJob.name(n.getInt("Job"))));
     lines.add(Component.literal("Place on solid ground; starts paused"));
     if (n.hasUUID("HomeId"))
       lines.add(Component.literal("Home: " + WorkMenu.xyz(BlockPos.of(n.getLong("Home")))));
     if (n.hasUUID("TotemId"))
       lines.add(Component.literal("Saved totem link (checked on placement)"));
+  }
+
+  @Override
+  public Component getName(ItemStack stack) {
+    String name =
+        stack.hasTag() ? WorkerNames.recordName(stack.getTag().getCompound("Automaton")) : "";
+    return name.isEmpty() ? super.getName(stack) : Component.literal(name);
+  }
+
+  @Override
+  public void inventoryTick(
+      ItemStack stack,
+      Level level,
+      net.minecraft.world.entity.Entity holder,
+      int slot,
+      boolean selected) {
+    if (!(level instanceof ServerLevel l) || holder.tickCount % 20 != 0 || !stack.hasTag()) return;
+    CompoundTag stored = stack.getTag().getCompound("Automaton");
+    if (!stored.hasUUID("Id")) return;
+    Ledger ledger = Ledger.get(l.getServer());
+    UUID id = stored.getUUID("Id");
+    CompoundTag record = ledger.workers.get(id);
+    if (record == null && stored.hasUUID("Owner") && stored.getInt("Version") <= 2) {
+      record = stored.copy();
+      record.putString("State", "Packed");
+      ledger.workers.put(id, record);
+      ledger.setDirty();
+    }
+    if (record == null) return;
+    String name = WorkerNames.record(ledger, id, record, l.random);
+    WorkerNames.writeName(stored, name);
   }
 }

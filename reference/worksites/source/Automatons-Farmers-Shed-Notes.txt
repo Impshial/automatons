@@ -1,0 +1,81 @@
+FARMER'S SHED
+
+Compact oak farm building with a shallow spruce HIP ROOF sloping on all four
+sides, broad windows, a small entrance porch, a composter and a wooden seat.
+The roof has no gable and is distinct from the Builder's Shed and Lumber Yard.
+A real item frame above the door holds a stone hoe.
+
+DIMENSIONS AND LAYOUT
+- Body: 7 x 7 blocks. Interior: 5 x 5, with a clear center aisle.
+- Full roof/eave reservation and schematic: 9 X x 7 Y x 9 Z.
+- Foundation: local Y=0. Walking level: local Y=1. Maximum roof top: Y=6.5.
+- Front faces north (negative Z).
+- Existing totem / construction anchor: (4,1,7), exposed in rear wall center.
+- WEOffset=(-4,-1,-7). Front door lower half: (4,1,1).
+- Frame tile: (4,3,0); supporting front beam: (4,3,1).
+- Two double chests: X=2 and X=6, Y=1, paired Z=5,6, facing inward.
+- Four wall torches inside; two lanterns under the front eave.
+- Five-block porch: X=2..6, Y=0, Z=0. Keep an outside approach to X=4 clear.
+- Composter: (2,1,0), empty. Seat: (6,1,0), one ordinary oak stair.
+- Register all structure logs as worksite blocks, excluded from lumber targets.
+
+REQUIRED FINISHED ITEMS
+Existing totem excluded; frame and display hoe included.
+  4  Chest
+ 29  Cobblestone
+  1  Composter
+ 12  Glass
+  1  Item Frame
+  2  Lantern
+  1  Oak Door
+ 32  Oak Log
+ 50  Oak Planks
+  1  Oak Stairs
+105  Spruce Slab
+  1  Stone Hoe
+  4  Torch
+
+The worker's usable hoe and any initial supply chest are additional.
+The composter is an ordinary player-usable block. Its inclusion does not add
+automatic composting behavior or promise a bone-meal supply for Farmingtons.
+
+PLACEMENT AND CONSTRUCTION
+Place the totem at normal ground walking level. Build outward from that fixed
+anchor, burying the foundation one block so the entrance is flush with terrain.
+Reserve the entire 9 x 9 area plus a clear entrance approach before starting.
+The already-placed totem is not another material to consume. Preserve its block
+entity, identity, owner, links, upgrades, contents, settings and requests.
+Skip template placement and block-entity loading at this live anchor.
+All chest inventories are empty. Do not overwrite existing occupied containers.
+Place supports before attached lights and the frame; handle the door as one
+item creating two halves. Double slabs require two slab items each.
+The front lanterns hang from the underside of the slab eave.
+
+The hoe sign is a minecraft:item_frame ENTITY in the schematic Entities list.
+Import entities as well as blocks, consume a frame plus one stone hoe, rotate
+its position/support/facing with the building, and generate a fresh entity UUID.
+The display is cosmetic and does not set the totem purpose or worker profession.
+
+FARM RELATIONSHIP
+This schematic contains the SHED ONLY. It does not include a crop field, water,
+seeds, fencing, paths, or the supplies a Farmington needs for field preparation.
+Buildington constructs the shed. Farmingtons tend existing eligible farmland,
+or establish one shared 9 x 9 field outside the totem's storage region and
+inside its work region. Additional Farmingtons share that field.
+The field is reserved separately and must not overlap the shed or its access.
+Use the mod's actual radius metric and storage eligibility to register chests.
+
+FORMAT AND INTEGRATION
+Minecraft Java 1.20.1, DataVersion 3465, Sponge Schematic v2.
+Requires automatons:totem with block entity automatons:station.
+The companion manifest provides block positions, item totals and frame data.
+Rotate all block states, entities and relative positions around the totem.
+Do not paste over a live operational totem or occupied site for a visual test.
+Use a disposable test site; enable entity pasting to include the hoe frame.
+
+VALIDATION
+NBT roundtrip, exact block comparison, material counts, roof coverage, clear
+doorway/aisle, supported frame and lanterns, chest pairs/lids and coarse access
+were checked. A separate validator checks 1.20.1 blockstate/model compatibility.
+No Minecraft-client paste or actual Automaton pathfinding test was performed.
+The preview uses exported geometry; chest and totem models are illustrative.

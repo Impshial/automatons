@@ -1,6 +1,8 @@
 # Automatons — history since the last full redesign prompt
 
-Scope: from your “ok, big redesign” message and `Automatons-Lumberton-Codex-Prompt (1).txt`, through the latest whole-number Magica display, connected/real-log felling, and path/stall recovery changes. Work before that prompt, such as the initial mod and creative-wand selection fix, is excluded except where it was regression-tested. This is a record of implemented changes and observed checks, not a claim that every possible terrain or mod combination was tested.
+Current milestone: **0.6.0 Lumina/Lumite**. Earlier sections below are historical. See [Lumina and migration](LUMINA.md), [current balance](BALANCE.md), and [0.6.0 recipe changes](RECIPE-CHANGES-0.6.md).
+
+Scope: from your “ok, big redesign” message and `Automatons-Lumberton-Codex-Prompt (1).txt`, through Minington mining, torch management, personal names, larger expressive heads, Find and solid smooth-falling timber in 0.3.0, and the underground storage/hazard/timing follow-up in 0.3.1. Work before that prompt, such as the initial mod and creative-wand selection fix, is excluded except where it was regression-tested. This is a record of implemented changes and observed checks, not a claim that every possible terrain or mod combination was tested.
 
 ## 1. Full redesign — version 0.2.0
 
@@ -141,6 +143,28 @@ Scope: from your “ok, big redesign” message and `Automatons-Lumberton-Codex-
 - Added a regression fixture containing only natural block states from the reported forest layout, with no player or entity data. Test workers restore the reported positions and pending roots; both finish their trees with all six oak and seven birch logs accounted for.
 - All **73 required server tests passed**. Built and installed **0.2.4**, preserved the previous JAR, and archived the matching source and evidence. No saved-world entity or block data was edited.
 
+## 6. Miningtons, personal names and presentation — version 0.3.0
+
+- Added the Minington job to existing worker identities, tools, cargo, home and Totem links. One saved mine per Totem builds the supplied arch, five-block ladder descent and 3×3×3 chamber from real items.
+- Added 32-column serpentine tunnels and a 5×5 quarry with a 3×3 center and winding full-block stairs. Both modes preserve their progress and shared access when switched. Workers physically travel, mine, haul, restock and respond to recall.
+- Added normal pickaxe/shovel tiers, hardness, enchantments, durability, loot and ore XP; mining creates no Magica. Construction, excavation and torch placement use permission hooks and bounded loaded-area checks.
+- Added real torch stock and block-light checks, missing-light recovery, and replacement-before-recovery when a mine torch obstructs excavation. Added Mining Range I/II, Mine/Forestry controls and declared-geometry outlines.
+- Added the supplied 640-name catalog and persistent world-wide reservations. Successful creation assigns once; previews reserve nothing. Names survive packing, jobs, links and reloads. Legacy names are reconciled, old issued names remain retired, and exhaustion uses unique compounds then numeric suffixes.
+- Added personal names to Totem rows, details and packed items; a saved per-home Show Automaton Names toggle controls ordinary overhead labels. Name-tag renames enforce the same registry.
+- Added a 30-second Find glow on Totem worker details, gray beveled menus, larger eight-unit wooden heads and visible mouths guided by the supplied character image.
+- Fixed client registration of per-log collision parts and smoothed falling progress. Actual client movement is now blocked by the landed Lumberton logs in the review fixture.
+- Retained the complete earlier server regression suite and added mining, names, collision and Find checks. Final counts, actual client captures, deployment and concrete test limits are recorded in `VERIFICATION.md`.
+
+## 7. Underground mining logistics and hazards — version 0.3.1
+
+- New mine platforms are twenty blocks below the entrance, with twenty physical ladder segments. Existing excavated shafts keep their saved depth and receive the new storage in place.
+- Require four ordinary chest items before new construction. Install two real double chests against the platform side walls, with usable lids and central access. Full miners unload there; tools and supplies still come from the surface Totem chests.
+- Skip a full underground chest pair for the other pair. Pause at the depot when neither can accept output. The storage is ordinary vanilla inventory, ready for a future Runnington rather than implementing that job prematurely.
+- Move to safe footing at least two blocks horizontally from falling material, preserve normal reach/line of sight, and mine repeatedly at the same location until the falling column settles. This prevents advancing behind a newly refilled gravel face.
+- On a fluid boundary, preserve the containing blocks, return to the platform, and choose an unused forward/side direction. Save the rejected direction and retain the original entrance, storage and excavated routes.
+- Replace five-tick mining quantization with one-tick work updates and normal grounded-player tool break durations, including Efficiency. Unenchanted stone is 12/8/6 ticks with stone/iron/diamond picks; shared Speed/Efficiency upgrades improve those times. Lumberton timing and movement are unchanged.
+- The final dedicated server passed all 101 required tests. Verification includes actual four-chest gating, twenty-block construction, second-pair underground hauling, gravel loot/health conservation, water and lava detours, vanilla tool timing comparison, and deep-quarry recall/resumption from the new platform depth.
+
 ## Current default chopping times
 
 At 20 TPS, without enchantments/upgrades; excludes travel and the 1.5-second fall. Loose logs use the processing column directly.
@@ -159,3 +183,7 @@ At 20 TPS, without enchantments/upgrades; excludes travel and the 1.5-second fal
 Development stays in `F:\Development\Codex\Automatons`; assets, documentation, versioned releases, source archives and screenshots are organized in `F:\Minecraft\Automatons`. Rackworks Tester is the designated installation target. Previous release JARs are backed up before replacement, and hashes are compared after copying.
 
 Server tests and opt-in Lab client scenarios provide the recorded evidence. No broad remote-multiplayer certification, every-seed terrain sweep or arbitrary third-party claim-mod certification was performed. Historical logs and captures remain in the versioned verification folders. See `VERIFICATION.md` and `LIMITS.md` for precise checks and boundaries.
+
+## 0.4.0
+
+Runnington adds shared warehouses and physical transport for the existing forestry/mining network. Both user-supplied schematics are runtime blueprints. New faces remove all mouths, widen head/torso by one pixel each and distinguish each current job with equipment. Earlier timber, Find, names and 0.3.1 mining behavior remain part of the regression suite.

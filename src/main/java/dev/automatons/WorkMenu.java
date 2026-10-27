@@ -18,6 +18,7 @@ public class WorkMenu extends AbstractContainerMenu {
   public final Player player;
   public final boolean isWorker, isTotem;
   public final int ownSlots, resultSlot;
+  public final int cargoLayoutExtra;
   public CompoundTag snapshot = new CompoundTag();
   private final SimpleContainer preview = new SimpleContainer(1);
   private int ticks;
@@ -36,7 +37,7 @@ public class WorkMenu extends AbstractContainerMenu {
     if (!b.readBoolean()) return inv.player.level().getBlockEntity(b.readBlockPos());
     var entity = inv.player.level().getEntity(b.readInt());
     int slots = b.readVarInt();
-    if (entity instanceof Lumberton w && slots >= 1 && slots <= 27 && w.cargo.getSlots() != slots)
+    if (entity instanceof Lumberton w && slots >= 1 && slots <= 54 && w.cargo.getSlots() != slots)
       w.cargo.setSize(slots);
     return entity;
   }
@@ -48,14 +49,15 @@ public class WorkMenu extends AbstractContainerMenu {
     this.worker = worker;
     isWorker = worker != null;
     isTotem = station != null && station.isTotem();
+    cargoLayoutExtra = isWorker ? Math.max(0, (worker.cargo.getSlots() + 8) / 9 - 3) * 18 : 0;
     resultSlot = !isWorker && !isTotem ? 6 : -1;
-    ownSlots = isWorker ? 3 + worker.cargo.getSlots() : isTotem ? 4 : 7;
+    ownSlots = isWorker ? 3 + worker.cargo.getSlots() : isTotem ? 0 : 7;
     if (isWorker) {
       for (int i = 0; i < 3; i++) addSlot(ownedSlot(worker.tools, i, 26 + i * 42, 44));
       for (int i = 0; i < worker.cargo.getSlots(); i++)
         addSlot(ownedSlot(worker.cargo, i, 8 + (i % 9) * 18, 76 + (i / 9) * 18));
     } else if (isTotem) {
-      for (int i = 0; i < 4; i++) addSlot(ownedSlot(station.inventory, i, 17 + i * 36, 44));
+      // No upgrade slots; saved legacy items are returned on the owner's next interaction.
     } else {
       IItemHandler input = station == null ? new ItemStackHandler(6) : station.inventory;
       int[][] positions = {{80, 31}, {44, 57}, {80, 57}, {116, 57}, {62, 83}, {98, 83}};
@@ -75,8 +77,9 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     for (int row = 0; row < 3; row++)
       for (int col = 0; col < 9; col++)
-        addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 152 + row * 18));
-    for (int col = 0; col < 9; col++) addSlot(new Slot(inv, col, 8 + col * 18, 210));
+        addSlot(new Slot(inv, col + row * 9 + 9, 8 + col * 18, 152 + cargoLayoutExtra + row * 18));
+    for (int col = 0; col < 9; col++)
+      addSlot(new Slot(inv, col, 8 + col * 18, 210 + cargoLayoutExtra));
     refreshPreview();
   }
 
@@ -159,10 +162,12 @@ public class WorkMenu extends AbstractContainerMenu {
     if (index < ownSlots) moved = moveItemStackTo(current, ownSlots, slots.size(), true);
     else if (isWorker)
       moved =
-          Inventories.axe(current)
+          worker.job() != 3
+                  && (Inventories.tool(snapshot.getInt("Job"), current)
+                      || Inventories.tool(worker.job(), current))
               ? moveItemStackTo(current, 0, 3, false)
               : moveItemStackTo(current, 3, ownSlots, false);
-    else moved = moveItemStackTo(current, 0, isTotem ? 4 : 6, false);
+    else moved = !isTotem && moveItemStackTo(current, 0, 6, false);
     if (!moved) return ItemStack.EMPTY;
     if (current.isEmpty()) slot.setByPlayer(ItemStack.EMPTY);
     else slot.setChanged();
@@ -181,15 +186,46 @@ public class WorkMenu extends AbstractContainerMenu {
     if (station != null && !isTotem) {
       if (action == 1) station.recall(true);
       if (action == 2) station.recall(false);
+      if (action == 15) station.showNames(!station.showNames);
     }
     if (worker != null) {
       if (action == 6) {
         worker.authorized = true;
         WorkerIdentity.update(worker, "Deployed");
       }
-      if (action == 7 || action == 8) {
-        worker.setJob(action == 8 ? 1 : 0);
+      if (action == 7
+          || action == 8
+          || action == 13
+          || action == 16
+          || action == 17
+          || action == 18
+          || action == 90) {
+        int previousSlots = worker.cargo.getSlots();
+        if (!worker.setJob(
+            action == 90
+                ? 6
+                : action == 18
+                    ? 5
+                    : action == 17
+                        ? 4
+                        : action == 16 ? 3 : action == 13 ? 2 : action == 8 ? 1 : 0)) {
+          p.displayClientMessage(Component.translatable("automatons.runner.unload"), true);
+          return false;
+        }
         WorkerIdentity.update(worker, "Deployed");
+        if (previousSlots != worker.cargo.getSlots()
+            && p instanceof ServerPlayer server
+            && !(p instanceof net.minecraftforge.common.util.FakePlayer)) {
+          net.minecraftforge.network.NetworkHooks.openScreen(
+              server,
+              worker,
+              b -> {
+                b.writeBoolean(true);
+                b.writeInt(worker.getId());
+                b.writeVarInt(worker.cargo.getSlots());
+              });
+          return true;
+        }
       }
       if (action == 3) {
         ItemStack wand = WandItem.held(p);
@@ -205,11 +241,43 @@ public class WorkMenu extends AbstractContainerMenu {
       }
     }
     if (isTotem) {
+      if (action >= 61 && action <= 65) station.configure(WorksitePurpose.of(action - 60));
+      if (action == 66 && station.project() == null) {
+        station.orientation = station.orientation.getClockWise();
+        station.changed();
+      }
+      if (action == 70 && station.farm != null) {
+        station.farm.boneMeal = !station.farm.boneMeal;
+        station.farm.changed((ServerLevel) p.level(), station);
+      }
+      if (action == 71 && station.farm != null) {
+        station.farm.preference = (station.farm.preference + 1) % 5;
+        station.farm.changed((ServerLevel) p.level(), station);
+      }
+      if (action >= 40 && action <= 43) {
+        var warehouse = WorldData.get((ServerLevel) p.level()).buildings.get(station.identity);
+        if (warehouse != null) {
+          if (action == 40) warehouse.paused = false;
+          if (action == 41) warehouse.paused = true;
+          if (action == 42 && !warehouse.approved) warehouse.front = warehouse.front.getClockWise();
+          if (action == 43) warehouse.repair((ServerLevel) p.level());
+          WorldData.get((ServerLevel) p.level()).setDirty();
+          station.changed();
+        }
+      }
+      if (action >= 30 && action <= 33) {
+        if (station.mine == null) station.mine = new MinePlan();
+        if (action == 30 || action == 31) station.mine.switchMode(MinePlan.Mode.TUNNEL);
+        if (action == 32 || action == 33) {
+          station.mine.paused = action == 33;
+          station.mine.revision++;
+          station.mine.builder = null;
+        }
+        station.changed();
+      }
       if (action == 4) chestPage = Math.max(0, chestPage - 1);
       if (action == 5)
         chestPage = Math.min(Math.max(0, (station.chests.size() - 1) / 3), chestPage + 1);
-      if (action >= 20 && action < 26)
-        station.toggleChest(chestPage * 3 + (action - 20) / 2, (action - 20) % 2 == 0 ? 1 : 2);
       if (action == 9) {
         workerPage = Math.max(0, workerPage - 1);
         selectedWorker = null;
@@ -228,6 +296,19 @@ public class WorkMenu extends AbstractContainerMenu {
         selectedWorker = null;
       }
       if (action == 12) selectedWorker = null;
+      if (action == 14
+          && selectedWorker != null
+          && station.workers.contains(selectedWorker)
+          && p.level() instanceof ServerLevel l
+          && l.getEntity(selectedWorker) instanceof Lumberton found
+          && found.owns(p)
+          && station.identity.equals(found.totemId)
+          && found.isAlive()
+          && !found.packing) {
+        found.addEffect(
+            new net.minecraft.world.effect.MobEffectInstance(
+                net.minecraft.world.effect.MobEffects.GLOWING, 600, 0, false, false));
+      }
     }
     ticks = 0;
     broadcastChanges();
@@ -244,26 +325,53 @@ public class WorkMenu extends AbstractContainerMenu {
 
   public CompoundTag describe() {
     CompoundTag n = new CompoundTag();
+    Station buildStation = isTotem ? station : worker == null ? null : worker.station();
+    if (worker != null
+        && worker.job() == WorkerJob.BUILDINGTON
+        && worker.building.active() != null
+        && player.level().getBlockEntity(worker.building.active().anchor)
+            instanceof Station destination) buildStation = destination;
+    if (buildStation != null) {
+      n.put("MineBuild", BuildMaterials.describe(buildStation, worker, false));
+      n.put("WarehouseBuild", BuildMaterials.describe(buildStation, worker, true));
+      n.putString("BuildTitle", buildStation.purpose.label + " — Build List");
+    }
     n.putBoolean("Editable", canEdit());
-    n.putInt("Magica", Magica.balance(player));
-    n.putInt("MagicaThirds", Magica.remainder(player));
+    n.putInt("Lumina", Lumina.balance(player));
+    n.putInt("LuminaThirds", Lumina.remainder(player));
+    if (station != null && !isTotem) n.putBoolean("ShowNames", station.showNames);
     ListTag lines = new ListTag();
     if (worker != null) {
       add(lines, worker.getDisplayName().getString());
-      add(lines, "Job: " + (worker.job() == 1 ? "Lumberton" : "Unassigned"));
-      add(lines, worker.status());
-      add(lines, "Home: " + (worker.home == null ? "missing" : xyz(worker.home)));
-      add(lines, "Totem: " + (worker.totem == null ? "unassigned" : xyz(worker.totem)));
+      add(lines, "Job: " + WorkerJob.name(worker.job()));
+      status(lines, worker.status());
+      if (worker.job() == 2)
+        add(lines, "Torches: " + worker.mining.carried(net.minecraft.world.item.Items.TORCH));
+      if (worker.job() == 3) {
+        int occupied = 0;
+        for (int i = 0; i < worker.cargo.getSlots(); i++)
+          if (!worker.cargo.getStackInSlot(i).isEmpty()) occupied++;
+        translated(lines, "automatons.runner.cargo", occupied, worker.cargo.getSlots());
+        BuildingProject warehouse = worker.running.warehouse();
+        status(lines, warehouse == null ? "Warehouse unassigned" : warehouse.reason);
+      }
+      if (worker.job() != 3) {
+        add(lines, "Home: " + (worker.home == null ? "missing" : xyz(worker.home)));
+        add(lines, "Totem: " + (worker.totem == null ? "unassigned" : xyz(worker.totem)));
+      }
       n.putInt("Active", worker.activeSlot());
       n.putInt("Job", worker.job());
       n.putBoolean("Authorized", worker.authorized);
       for (int i = 0; i < 3; i++) {
         ItemStack tool = worker.tools.getStackInSlot(i);
+        if (worker.job() == 3 || worker.job() == WorkerJob.OPERATORTON) continue;
         add(
             lines,
             "Tool "
                 + (i + 1)
-                + (worker.job() == 0 ? " (inactive)" : worker.activeSlot() == i ? " *" : "")
+                + (!Inventories.tool(worker.job(), tool)
+                    ? " (inactive)"
+                    : worker.activeSlot() == i ? " *" : "")
                 + ": "
                 + (tool.isEmpty()
                     ? "empty"
@@ -278,38 +386,172 @@ public class WorkMenu extends AbstractContainerMenu {
       blockers(lines, worker.alerts);
     }
     if (station != null && !isTotem) {
+      n.put("ActiveBuilds", BuildMaterials.network(station));
       n.putBoolean("Ready", station.ready());
-      add(lines, station.ready() ? "Components ready" : "Add six body parts");
-      add(lines, "Taking the result assembles one Automaton.");
-      add(lines, "No extra Magica payment");
-      add(lines, station.recalled ? "All home workers recalled" : "Work enabled");
-      add(lines, "Registered: " + station.workers.size());
+      add(lines, station.recalled ? "Work disabled" : "Work enabled");
+      for (BuildingProject project : WorldData.get((ServerLevel) player.level()).buildings.values())
+        if (station.identity.equals(project.home))
+          add(lines, project.purpose.label + ": " + project.reason);
+      Ledger ledger = Ledger.get(player.getServer());
+      for (UUID id : station.workers.stream().sorted().toList()) {
+        CompoundTag record = ledger.workers.get(id);
+        if (record != null)
+          add(lines, WorkerNames.record(ledger, id, record, ((ServerLevel) player.level()).random));
+      }
     }
     if (isTotem) {
-      add(lines, "Storage: " + station.storageRange() + " outward");
-      add(lines, "Lumber: " + station.lumberRange() + " outward");
-      add(lines, "Trees: " + station.trees.size() + " / timber: " + station.timberJobs().size());
+      n.putInt("Purpose", station.purpose.ordinal());
+      n.putBoolean("Configured", station.project() != null);
+      n.putString("Orientation", station.orientation.getName());
+      ListTag worksite = new ListTag();
+      if (!station.setupIssue.isEmpty()) add(worksite, "Site unavailable: " + station.setupIssue);
+      add(worksite, "Purpose: " + station.purpose.label);
+      add(worksite, "Range: " + station.workRange() + " blocks for work and chests");
+      BuildingProject project = station.project();
+      if (project == null)
+        add(worksite, "Choose a purpose and entrance direction, then create the worksite.");
+      else {
+        add(worksite, project.reason);
+        add(worksite, "Entrance: " + project.front.getName());
+        add(
+            worksite,
+            "Built: "
+                + project.completed.size()
+                + " / "
+                + project.template((ServerLevel) player.level()).placements().size());
+        if (project.builder != null) {
+          CompoundTag record = Ledger.get(player.getServer()).workers.get(project.builder);
+          add(
+              worksite,
+              "Builder: "
+                  + (record == null ? "Assigned (unloaded)" : WorkerNames.recordName(record)));
+        } else if (!project.ready) add(worksite, "Awaiting Buildington");
+      }
+      n.put("WorksiteLines", worksite);
+      ListTag farming = new ListTag();
+      if (station.farm == null) add(farming, "Assign a Farmington after the shed is ready.");
+      else {
+        FarmPlan f = station.farm;
+        add(farming, f.reason);
+        add(farming, "Shared crop cells: " + f.cells.size());
+        add(
+            farming,
+            "Crop: "
+                + (f.preference == 0
+                    ? "Available supplies"
+                    : new ItemStack(FarmPlan.PLANTS.get(f.preference - 1))
+                        .getHoverName()
+                        .getString()));
+        add(farming, "Use bone meal: " + (f.boneMeal ? "ON (optional)" : "OFF"));
+        f.reserves((ServerLevel) player.level())
+            .forEach(
+                (item, count) ->
+                    add(
+                        farming,
+                        "Replant reserve: "
+                            + count
+                            + " "
+                            + new ItemStack(item).getHoverName().getString()));
+        add(farming, "Field supplies are separate from shed construction.");
+      }
+      n.put("FarmLines", farming);
+      ListTag mining = new ListTag();
+      add(
+          mining,
+          "Underground extent: "
+              + station.miningRange()
+              + " ("
+              + (station.miningRange() * 2 + 1)
+              + " x "
+              + (station.miningRange() * 2 + 1)
+              + ")");
+      if (station.mine != null) {
+        MinePlan m = station.mine;
+        n.putBoolean("HasMine", true);
+        n.putBoolean("MinePaused", m.paused);
+        n.putInt("MineMode", m.mode.ordinal());
+        add(
+            mining,
+            m.mode == MinePlan.Mode.TUNNEL
+                ? "Tunnel: independent 1 x 2, 32-block branches"
+                : "Quarry: 5 x 5, 3 x 3 center");
+        add(mining, "Entrance: " + (m.entrance == null ? "searching" : xyz(m.entrance)));
+        add(mining, "Platform: " + m.shaftDepth + " blocks down");
+        add(
+            mining,
+            m.depotBuilt ? "Storage: 2 underground double chests" : "Storage: needs 4 chests");
+        add(
+            mining,
+            "Direction: " + m.workFacing().getName() + "; wet routes: " + m.wetRoutes.size());
+        add(mining, "Stage: " + m.stage.name().toLowerCase(java.util.Locale.ROOT));
+        add(mining, m.paused ? "Paused" : m.reason);
+        if (m.stage != MinePlan.Stage.SITE && m.stage != MinePlan.Stage.READY)
+          add(
+              mining,
+              "Construction: "
+                  + m.construction
+                  + "/"
+                  + m.constructionTasks((ServerLevel) player.level()).size());
+        if (m.mode == MinePlan.Mode.TUNNEL)
+          for (MinePlan.Tunnel t : m.tunnels) {
+            CompoundTag record =
+                t.worker == null ? null : Ledger.get(player.getServer()).workers.get(t.worker);
+            add(
+                mining,
+                (record == null ? "Branch" : WorkerNames.recordName(record))
+                    + ": "
+                    + m.facing(t.route).getName()
+                    + " lane "
+                    + (t.lane + 1)
+                    + ", "
+                    + Math.min(32, t.column)
+                    + "/32"
+                    + (t.wet ? " (water/lava)" : t.finished ? " (done)" : ""));
+          }
+        else add(mining, "Quarry depth: " + m.quarryLayer + "; exclusions: " + m.exclusions.size());
+        add(
+            mining,
+            "Miners: " + station.loadedWorkers().stream().filter(w -> w.job() == 2).count());
+        Lumberton builder =
+            station.loadedWorkers().stream().filter(w -> w.job() == 2).findFirst().orElse(null);
+        if (builder != null)
+          for (var need : builder.mining.requiredStock().entrySet()) {
+            int available = builder.mining.carried(need.getKey());
+            for (BlockPos p : station.chests)
+              if ((station.flags(p) & 2) != 0) {
+                var h = Storage.handler((ServerLevel) player.level(), p, station);
+                if (h != null)
+                  for (int i = 0; i < h.getSlots(); i++)
+                    if (h.getStackInSlot(i).is(need.getKey()))
+                      available += h.getStackInSlot(i).getCount();
+              }
+            add(
+                mining,
+                new ItemStack(need.getKey()).getHoverName().getString()
+                    + ": "
+                    + available
+                    + "/"
+                    + need.getValue()
+                    + " (missing "
+                    + Math.max(0, need.getValue() - available)
+                    + ")");
+          }
+      } else add(mining, "Assign a Minington to build a shared mine.");
+      n.put("MiningLines", mining);
+      ListTag forestry = new ListTag();
+      add(forestry, "Worksite range: " + station.workRange() + " blocks (work and chests)");
+      add(forestry, "Trees: " + station.trees.size() + " / timber: " + station.timberJobs().size());
       if (!station.trees.isEmpty())
         add(
-            lines,
+            forestry,
             "Next: "
                 + String.format(
                     java.util.Locale.ROOT,
                     "%.1f",
                     Math.sqrt(station.orderedTrees().get(0).distanceFrom(station)))
                 + " blocks from totem");
-      add(lines, station.scanComplete ? station.scanReason : "Searching for trees");
-      ListTag chests = new ListTag();
-      for (int i = chestPage * 3; i < Math.min(station.chests.size(), chestPage * 3 + 3); i++) {
-        BlockPos pos = station.chests.get(i);
-        CompoundTag c = new CompoundTag();
-        c.putString("Pos", xyz(pos));
-        c.putInt("Flags", station.flags(pos));
-        chests.add(c);
-      }
-      n.put("Chests", chests);
-      n.putInt("Page", chestPage + 1);
-      n.putInt("ChestCount", station.chests.size());
+      add(forestry, station.scanComplete ? station.scanReason : "Searching for trees");
+      n.put("ForestryLines", forestry);
       List<UUID> ids = roster();
       ListTag members = new ListTag();
       Ledger ledger = Ledger.get(player.getServer());
@@ -317,6 +559,9 @@ public class WorkMenu extends AbstractContainerMenu {
         UUID id = ids.get(i);
         CompoundTag record = ledger.workers.get(id),
             entry = record == null ? new CompoundTag() : record.copy();
+        if (record != null)
+          WorkerNames.record(ledger, id, entry, ((ServerLevel) player.level()).random);
+        else if (ledger.names.name(id) != null) WorkerNames.writeName(entry, ledger.names.name(id));
         entry.putUUID("Id", id);
         if (record == null
             || record.getString("State").equals("Deployed")
@@ -327,16 +572,27 @@ public class WorkMenu extends AbstractContainerMenu {
       n.put("Members", members);
       n.putInt("WorkerPage", workerPage + 1);
       n.putInt("WorkerCount", ids.size());
+      add(lines, "Workers: " + ids.size());
       if (selectedWorker != null && station.workers.contains(selectedWorker)) {
         CompoundTag record = ledger.workers.get(selectedWorker);
         n.putBoolean("HasSelected", true);
+        n.putBoolean(
+            "Findable",
+            ((ServerLevel) player.level()).getEntity(selectedWorker) instanceof Lumberton found
+                && found.isAlive()
+                && !found.packing
+                && station.identity.equals(found.totemId));
         if (record != null) {
           ListTag details = new ListTag();
-          add(details, "Worker " + selectedWorker.toString().substring(0, 8));
-          add(details, record.getInt("Job") == 1 ? "Lumberton" : "Unassigned");
+          add(
+              details,
+              WorkerNames.record(
+                  ledger, selectedWorker, record, ((ServerLevel) player.level()).random));
+          add(details, WorkerJob.name(record.getInt("Job")));
           add(details, record.getString("State"));
           add(details, record.getString("Status"));
-          add(details, record.getBoolean("ToolsReady") ? "Axe ready" : "No active axe");
+          add(details, "Torches: " + record.getInt("Torches"));
+          add(details, record.getBoolean("ToolsReady") ? "Tool ready" : "No active tool");
           if (record.contains("Home"))
             add(details, "Home: " + xyz(BlockPos.of(record.getLong("Home"))));
           blockers(details, record.getInt("Alerts"));
@@ -345,12 +601,152 @@ public class WorkMenu extends AbstractContainerMenu {
       }
       blockers(lines, station.alerts);
     }
+    if (player.level() instanceof ServerLevel level) {
+      ListTag logistics = new ListTag();
+      UUID logisticsHome =
+          worker != null
+              ? worker.homeId
+              : station == null ? null : isTotem ? station.logisticsHome : station.identity;
+      Ledger workerLedger = Ledger.get(level.getServer());
+      add(logistics, "Worker activity");
+      workerLedger.workers.entrySet().stream()
+          .filter(
+              e ->
+                  e.getValue().hasUUID("HomeId")
+                      && Objects.equals(logisticsHome, e.getValue().getUUID("HomeId")))
+          .sorted(Comparator.comparing(e -> WorkerNames.recordName(e.getValue())))
+          .forEach(
+              e -> {
+                CompoundTag record = e.getValue();
+                String activity = record.getString("State");
+                if (level.getEntity(e.getKey()) instanceof Lumberton live) activity = live.status();
+                else if (activity.equals("Deployed")) activity = "Unloaded";
+                add(logistics, WorkerNames.recordName(record) + ": " + activity);
+              });
+      add(logistics, "Requests");
+      BuildingProject warehouse =
+          isTotem
+              ? WorldData.get(level).buildings.get(station.identity)
+              : worker != null && worker.job() == 3 ? worker.running.warehouse() : null;
+      if (warehouse != null) {
+        n.putBoolean("HasWarehouse", true);
+        n.putBoolean("WarehouseApproved", warehouse.approved);
+        n.putBoolean("WarehousePaused", warehouse.paused);
+        status(logistics, warehouse.reason);
+        translated(
+            logistics,
+            "automatons.warehouse.direction",
+            Component.translatable("automatons.direction." + warehouse.front.getName()));
+        int total =
+            warehouse.template(level).materials.values().stream().mapToInt(Integer::intValue).sum();
+        int remaining =
+            warehouse.remaining(level).values().stream().mapToInt(Integer::intValue).sum();
+        translated(logistics, "automatons.warehouse.progress", total - remaining, total);
+        if (!warehouse.ready) {
+          Map<net.minecraft.world.item.Item, Integer> available = new HashMap<>();
+          Station anchor =
+              level.hasChunkAt(warehouse.anchor)
+                      && level.getBlockEntity(warehouse.anchor) instanceof Station a
+                  ? a
+                  : null;
+          if (anchor != null) {
+            for (Lumberton w : anchor.loadedWorkers())
+              if (w.job() == 3 && warehouse.home.equals(w.homeId))
+                BuildingProject.count(w.cargo, available);
+            for (BlockPos p : anchor.chests)
+              if ((anchor.flags(p) & 2) != 0) {
+                var h = Storage.handler(level, p, anchor);
+                if (h != null) BuildingProject.countConstructionSupply(h, available);
+              }
+          }
+          for (var e : warehouse.remaining(level).entrySet())
+            translated(
+                logistics,
+                "automatons.warehouse.material",
+                new ItemStack(e.getKey()).getHoverName(),
+                e.getValue(),
+                Math.max(0, e.getValue() - available.getOrDefault(e.getKey(), 0)));
+        }
+      }
+      UUID networkId =
+          worker != null
+              ? worker.homeId
+              : station == null ? null : isTotem ? station.logisticsHome : station.identity;
+      LogisticsNetwork network = WorldData.get(level).logistics.get(networkId);
+      if (network != null) {
+        network.refresh(level);
+        ForestryHelp.maintain(network, level);
+        for (var request : network.obstacles.values()) {
+          if (isTotem && !station.identity.equals(request.site)) continue;
+          add(
+              logistics,
+              "Pickaxe obstacle at " + request.pos.toShortString() + ": " + request.status);
+        }
+        translated(
+            logistics,
+            "automatons.network.overview",
+            network.demands.size(),
+            network.parcels.size());
+        Ledger ledger = Ledger.get(player.getServer());
+        for (var d : network.demands.values()) {
+          if (isTotem && !station.identity.equals(d.totem) && warehouse == null) continue;
+          if (d.source != null) {
+            translated(
+                logistics,
+                "automatons.network." + d.kind,
+                new ItemStack(d.item).getHoverName(),
+                d.quantity);
+            continue;
+          }
+          CompoundTag record = ledger.workers.get(d.worker);
+          String name = record == null ? "Automaton" : WorkerNames.recordName(record);
+          translated(
+              logistics,
+              d.item == null ? "automatons.network.tool" : "automatons.network.need",
+              name,
+              d.item == null ? "" : new ItemStack(d.item).getHoverName(),
+              d.quantity);
+        }
+        int stock =
+            network.reports.values().stream()
+                .filter(r -> r.loaded && r.warehouse)
+                .flatMap(r -> r.contents.stream())
+                .mapToInt(ItemStack::getCount)
+                .sum();
+        translated(logistics, "automatons.network.stock", stock);
+        for (var parcel : network.parcels.values()) {
+          CompoundTag record = ledger.workers.get(parcel.runner);
+          String name = record == null ? "Runnington" : WorkerNames.recordName(record);
+          translated(
+              logistics,
+              "automatons.network.delivery",
+              name,
+              Component.translatable(
+                  "automatons.phase." + parcel.phase.name().toLowerCase(Locale.ROOT)),
+              parcel.item.getHoverName());
+        }
+        if (worker != null && worker.job() == 3) {
+          var parcel = network.parcels.get(worker.getUUID());
+          if (parcel != null) {
+            translated(
+                lines,
+                "automatons.runner.parcel",
+                parcel.item.getHoverName(),
+                parcel.outstanding());
+            if (parcel.destination.worker() != null
+                && level.getEntity(parcel.destination.worker()) instanceof Lumberton recipient)
+              translated(lines, "automatons.runner.recipient", recipient.getDisplayName());
+          }
+        }
+      } else translated(logistics, "automatons.network.setup");
+      n.put("LogisticsLines", logistics);
+    }
     n.put("Lines", lines);
     return n;
   }
 
   private static void blockers(ListTag lines, int flags) {
-    for (int bit : new int[] {1, 2, 4, 8})
+    for (int bit : new int[] {1, 2, 4, 8, 16, 32, 64})
       if ((flags & bit) != 0)
         add(
             lines,
@@ -358,12 +754,38 @@ public class WorkMenu extends AbstractContainerMenu {
               case 1 -> "! No usable tools";
               case 2 -> "! No eligible wood";
               case 4 -> "! Storage full";
+              case 16 -> "! Mine needs attention";
+              case 32 -> "! Work complete";
+              case 64 -> "! Needs torches";
               default -> "! Cargo full";
             });
   }
 
   private static void add(ListTag list, String text) {
     list.add(StringTag.valueOf(text));
+  }
+
+  private static void translated(ListTag list, String key, Object... args) {
+    list.add(
+        StringTag.valueOf(
+            "\u001e" + Component.Serializer.toJson(Component.translatable(key, args))));
+  }
+
+  private static void status(ListTag list, String text) {
+    for (String prefix : List.of("Collecting ", "Delivering ", "Needs "))
+      if (text.startsWith(prefix)) {
+        translated(
+            list,
+            "automatons.status." + prefix.trim().toLowerCase(Locale.ROOT),
+            text.substring(prefix.length()));
+        return;
+      }
+    String key =
+        "automatons.status."
+            + text.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "_").replaceAll("_$", "");
+    list.add(
+        StringTag.valueOf(
+            "\u001e" + Component.Serializer.toJson(Component.translatableWithFallback(key, text))));
   }
 
   public static String xyz(BlockPos p) {

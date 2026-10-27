@@ -28,6 +28,10 @@ public final class Automatons {
     return new ResourceLocation(ID, name);
   }
 
+  public static final DeferredRegister<net.minecraft.world.level.levelgen.feature.Feature<?>>
+      FEATURES = DeferredRegister.create(ForgeRegistries.FEATURES, ID);
+  public static final RegistryObject<LumiteFeature> LUMITE_FEATURE =
+      FEATURES.register("lumite", LumiteFeature::new);
   public static final DeferredRegister<Block> BLOCKS =
       DeferredRegister.create(ForgeRegistries.BLOCKS, ID);
   public static final DeferredRegister<Item> ITEMS =
@@ -56,9 +60,29 @@ public final class Automatons {
   public static final RegistryObject<Item> AUTOMATON_ITEM =
       ITEMS.register("automaton", AutomatonItem::new);
   public static final RegistryObject<Item> EMPTY_CORE =
-      ITEMS.register("empty_magica_core", CoreItem::new);
-  public static final RegistryObject<Item> MAGICA_CORE =
-      ITEMS.register("magica_core", () -> new Item(new Item.Properties()));
+      ITEMS.register(LegacyMagic.EMPTY_CORE_ID, CoreItem::new);
+  public static final RegistryObject<Item> LUMINA_CORE =
+      ITEMS.register(LegacyMagic.CORE_ID, () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Block> LUMITE_ORE =
+      BLOCKS.register(
+          "lumite_ore",
+          () ->
+              new net.minecraft.world.level.block.DropExperienceBlock(
+                  net.minecraft.world.level.block.state.BlockBehaviour.Properties.copy(
+                          net.minecraft.world.level.block.Blocks.IRON_ORE)
+                      .lightLevel(s -> 0)));
+  public static final RegistryObject<Block> DEEPSLATE_LUMITE_ORE =
+      BLOCKS.register(
+          "deepslate_lumite_ore",
+          () ->
+              new net.minecraft.world.level.block.DropExperienceBlock(
+                  net.minecraft.world.level.block.state.BlockBehaviour.Properties.copy(
+                          net.minecraft.world.level.block.Blocks.DEEPSLATE_IRON_ORE)
+                      .lightLevel(s -> 0)));
+  public static final RegistryObject<Item> LUMITE_SHARD =
+      ITEMS.register("lumite_shard", LumiteShardItem::new);
+  public static final RegistryObject<Item> INFUSED_LUMITE =
+      ITEMS.register("infused_lumite_shard", () -> new Item(new Item.Properties()));
   public static final RegistryObject<Item> HEAD =
       ITEMS.register("automaton_head", () -> new Item(new Item.Properties()));
   public static final RegistryObject<Item> BODY =
@@ -69,23 +93,30 @@ public final class Automatons {
       ITEMS.register("automaton_leg", () -> new Item(new Item.Properties()));
   public static final RegistryObject<Item> PLATE =
       ITEMS.register("upgrade_plate", () -> new Item(new Item.Properties()));
-  public static final RegistryObject<EntityType<MagicaOrb>> MAGICA_ORB =
+  public static final RegistryObject<EntityType<LuminaOrb>> LUMINA_ORB =
       ENTITIES.register(
-          "magica_orb",
+          LegacyMagic.ORB_ID,
           () ->
-              EntityType.Builder.<MagicaOrb>of(MagicaOrb::new, MobCategory.MISC)
+              EntityType.Builder.<LuminaOrb>of(LuminaOrb::new, MobCategory.MISC)
                   .sized(.5f, .5f)
                   .clientTrackingRange(6)
                   .updateInterval(20)
-                  .build("magica_orb"));
+                  .build(LegacyMagic.ORB_ID));
   public static final RegistryObject<Item> WAND = ITEMS.register("wand", WandItem::new);
+  public static final RegistryObject<Item> HAMMER = ITEMS.register("hammer", HammerItem::new);
+  public static final RegistryObject<Item> HANDBOOK =
+      ITEMS.register("automaton_handbook", HandbookItem::new);
+  public static final RegistryObject<Item> COAL_PIECE =
+      ITEMS.register("coal_piece", () -> new FuelPieceItem(Items.COAL));
+  public static final RegistryObject<Item> CHARCOAL_PIECE =
+      ITEMS.register("charcoal_piece", () -> new FuelPieceItem(Items.CHARCOAL));
   public static final Map<String, RegistryObject<Item>> UPGRADES = new LinkedHashMap<>();
   public static final RegistryObject<EntityType<Lumberton>> LUMBERTON =
       ENTITIES.register(
           "lumberton",
           () ->
               EntityType.Builder.of(Lumberton::new, MobCategory.CREATURE)
-                  .sized(.7f, 1.5f)
+                  .sized(.7f, 1.625f)
                   .clientTrackingRange(10)
                   .build("lumberton"));
   public static final RegistryObject<EntityType<Timber>> TIMBER =
@@ -115,11 +146,19 @@ public final class Automatons {
   public static final RegistryObject<RecipeSerializer<CreationRecipe>> CREATION_SERIALIZER =
       SERIALIZERS.register("creation", CreationRecipe.Serializer::new);
 
+  public static boolean retired(Item item) {
+    return item instanceof UpgradeItem || item == PLATE.get();
+  }
+
   static {
+    ITEMS.register("lumite_ore", () -> new BlockItem(LUMITE_ORE.get(), new Item.Properties()));
+    ITEMS.register(
+        "deepslate_lumite_ore",
+        () -> new BlockItem(DEEPSLATE_LUMITE_ORE.get(), new Item.Properties()));
     ITEMS.register("infusing_pedestal", () -> new BlockItem(INFUSER.get(), new Item.Properties()));
     ITEMS.register("pedestal", () -> new BlockItem(PEDESTAL.get(), new Item.Properties()));
     ITEMS.register("totem", () -> new BlockItem(TOTEM.get(), new Item.Properties()));
-    for (String family : List.of("storage", "lumber", "speed", "efficiency"))
+    for (String family : List.of("storage", "lumber", "speed", "efficiency", "mining"))
       for (int level = 1; level <= 2; level++) {
         int tier = level;
         UPGRADES.put(
@@ -137,12 +176,19 @@ public final class Automatons {
             CreativeModeTab.builder()
                 .title(Component.literal("Automatons"))
                 .icon(() -> new ItemStack(WAND.get()))
-                .displayItems((p, o) -> ITEMS.getEntries().forEach(i -> o.accept(i.get())))
+                .displayItems(
+                    (p, o) ->
+                        ITEMS.getEntries().stream()
+                            .filter(i -> !retired(i.get()))
+                            .forEach(i -> o.accept(i.get())))
                 .build());
   }
 
   public Automatons() {
     IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
+    Luminall.register(bus);
+    MachineParts.register();
+    FEATURES.register(bus);
     BLOCKS.register(bus);
     ITEMS.register(bus);
     ENTITIES.register(bus);
@@ -154,7 +200,8 @@ public final class Automatons {
     bus.addListener(this::attributes);
     ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Balance.SPEC);
     MinecraftForge.EVENT_BUS.register(WorldEvents.class);
-    MinecraftForge.EVENT_BUS.register(MagicaHarvest.class);
+    MinecraftForge.EVENT_BUS.register(WorkerNames.class);
+    MinecraftForge.EVENT_BUS.register(LuminaHarvest.class);
     MinecraftForge.EVENT_BUS.register(PlayerFelling.class);
     Network.init();
   }

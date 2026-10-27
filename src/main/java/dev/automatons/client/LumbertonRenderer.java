@@ -12,7 +12,14 @@ public class LumbertonRenderer extends MobRenderer<Lumberton, LumbertonModel> {
   }
 
   @Override
+  protected boolean shouldShowName(Lumberton worker) {
+    return worker.showNames() && super.shouldShowName(worker);
+  }
+
+  @Override
   public ResourceLocation getTextureLocation(Lumberton w) {
+    if (Math.floorMod(w.tickCount + w.getId() * 17, 100) < 3)
+      return Automatons.id("textures/entity/lumberton_blink.png");
     return Automatons.id(
         "textures/entity/lumberton_"
             + new String[] {"idle", "smile", "brow", "focused", "frown", "anger"}

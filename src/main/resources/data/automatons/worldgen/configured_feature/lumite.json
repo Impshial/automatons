@@ -1,0 +1,23 @@
+{
+  "type": "automatons:lumite",
+  "config": {
+    "ore": {
+      "size": 8,
+      "discard_chance_on_air_exposure": 0.0,
+      "targets": [
+        {
+          "target": {
+            "predicate_type": "minecraft:tag_match",
+            "tag": "minecraft:stone_ore_replaceables"
+          },
+          "state": {
+            "Name": "automatons:lumite_ore"
+          }
+        }
+      ]
+    },
+    "min_y": -32,
+    "max_y": 64,
+    "attempts": 8
+  }
+}

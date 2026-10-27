@@ -1,0 +1,2305 @@
+{
+  "version": 3,
+  "size": [
+    7,
+    6,
+    9
+  ],
+  "anchor": [
+    3,
+    1,
+    8
+  ],
+  "frames": [
+    {
+      "tile": [
+        3,
+        3,
+        0
+      ],
+      "item": "minecraft:chest"
+    }
+  ],
+  "blocks": [
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 7,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 8,
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_door[facing=north,half=lower,hinge=left,open=false,powered=false]"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=west,type=right,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:chest[facing=west,type=left,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:chest[facing=west,type=right,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:chest[facing=west,type=left,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 8,
+      "state": "automatons:totem"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_door[facing=north,half=upper,hinge=left,open=false,powered=false]"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:wall_torch[facing=south]"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:wall_torch[facing=south]"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:chest[facing=west,type=right,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:chest[facing=west,type=left,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:glass"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:chest[facing=west,type=right,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:wall_torch[facing=north]"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:wall_torch[facing=north]"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:chest[facing=west,type=left,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 7,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 7,
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 8,
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 0,
+      "state": "minecraft:air"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 1,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 2,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 3,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 4,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 5,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 6,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 7,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 0,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 1,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 2,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 3,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 4,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 5,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "x": 6,
+      "y": 5,
+      "z": 8,
+      "state": "minecraft:oak_slab[type=bottom,waterlogged=false]"
+    }
+  ],
+  "materials": {
+    "minecraft:chest": 17,
+    "minecraft:cobblestone": 26,
+    "minecraft:glass": 12,
+    "minecraft:item_frame": 1,
+    "minecraft:oak_door": 1,
+    "minecraft:oak_log": 38,
+    "minecraft:oak_planks": 81,
+    "minecraft:oak_slab": 56,
+    "minecraft:torch": 4
+  },
+  "changes": []
+}

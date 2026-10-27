@@ -1,0 +1,26 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "IKI",
+    "KBK",
+    "CKC"
+  ],
+  "key": {
+    "C": {
+      "item": "minecraft:copper_ingot"
+    },
+    "B": {
+      "item": "minecraft:redstone_block"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "K": {
+      "item": "automatons:magica_core"
+    }
+  },
+  "result": {
+    "item": "automatons:lumina_engine",
+    "count": 1
+  }
+}

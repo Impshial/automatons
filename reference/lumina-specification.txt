@@ -1,0 +1,264 @@
+AUTOMATONS: LUMINA, LUMITE, FOUR-CORNER INFUSION, ONE-TIME WORLD RETROGEN, UPGRADE REMOVAL, AND HAMMER UPDATES
+
+Implement this milestone in the existing Automatons Minecraft Java 1.20.1 project. Inspect the current repository and its instructions, make a short staged plan, and complete the implementation and appropriate verification. Use the current Forge/Java setup, registries, assets, recipes, persistence, permissions, tests, and release workflow. Do not reconstruct the mod from older prompts or undo newer user changes.
+
+The supplied recent log reports version 0.5.0 with Buildingtons, Farmingtons, The Network, one purpose-specific Totem range for work and storage, and unchanged magical-energy rewards. Treat live source as authoritative for actual implementation. Preserve those systems and their current base behavior while integrating this milestone.
+
+The user has deferred ALL upgrades until more Automaton professions exist and upgrades can be designed coherently across them. Remove the upgrade system from active gameplay now, including its recipes, effects, and GUI controls, as detailed in section 10. Also fix the Hammer's item texture so it visibly reads as a hammer. Do not implement a replacement upgrade system in this milestone.
+
+1. FINAL NAMES AND PROGRESSION
+
+The magical energy is named LUMINA everywhere players encounter it. Canonical item/block names:
+- Lumite Ore
+- Deepslate Lumite Ore
+- Lumite Shard: the raw mined item
+- Infused Lumite Shard: a fully charged crafting ingredient
+- Empty Core
+- Lumina Core: the completed core crafted with infused shards
+- Infusing Pedestal
+
+The progression is: mine Lumite for shards; use shards in the Empty Core recipe; infuse individual shards at the Infusing Pedestal; craft one Empty Core plus four Infused Lumite Shards into one Lumina Core; use cores and infused shards in the appropriate existing recipes.
+
+Keep the Automaton's torso/core assembly component distinct from this generic magical crafting core if the current project already distinguishes them. Inspect the actual registrations and recipe graph instead of accidentally replacing the Automaton body-part item with a resource item.
+
+Lumina remains the existing white-purple, XP-like collected energy. Preserve its acquisition eligibility, randomized natural-block rewards, orb behavior, attraction, current balance, stored fractional precision, and HUD accounting. This milestone does not halve log rewards or alter vanilla XP. Preserve the current interpretation of the HUD number as points where applicable.
+
+Replace the old energy terminology in active player-facing text, item names, menus, tooltips, messages, commands, recipe descriptions, creative entries, and current documentation. Use the new vocabulary in active implementation concepts. Preserve save compatibility with explicit, isolated legacy readers/aliases/mappings wherever needed; old serialized names must not leak into normal UI. Do not strand saved balances or registered items merely to rename an identifier.
+
+2. LUMITE ORE AND MINING
+
+Register regular and deepslate Lumite Ore plus their block items, Lumite Shards, and Infused Lumite Shards. Use the project's registration, data-generation, tags, translations, and creative-tab conventions.
+
+Mining rules:
+- Requires a stone-tier pickaxe or better, including equivalent supported modded tools through normal tier rules.
+- A successful ordinary harvest drops a uniformly randomized 1-3 raw Lumite Shards.
+- Fortune increases the drop using the normal ore-drop bonus behavior, implemented through the loot table rather than a second break-event reward.
+- Silk Touch takes precedence and returns one matching ore block without extra shards.
+- An unsuitable tool does not yield the ore or shards.
+- Use ordinary explosion/loot and tool-wear behavior consistent with other ores. Do not produce duplicate rewards from worker and vanilla paths.
+- Shards drop directly. No mandatory smelting or extra intermediate crystal-crafting step is part of this progression. A Silk Touch ore block can be placed and mined normally later.
+- Lumite mining must not silently introduce a new Lumina reward category or a repeatable resource-to-energy loop.
+
+Add appropriate mineable/pickaxe, tool-tier, and Forge ore tags. Make Miningtons discover, mine, and collect Lumite through their existing terrain/ore logic, with normal protection, reach, mining time, Fortune/Silk Touch, inventory and drop handling. Do not introduce a special remote-mining or item-spawning shortcut.
+
+3. APPEARANCE: GLOWING VEINS ONLY
+
+Use native 16x16 Minecraft-style textures. Both ore variants have white-purple crystalline veins embedded in their normal stone/deepslate base. The vein pixels remain visibly bright in darkness; the surrounding rock receives normal lighting and shading.
+
+This is emissive appearance only. The ore's emitted world/block light is zero. It does not illuminate neighboring blocks, replace torches, change lighting-based mob spawning, or require colored-light support. Do not make the whole stone face full-bright.
+
+Implement a separate emissive crystal layer or the equivalent supported model approach for the actual Forge version. It must work without a shader pack or an optional rendering mod. Verify cutout transparency, face culling, adjacent ore blocks, inventory/block-item appearance, daylight, and darkness. Avoid coplanar flickering, black overlays, glowing rock backgrounds, and rendering hidden ore through solid walls.
+
+Raw and infused shards should be distinguishable at inventory scale. Use a stronger luminous crystal appearance for the infused item while preserving the same material identity. Keep assets consistent with the existing white-purple palette.
+
+4. NEW-CHUNK WORLD GENERATION
+
+Use these initial balance settings:
+- Overworld generation in all eligible Overworld biomes, including appropriately tagged compatible biomes.
+- Generation range: absolute Y=-32 through Y=64. Y=64 is the upper limit.
+- Triangular distribution peaking around Y=16, the midpoint of those bounds, and tapering toward the endpoints.
+- Eight placement attempts per chunk.
+- Configured vein size: six, using ordinary small ore clusters.
+- Air-exposure discard chance: zero, so ore can appear in cave walls.
+- Replace normal stone-ore-replaceable terrain with regular Lumite Ore and deepslate-ore-replaceable terrain with Deepslate Lumite Ore.
+
+Attempt count and configured vein size are generation parameters, not promises of eight successful veins or six blocks in every cluster. Do not replace existing ores, air, liquids, containers, or arbitrary blocks. Reuse the standard configured/placed feature and biome integration patterns supported by the project's exact version, registering the feature once.
+
+Respect the requested upper limit for actual ore placement, including vein extents, rather than merely limiting a vein's starting position. Normal generation and retrogen must both keep Lumite within the configured vertical bounds.
+
+These are starting balance values. Sample several seeds and terrain/biome types and report actual ore abundance and vertical distribution. Do not claim a guaranteed discovery time. Keep tuning data-driven where practical. Ordinary new-chunk generation remains enabled independently of the temporary retrogen command.
+
+5. REDESIGN THE INFUSING PEDESTAL
+
+Make the pedestal larger than its current half-height design: a full-size single-block pedestal with a black-and-white body and four clearly visible raised corner prongs. Keep the silhouette, collision shape, item model, and interaction geometry coherent. Retain Minecraft pixel density and do not create an elaborate multiblock structure.
+
+It has no GUI. It contains exactly four physical infusion positions, one per corner, and each position accepts ONE Lumite Shard, not a whole stack.
+
+Interactions:
+- Right-click a corner with raw shards to insert one into that empty position, decrementing the held stack correctly.
+- Make corner selection predictable from the block hit position and viewing angle. The four prongs should make the positions obvious.
+- Right-click an occupied corner with an empty hand to retrieve its shard. Partial progress must survive retrieval and reinsertion; a completed shard is retrieved as an Infused Lumite Shard.
+- An occupied corner cannot be overwritten. A full pedestal gives brief feedback without consuming anything.
+- Server authority determines insertion, withdrawal, progress, payment, and completion. Client animation cannot create or charge an item.
+- Preserve existing interaction permission rules. A player's shard must not draw energy from unrelated nearby players.
+
+Visuals:
+- Each inserted shard immediately appears floating above its own corner and continuously rotates. Keep it anchored above that corner rather than orbiting the whole pedestal.
+- Occupied corners can infuse simultaneously.
+- Show white-purple Lumina flowing from the contributing player toward each actively charging shard.
+- Only show active transfer while real energy is being paid. No transfer effect when the player is absent, out of range, empty of Lumina, or the shard is complete.
+- A completed shard emits green completion particles from its corner and remains floating/rotating until retrieved.
+- Keep particles and synchronization bounded, including with several pedestals nearby. Use the project's current infusion sound conventions where appropriate.
+
+6. INFUSION COST AND OWNERSHIP
+
+Infusing ONE shard costs exactly 25 Lumina. Four shards cost exactly 100 Lumina. Neither parallel charging nor partial insertion changes that cost.
+
+Each corner stores the inserted item, exact paid progress, and contributing player's stable identity. Draw only from the player who inserted that shard while they are nearby and in the same dimension. Reuse the current infusion proximity distance unless it is defective; document the actual value. With shards inserted by different players, each contributes only to their own shards.
+
+Use the existing exact fractional-energy accounting. Never round the charge independently each tick in a way that creates a discount or overcharge. Pay only the remaining cost, stop at exactly 25, and perform one item conversion on completion.
+
+Retain the current pedestal's total transfer-rate budget as an initial default and distribute it fairly among eligible active corners. Four occupied positions must not accidentally multiply the configured total drain rate by four. Document the effective rate and resulting single-shard/full-batch times. Simultaneous infusion means each eligible shard advances, not that one corner monopolizes all available energy.
+
+If the player runs out of Lumina, leaves range, disconnects, or the chunk unloads, pause and preserve progress. Resume when conditions allow. Completed corners consume no energy. Do not drain the player below zero.
+
+Partial progress belongs to the item and must survive inventory movement, pedestal removal, and reinsertion without duplication. Represent partially infused items safely so their progress cannot spread to an entire stack of untouched shards. Only the completed Infused Lumite Shard item satisfies infused-ingredient recipes.
+
+Breaking or packing the pedestal drops/returns its real contents once through the established block lifecycle. Save and reload must preserve all four positions. Handle player inventories with no room using the existing safe transfer/drop behavior. Include multiplayer attempts to retrieve or insert into the same corner in validation.
+
+7. RECIPES: EXACT REPLACEMENT RULES
+
+First remove the deferred upgrade recipes and any now-unused upgrade-only component recipes according to section 10. Then audit every REMAINING Automatons recipe and generated recipe source that uses amethyst, including relevant ingredient tags. Apply these rules in this order, preserving ingredient quantities and other recipe parts unless explicitly changed below:
+
+A. EMPTY CORE
+Keep the existing Empty Core recipe layout, output quantity, and other ingredients. Replace its amethyst ingredient with a RAW Lumite Shard at the same quantity. This exception is deliberate. An Empty Core must be craftable before any infusion has occurred.
+
+B. INFUSING PEDESTAL
+Keep its current recipe layout, output quantity, and other ingredients. Replace its amethyst ingredient with ONE DIAMOND in that position. Audit the dependency chain to ensure the first pedestal can be crafted without an already-infused shard or completed Lumina Core. The first Automaton should require finding a diamond to build this pedestal.
+
+C. EVERY OTHER REMAINING AMETHYST INGREDIENT
+Replace it with an INFUSED LUMITE SHARD, preserving the existing count. This applies to recipes that remain in active gameplay after the upgrade removal. Do not recreate or retain retired upgrade recipes merely to replace their ingredients. Do not substitute raw shards, lapis, copper, or another unrelated material in these positions. Remove unintended amethyst acceptance through broad ingredient tags or alternate recipes in this mod.
+
+D. LUMINA CORE
+Create this shaped 3x3 crafting-table recipe:
+    . I .
+    I E I
+    . I .
+where I is one Infused Lumite Shard, E is one Empty Core, and . is empty.
+Output exactly ONE Lumina Core. Consume all four infused shards and the Empty Core. Four finished shards carry a total investment of 100 Lumina; crafting the core does not deduct another 100 from the player.
+
+Existing recipes that require a completed magical core should use the Lumina Core, preserving their core counts. Keep the Automaton torso/component distinction described in section 1. The Infusing Pedestal now processes shards; core completion happens through the crafting recipe above.
+
+Inspect the live project and update every remaining applicable recipe, recipe-book unlock, JEI display, generated source, and current recipe document. Remove deferred upgrade recipes and their unlock/display references. Preserve the newer purpose-specific range architecture using its current BASE settings, with no installed-upgrade bonuses. The Upgrade Plate's conditional handling is specified in section 10.
+
+Keep resource tooltips concise and consistent with the current mod policy. Do not put recipe walkthroughs into item tooltips. Provide a final before/after recipe table based on the actual implemented recipes.
+
+8. TEMPORARY RETROGEN: ONE PASS PER WORLD
+
+Add a temporary administrative slash-command workflow that adds Lumite to already-generated Overworld chunks so existing worlds can continue to be used.
+
+The limit is ONE WORLD-WIDE RETROGEN PASS PER SAVED WORLD. It is not once per player, once per server session, once per dimension, once per command invocation, or an endlessly repeatable operation that merely skips individual chunks. After successful completion, no second pass may be started in that world.
+
+The user-facing start command must be exactly:
+- /automaton regen
+
+Support these management subcommands under that same path:
+- /automaton regen status
+- /automaton regen pause
+- /automaton regen resume
+
+The base command starts the single allowed pass; no additional start argument is required. Use the singular /automaton root for this command and leave unrelated existing commands intact.
+
+Require the established administrative/operator permission level, support the dedicated-server console, and give concise counts and status. The command acts on the world's Overworld even when invoked from another dimension. Status is read-only and can be called repeatedly. Pause/resume continues the same pass. Do not provide force, reset, repeat, or alternate-radius paths that bypass the global completion marker.
+
+Persistent state:
+- Record never-started, preparing, running, paused, and completed or equivalent existing state concepts.
+- Preserve one stable job ID, the existing-chunk scope, chosen generation parameters, exclusions, progress, and chunk completion records in the save.
+- Capture the already-generated FULL Overworld chunks at the start using existing saved and loaded-chunk metadata. Enumerate them in bounded batches with a stable scope. Do not limit the job to chunks currently loaded around players.
+- Chunks newly generated after installation use normal Lumite generation and must not receive a second retrogen pass. Record normal-generation completion or equivalent reliable provenance, including chunks where attempts placed no ore.
+- Restarting the game, changing settings, updating the mod, or invoking /automaton regen again must not erase completion or re-enroll completed chunks.
+- An interrupted or failed pass remains resumable with the same remaining scope. Completion is marked only when every scoped chunk is processed or deliberately excluded with a recorded reason. Read/processing errors remain unresolved rather than silently counted as success.
+- Removing the temporary command in a future release must not remove generated Lumite or reset the saved one-pass history.
+
+Generation behavior:
+- Add only Lumite to still-eligible replacement terrain, using the same height, frequency, vein-size, biome and variant rules as normal generation.
+- Do not change the world seed, regenerate terrain, rerun all biome decoration, replace existing ores, refill mined air, or rebuild structures.
+- Use stable deterministic placement decisions derived from the world seed, chunk coordinates, and a fixed Lumite-specific salt. Resume must not reroll new locations and produce progressively more ore.
+- Limit writes to the authorized existing chunks. Handle vein boundaries deliberately so the feature cannot generate neighboring chunks, modify excluded terrain, or produce duplicate cross-boundary placements. Document any boundary clipping needed for safe retrogen; statistical settings should match normal generation without promising identical block positions.
+- Recheck the actual block and exclusions immediately before placing an ore block. Do not overwrite player changes made after a job was queued.
+- Store per-chunk completion consistently with changed chunk data. Use it to reconcile global progress on reload, so an interrupted aggregate counter cannot make a processed chunk run again.
+
+World preservation and performance:
+- Process a bounded number of chunks/placements per tick and use the existing server-safe chunk access and IO mechanisms. Do not load the entire world at once or run a long synchronous generation loop on a command invocation.
+- Load existing chunks as needed in controlled batches without generating missing chunks. Release only tickets/resources acquired by this job and preserve player-held loading state.
+- Skip the mod's protected chunks, registered worksite/building blocks and reservations, tracked player-placed blocks where available, containers, block entities, and explicit administrator exclusions. Snapshot exclusions before the first mutation and continue honoring new protection added while the job runs.
+- Provide an optional configured exclusion list of chunk rectangles for other player builds. Do not require an elaborate new GUI for this temporary tool.
+- Old player-placed stone may be indistinguishable from natural stone when its placement was never tracked. State that limitation accurately in command help/docs and recommend a backup and exclusions around such builds. Do not claim universal detection or guaranteed preservation of every unregistered stone structure.
+- Do not automatically run retrogen just because the mod is installed or a chunk loads. It starts only through the explicit administrative command.
+
+The one-pass restriction governs this compatibility job. Normal generation in genuinely new chunks continues afterward, and ordinary ore blocks already added remain mineable.
+
+9. SAVE COMPATIBILITY AND INTEGRATION
+
+Preserve existing player Lumina balances exactly, including fractional units. Existing earned energy must not be reset, reduced, or charged again by the rename.
+
+Map existing Empty Cores and completed cores to their current equivalents without item loss. Existing completed cores remain usable as Lumina Cores without retroactive extra payment. Migrate recipes and references coherently instead of leaving missing-item stacks or duplicate creative entries.
+
+Inspect current Infusing Pedestal saves before changing their inventory layout. Preserve occupied items and any recorded paid energy. If an old partially infused core cannot participate in the new shard workflow, use an explicit, one-time migration/recovery path that preserves its item and accounts for its recorded invested energy. Do not silently delete it, invent free shards, refund repeatedly, or discard a balance whose owner cannot be resolved; retain recoverable data and document the handling.
+
+Migrations must be versioned and idempotent. Repeated loads must not duplicate items, energy, pedestal contents, normal generation markers, or retrogen eligibility. Keep world state isolated between saves and dimensions.
+
+Preserve existing pedestal/totem/worker identities, names, inventories, jobs, structures, one-range BASE worksite settings, mining behavior, leaf cleanup, base construction speed, and courier restrictions. Explicit upgrade effects are removed as described below. This milestone does not otherwise rework professions or reverse the user's latest rules about tool withdrawals and worker supply handling.
+
+10. DEFER ALL UPGRADES AND UPDATE THE HAMMER
+
+UPGRADE REMOVAL
+Inventory every implemented upgrade family and tier, including their items, recipes, install paths, slots, menus, tooltips, JEI/creative/recipe-book entries, generated assets/data, and server-side effects. Remove ALL upgrades from active gameplay for this release. Do not limit this to the few recipes shown in screenshots.
+
+- Remove upgrade crafting and other normal acquisition routes. Remove upgrade items from the creative tab, JEI ingredient/recipe listings, and recipe-book unlocks.
+- Remove upgrade slots, installation buttons, tabs/sections, progress descriptions, and upgrade-only help text. Reflow the remaining vanilla-style GUIs so they do not retain empty panels or unusable controls.
+- Stop applying every upgrade-derived bonus. Clear/recompute cached derived values after migration and on reload. Hidden items or missing GUI slots alone are insufficient if the old bonuses still affect workers.
+- Reject obsolete installation packets or automation insertion paths server-side. Do not leave an alternative way to activate upgrades.
+- Use current base ranges, speeds, reach, capacities, and other ordinary job settings from the live project/configuration. Do not revive old dual-radius rules or rebalance baseline workers merely to compensate for removing upgrades.
+- Preserve normal enchantments actually present on tools, profession-specific equipment such as the Runnington backpack, ordinary mining modes, and job abilities. These are not automatically upgrades just because they improve capability. Remove only the effects provided by the mod's retired upgrade system.
+- Update active documentation and player-facing references to match the removal. Do not add future upgrade tiers, placeholder tabs, replacement recipes, or new progression systems now.
+
+UPGRADE PLATE
+Inspect the actual recipe dependencies. If the Upgrade Plate is only used for upgrades, remove it from active crafting, creative/JEI listings, and progression along with the upgrades. Do not keep a dead-end component merely because it previously existed. This is the expected outcome unless the live project has a real non-upgrade dependency.
+
+If a remaining non-upgrade recipe genuinely needs the plate, retain it for that dependency and use the user's exact SHAPED crafting-table recipe:
+    . I .
+    R S R
+    . I .
+I = one iron ingot, R = one redstone dust, S = one Infused Lumite Shard, . = empty.
+Output ONE Upgrade Plate. Use minecraft:crafting_shaped, not shapeless crafting. Report the concrete remaining dependency that required keeping it. Do not invent a new use to justify retaining it.
+
+EXISTING UPGRADE DATA
+Existing worlds must still load cleanly. Disable installed upgrade effects and preserve old stored items without silently deleting inventory or causing missing-registry failures. If compatibility requires retaining hidden legacy registrations, make them inert and unavailable through ordinary crafting/creative/JEI paths. This compatibility handling is not an active upgrade feature.
+
+If removing GUI slots strands installed items, provide a safe one-time extraction/recovery path through existing inventory handling, with overflow accounted for and no duplication. Preserve unrelated contents and controller identities. Do not invent material/Lumina refunds without reliable provenance. Document the actual migration behavior and verify it is idempotent.
+
+HAMMER TEXTURE
+Redraw the current Hammer as a recognizable compact builder's hammer/mallet at native inventory size:
+- Native 16x16 pixel sprite with transparency and crisp pixel edges.
+- A medium-sized iron mallet head with two flat striking faces and a long, sturdy warm-brown wooden handle attached to the center of the head. Show the handle running diagonally from lower left toward upper right, with the head perpendicular to it.
+- Keep the head compact but substantial: its long axis should be roughly two-thirds the exposed handle length, and its thickness roughly twice the handle width, adjusted to read cleanly on the 16x16 grid. It should have a balanced builder's-hammer silhouette, with the wooden handle remaining a prominent part of the design.
+- Use a dark charcoal outline, a small iron-gray palette with restrained pale highlights on the striking faces, and distinct brown wood tones. Retain crisp square pixel clusters, with no glow, crystals, labels, or decorative attachments.
+- Match vanilla Minecraft item styling and the mod's existing palette. Draw the final sprite on a true 16x16 transparent canvas, with intentional placement of each pixel. An enlarged concept preview is not a finished game asset; do not merely shrink it with filtering and call the result complete.
+- Keep the Hammer's existing identity, recipe, durability capacity, builder functionality, and construction timing. Its player mining behavior changes as specified below.
+- Update the editable art source/generator as well as generated textures so a later asset rebuild cannot restore the bad sprite. Ensure the corrected item appears in inventory, the worker's hand, and identification frames without changing the building templates.
+- Review it at actual 16x16 scale and a nearest-neighbor enlarged scale, plus held and framed views in the packaged client when available. Supply the reviewed preview with release evidence rather than claiming the art is fixed from file existence alone.
+
+HAMMER: SLOW PLAYER MINING
+Players must be able to break ordinary breakable blocks by holding the Hammer and using normal left-click mining. Do not cancel mining or give it zero breaking progress merely because it is a builder's tool.
+
+- The Hammer must mine more slowly than an unenchanted wooden pickaxe on the same block under identical player conditions. Choose and document a positive base mining speed that meets this requirement; compare actual survival-mode break times, not just a nominal tool-speed value.
+- Use the normal block-breaking lifecycle, including crack progress, completion, tool wear, and applicable player mining modifiers. Retain the existing durability capacity and avoid duplicate durability charges or duplicate block drops.
+- Set its mining harvest capability to WOODEN-PICKAXE TIER. Use the same pickaxe harvest eligibility and supported block/tool tags as a wooden pickaxe, with the slower mining speed described above. Blocks harvestable by a wooden pickaxe may give their normal drops.
+- Blocks requiring a stone-tier pickaxe or better can still be broken, but yield NO block/item drops or mining XP with the Hammer. Explicitly verify Iron Ore, Deepslate Iron Ore, Lumite Ore, and Deepslate Lumite Ore. Do not add custom drops or let loot modifiers bypass the minimum-tier restriction.
+- Respect ordinary block hardness, unbreakable blocks, and interaction permissions. The wood-tier limit applies to harvesting, not to whether breaking progress can complete on an otherwise breakable block.
+- This is a player-held fallback tool behavior. Keep Buildington construction timing and job/tool eligibility unchanged; do not turn the Hammer into a Minington mining tool.
+
+11. VERIFICATION AND DELIVERY
+
+Run the repository's required checks, then meaningful focused tests for:
+- All new registrations, tags, loot tables, recipes, translations, assets, and dedicated-server startup.
+- Stone-tier tool requirements, 1-3 unenchanted drops, controlled Fortune cases, Silk Touch precedence, and a real Minington mining both ore variants without duplicated loot or tool wear.
+- Several world seeds with measured vertical distribution, replacement targets, biome coverage, no Nether/End generation, and no duplicate feature registration.
+- Emissive veins visible in darkness while stone stays shaded and emitted block light remains zero, with adjacent blocks, culling, inventory rendering, and the actual installed rendering mod set where available.
+- One, two, three, and four occupied pedestal corners; physical hit targeting; floating/rotation; real transfer particles; individual completion particles; no-GUI interaction.
+- Exactly 25 Lumina spent per completed shard and 100 for four; fractional balances; near-zero remaining energy; pause/resume; shared transfer-rate budget; no double payment or free conversion.
+- Separate players' shards; no energy taken from bystanders; disconnect/out-of-range; simultaneous interactions; full inventories; pedestal break; partial shard retrieval/reinsertion; save/reload mid-infusion.
+- Every remaining recipe replacement exception: raw shard for Empty Core, diamond for Infusing Pedestal, infused shards for other surviving amethyst ingredients, and the shaped four-shard Lumina Core recipe. Check bootstrap dependencies and prevent raw/partial shards from satisfying infused recipes. Deferred upgrade recipes must remain absent.
+- Every upgrade family/tier is unavailable in normal acquisition and has no active effects or GUI controls. Test old installed and carried items, repeated migration, stale install requests, and cached bonuses; preserve ordinary tool enchantments, backpack capacity, and base profession settings.
+- The Upgrade Plate is removed when unused, or its genuine non-upgrade dependency and exact shaped recipe are verified. Check generated recipes and JEI/creative/recipe-book entries for stale references.
+- Hammer texture at native scale, enlarged pixel scale, held view, and item-frame view; asset regeneration retains the corrected design.
+- Hammer player mining completes successfully on representative breakable blocks and is measurably slower than an unenchanted wooden pickaxe on the same non-instant blocks under matching conditions. Verify wooden-pickaxe harvest eligibility: eligible blocks give normal drops, while Iron Ore, Deepslate Iron Ore, both Lumite ore variants, and other higher-tier blocks break without drops or mining XP. Check crack progress, durability, and unbreakable blocks; Buildington construction behavior remains unchanged.
+- Existing-save migration twice with balances, cores, occupied pedestals and unrelated Network state intact.
+- Retrogen over a disposable copy of an existing world, including generated but unloaded chunks, protected/excluded areas, missing chunks, already-Lumite-generated chunks, and partially processed chunks.
+- Pause/restart/resume during retrogen; stable placements and counts; no refill after mining; no new terrain generation; scoped chunk-boundary behavior; bounded processing and ticket cleanup.
+- A second start is refused after completion across player changes, server restarts, configuration changes, and ordinary mod upgrades. A fresh independent world has its own separate eligibility.
+
+Use disposable copies for destructive verification and the project's existing isolated client review workflow. Do not execute retrogen on the user's live world as an incidental test or install-time action. Implementing the command is requested; using it on their world remains a deliberate in-game administrative action.
+
+Deliver the integrated implementation, data/assets, upgrade removal and migration handling, reviewed Hammer art and slow player-mining behavior, normal build/release artifacts, recipe table, concise setup/command documentation, and verification results. State whether the Upgrade Plate was removed or retained for a documented dependency. Report any test or client review that could not be performed instead of claiming it passed. Distinguish the initial ore-generation balance from measured results and retain the temporary command's one-world-one-pass guarantee.

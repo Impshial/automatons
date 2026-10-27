@@ -1,0 +1,13 @@
+{
+  "variants": {
+    "kind=0": {
+      "model": "automatons:block/fluid_spill_0"
+    },
+    "kind=1": {
+      "model": "automatons:block/fluid_spill_1"
+    },
+    "kind=2": {
+      "model": "automatons:block/fluid_spill_2"
+    }
+  }
+}

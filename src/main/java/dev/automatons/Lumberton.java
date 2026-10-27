@@ -17,12 +17,17 @@ import net.minecraft.world.inventory.AbstractContainerMenu;
 import net.minecraft.world.item.*;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.ServerLevelAccessor;
+import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.pathfinder.Path;
 import net.minecraft.world.phys.*;
 import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
 
 public class Lumberton extends PathfinderMob implements MenuProvider {
+  public final Mining mining = new Mining(this);
+  public final Building building = new Building(this);
+  public final Farming farming = new Farming(this);
+  public final Running running = new Running(this);
   public static final int TOOLS = 1, WOOD = 2, STORAGE = 4, CARGO = 8;
   private static final EntityDataAccessor<Integer>
       FACE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT),
@@ -31,7 +36,20 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.STRING);
   private static final EntityDataAccessor<Optional<BlockPos>> CHOP_TARGET =
       SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.OPTIONAL_BLOCK_POS);
+  private static final EntityDataAccessor<ItemStack> ACTION_ITEM =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.ITEM_STACK);
   public UUID owner, homeId, totemId, timberId;
+  private static final EntityDataAccessor<Boolean> SHOW_NAMES =
+      SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.BOOLEAN);
+
+  public boolean showNames() {
+    return entityData.get(SHOW_NAMES);
+  }
+
+  public void showNames(boolean value) {
+    entityData.set(SHOW_NAMES, value);
+  }
+
   private Timber escapeTimber;
   private UUID looseLogItem;
   private long nextLogSearch, nextLogPath;
@@ -45,10 +63,16 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   private final Map<Long, Long> avoidedNodes = new HashMap<>();
   private final Map<UUID, Long> failedTimber = new HashMap<>();
   private BlockPos crackTarget;
+  private BlockPos replantAt;
+  private int replantRetries;
+  private long nextSaplingSearch;
+  private BlockPos saplingChest;
+  public final ForestryAccess forestryAccess = new ForestryAccess(this);
 
   public BlockPos home, totem;
   public String homeDimension = "", totemDimension = "";
   public boolean authorized = true, packing, deploying;
+  public UUID machineId;
   private static final EntityDataAccessor<Integer> JOB =
       SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   public int alerts;
@@ -58,6 +82,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public boolean wantsJob, pathDeferred;
   private boolean servicing, serviceArrived;
   private int serviceRetry, storageCheckEpoch = -1;
+  private int scanWaitSince = -1;
   private long storageRouteUntil;
   private boolean storageRouteAvailable;
   private String serviceReason = "Waiting for available work";
@@ -81,18 +106,31 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
               smile();
             }
           },
-          () -> job() == 1);
-  public final ItemStackHandler cargo =
-      new ItemStackHandler(Balance.CARGO.get()) {
-        @Override
-        public boolean isItemValid(int slot, ItemStack stack) {
-          return !Inventories.axe(stack);
-        }
-      };
+          (java.util.function.IntSupplier) this::job);
+  public final ItemStackHandler cargo = new ItemStackHandler(Balance.CARGO.get());
+
+  private final net.minecraftforge.common.util.LazyOptional<net.minecraftforge.items.IItemHandler>
+      inventoryCapability =
+          net.minecraftforge.common.util.LazyOptional.of(() -> new WorkerInventory(this));
+
+  @Override
+  public <T> net.minecraftforge.common.util.LazyOptional<T> getCapability(
+      net.minecraftforge.common.capabilities.Capability<T> capability, Direction side) {
+    if (capability == net.minecraftforge.common.capabilities.ForgeCapabilities.ITEM_HANDLER
+        && isAlive()) return inventoryCapability.cast();
+    return super.getCapability(capability, side);
+  }
+
+  @Override
+  public void invalidateCaps() {
+    super.invalidateCaps();
+    inventoryCapability.invalidate();
+  }
 
   public Lumberton(EntityType<? extends Lumberton> type, Level l) {
     super(type, l);
     setPersistenceRequired();
+    moveControl = new WorkerMoveControl(this);
     setCanPickUpLoot(false);
   }
 
@@ -105,6 +143,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (avoidedNodes != null
         && avoidedNodes.getOrDefault(node.asLong(), 0L) > level().getGameTime()) return true;
     AABB box = getDimensions(Pose.STANDING).makeBoundingBox(Vec3.atBottomCenterOf(node));
+    if (building.blocksRoute(box)) return true;
     if (navigationTimberTick != tickCount) {
       navigationTimber = Timber.nearby(level(), getBoundingBox().inflate(64));
       navigationTimberTick = tickCount;
@@ -169,6 +208,19 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   protected void registerGoals() {
     goalSelector.addGoal(0, new FloatGoal(this));
+    goalSelector.addGoal(1, new OpenDoorGoal(this, false));
+    goalSelector.addGoal(
+        2,
+        new Goal() {
+          {
+            setFlags(EnumSet.of(Flag.LOOK));
+          }
+
+          @Override
+          public boolean canUse() {
+            return building.controlsLook();
+          }
+        });
     goalSelector.addGoal(8, new LookAtPlayerGoal(this, Player.class, 6));
     goalSelector.addGoal(9, new RandomLookAroundGoal(this));
   }
@@ -177,6 +229,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   protected void defineSynchedData() {
     super.defineSynchedData();
     entityData.define(CHOP_TARGET, Optional.empty());
+    entityData.define(ACTION_ITEM, ItemStack.EMPTY);
+    entityData.define(SHOW_NAMES, true);
     entityData.define(JOB, 1);
     entityData.define(FACE, 0);
     entityData.define(ACTIVE, 0);
@@ -185,7 +239,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   protected float getStandingEyeHeight(Pose pose, EntityDimensions dim) {
-    return 1.29f;
+    return 1.4f;
   }
 
   public boolean owns(Player p) {
@@ -196,13 +250,28 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     return entityData.get(JOB);
   }
 
-  public void setJob(int job) {
-    entityData.set(JOB, job == 1 ? 1 : 0);
+  public boolean setJob(int job) {
+    int next = WorkerJob.valid(job);
+    if (!Inventories.resize(cargo, Inventories.cargoSlots(next))) {
+      state(
+          net.minecraft.network.chat.Component.translatable("automatons.runner.unload")
+              .getString());
+      return false;
+    }
+    entityData.set(JOB, next);
+    replantAt = null;
     suspendWork();
     alerts = 0;
+    return true;
   }
 
   public void suspendWork() {
+    if (machineId != null && level() instanceof ServerLevel) MachineOperator.leave(this);
+    forestryHelp.release();
+    farming.release();
+    building.release();
+    running.release();
+    mining.release();
     clearChop();
     wantsJob = false;
     servicing = false;
@@ -227,34 +296,50 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public ItemStack activeTool() {
-    return tools == null || job() != 1
+    return tools == null
+            || job() == 0
+            || !Inventories.tool(
+                job(), tools.getStackInSlot(Math.min(2, Math.max(0, activeSlot()))))
         ? ItemStack.EMPTY
         : tools.getStackInSlot(Math.min(2, Math.max(0, activeSlot())));
   }
 
   @Override
   public ItemStack getItemBySlot(EquipmentSlot slot) {
-    return slot == EquipmentSlot.MAINHAND ? activeTool() : super.getItemBySlot(slot);
+    if (slot != EquipmentSlot.MAINHAND) return super.getItemBySlot(slot);
+    ItemStack action = entityData.get(ACTION_ITEM);
+    return job() == WorkerJob.FARMINGTON && !action.isEmpty() ? action : activeTool();
   }
 
   @Override
   public void setItemSlot(EquipmentSlot slot, ItemStack stack) {
     if (slot == EquipmentSlot.MAINHAND && tools != null) {
-      if (!stack.isEmpty() && !Inventories.axe(stack)) return;
+      if (!stack.isEmpty() && !Inventories.tool(job(), stack)) return;
       tools.setStackInSlot(activeSlot(), stack);
       return;
     }
     super.setItemSlot(slot, stack);
   }
 
+  /** Visual only: inventory ownership remains in real cargo/tool slots. */
+  public void showActionItem(Item item) {
+    ItemStack next = item == Items.AIR ? ItemStack.EMPTY : new ItemStack(item);
+    if (!ItemStack.isSameItemSameTags(entityData.get(ACTION_ITEM), next))
+      entityData.set(ACTION_ITEM, next);
+  }
+
   public void selectTool() {
     if (tools == null) return;
-    if (Inventories.axe(activeTool())) return;
+    if (Inventories.tool(job(), activeTool())) return;
     for (int i = 0; i < 3; i++)
-      if (Inventories.axe(tools.getStackInSlot(i))) {
+      if (Inventories.tool(job(), tools.getStackInSlot(i))) {
         entityData.set(ACTIVE, i);
         return;
       }
+  }
+
+  public void activateTool(int slot) {
+    entityData.set(ACTIVE, Math.max(0, Math.min(2, slot)));
   }
 
   public void smile() {
@@ -262,6 +347,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public ItemStack expectedOutput() {
+    if (job() == 2) return mining.expectedOutput();
     Timber t = timber();
     if (t != null && t.pendingLoot != null && !t.pendingLoot.isEmpty())
       return t.pendingLoot.get(0).copyWithCount(1);
@@ -276,6 +362,40 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public boolean cargoEmpty() {
     for (int i = 0; i < cargo.getSlots(); i++) if (!cargo.getStackInSlot(i).isEmpty()) return false;
     return true;
+  }
+
+  public int cargoKeep(ItemStack stack) {
+    if (job() == WorkerJob.FARMINGTON) return farming.reserve().getOrDefault(stack.getItem(), 0);
+    if (job() == 2) return mining.keep(stack);
+    if (job() == 1 && stack.is(net.minecraft.tags.ItemTags.SAPLINGS)) return 16;
+    if (job() == 1 && ForestryAccess.buildingBlock(stack)) return 64;
+    return 0;
+  }
+
+  private long harvestSince = -1;
+
+  int harvestCargoCount() {
+    Map<Item, Integer> counts = new HashMap<>();
+    Map<Item, Integer> retained = new HashMap<>();
+    for (int slot = 0; slot < cargo.getSlots(); slot++) {
+      ItemStack stack = cargo.getStackInSlot(slot);
+      if (stack.isEmpty()) continue;
+      counts.merge(stack.getItem(), stack.getCount(), Integer::sum);
+      retained.put(stack.getItem(), cargoKeep(stack));
+    }
+    return counts.entrySet().stream()
+        .mapToInt(e -> Math.max(0, e.getValue() - retained.getOrDefault(e.getKey(), 0)))
+        .sum();
+  }
+
+  boolean harvestDeliveryDue() {
+    int count = harvestCargoCount();
+    if (count == 0) {
+      harvestSince = -1;
+      return false;
+    }
+    if (harvestSince == -1) harvestSince = level().getGameTime();
+    return count >= 128 || level().getGameTime() - harvestSince >= 1200;
   }
 
   public void wear(int amount) {
@@ -332,18 +452,21 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public String assign(Station target) {
     if (!target.isTotem() || owner == null || !owner.equals(target.owner))
       return "Choose your own totem";
+    if (target.logisticsHome != null && !target.logisticsHome.equals(homeId))
+      return "Totem belongs to another home";
     unassign();
     totem = target.getBlockPos();
     totemId = target.identity;
     totemDimension = level().dimension().location().toString();
     target.workers.add(getUUID());
+    if (homeId != null) target.logisticsHome = homeId;
     authorized = true;
     WorkerIdentity.update(this, "Deployed");
     target.invalidateTrees();
     target.refreshStorage();
     target.changed();
     smile();
-    return "Lumberton assigned";
+    return getDisplayName().getString() + " assigned";
   }
 
   public String rebind(Station s) {
@@ -387,10 +510,11 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         .info("{} at {}: {} (flags {})", getUUID(), blockPosition(), message, alerts);
   }
 
-  private void state(String text) {
+  public void state(String text) {
     if (!text.equals("Chopping")
         && !text.equals("Clearing leaves")
-        && !text.equals("Processing timber")) clearChop();
+        && !text.equals("Processing timber")
+        && !text.equals("Mining")) clearChop();
     if (!text.equals(status())) debugWork(status() + " -> " + text);
     entityData.set(STATUS, text);
     int face = 0;
@@ -399,7 +523,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     else if (tickCount < smileUntil) face = 1;
     else if (text.equals("Chopping")
         || text.equals("Clearing leaves")
-        || text.equals("Processing timber")) face = 3;
+        || text.equals("Processing timber")
+        || text.equals("Mining")) face = 3;
     else if (text.equals("Seeking tree")) face = 2;
     entityData.set(FACE, face);
   }
@@ -412,39 +537,64 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   @Override
+  public void travel(Vec3 input) {
+    if (mining != null && mining.travelControlled()) return;
+    super.travel(input);
+  }
+
+  @Override
   public void tick() {
     super.tick();
+    if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0)
+      pickupNearbyItems();
+    if (!level().isClientSide && tickCount % 20 == 0) WorkerNames.sync(this);
+    if (!level().isClientSide) mining.motionTick();
     if (!level().isClientSide && chopTarget() != null) aimAt(chopTarget());
-    if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0) {
-      getAttribute(Attributes.MOVEMENT_SPEED).setBaseValue(Balance.WALK.get());
+    if (!level().isClientSide
+        && isAlive()
+        && !packing
+        && !isNoAi()
+        && (job() >= 2 || tickCount % 5 == 0)) {
+      getAttribute(Attributes.MOVEMENT_SPEED)
+          .setBaseValue(job() == 3 ? Balance.RUNNER_WALK.get() : Balance.WALK.get());
       if (tickCount % 20 == 0) recoverStalledNavigation();
+      if (job() != 0) running.doorTick();
       brain();
       if (tickCount % 20 == 0) {
-        if (job() == 1 && authorized) pickup();
         WorkerIdentity.update(this, "Deployed");
       }
     }
   }
 
-  private void pickup() {
-    for (ItemEntity e : level().getEntitiesOfClass(ItemEntity.class, getBoundingBox().inflate(1))) {
-      if (e.hasPickUpDelay() || e.getOwner() != null && !e.getOwner().getUUID().equals(owner))
-        continue;
-      CompoundTag pickup = e.saveWithoutId(new CompoundTag());
-      if (pickup.hasUUID("Owner") && !pickup.getUUID("Owner").equals(owner)) continue;
-      ItemStack s = e.getItem(), rest = s.copy();
-      if (Inventories.axe(s)) {
-        for (int i = 0; i < 3 && !rest.isEmpty(); i++) rest = tools.insertItem(i, rest, false);
-      } else if (s.is(net.minecraft.tags.ItemTags.LOGS) && looseLogAllowed(e, station())
-          || s.is(net.minecraft.tags.ItemTags.SAPLINGS)
-          || s.is(Items.STICK)
-          || s.is(Items.APPLE)) {
-        rest = Inventories.insert(cargo, rest, false);
-      } else continue;
-      if (rest.isEmpty()) e.discard();
-      else e.setItem(rest);
-      selectTool();
-    }
+  /** Nearby cleanup is independent of job authorization, worksite readiness and work state. */
+  private void pickupNearbyItems() {
+    for (ItemEntity e : level().getEntitiesOfClass(ItemEntity.class, getBoundingBox().inflate(1)))
+      pickupDrop(e);
+  }
+
+  boolean canCollectDrop(ItemEntity item) {
+    if (!item.isAlive() || item.hasPickUpDelay() || item.getItem().isEmpty()) return false;
+    // The saved UUID also protects drops whose owner is offline or outside loaded chunks.
+    CompoundTag saved = item.saveWithoutId(new CompoundTag());
+    return !saved.hasUUID("Owner") || saved.getUUID("Owner").equals(owner);
+  }
+
+  boolean pickupDrop(ItemEntity item) {
+    if (level().isClientSide
+        || !isAlive()
+        || packing
+        || !canCollectDrop(item)
+        || !hasLineOfSight(item)) return false;
+    ItemStack stack = item.getItem();
+    ItemStack rest = stack.copy();
+    if (Inventories.tool(job(), rest)) rest = Inventories.insert(tools, rest, false);
+    rest = Inventories.insert(cargo, rest, false);
+    int collected = stack.getCount() - rest.getCount();
+    if (collected == 0) return false;
+    take(item, collected);
+    if (rest.isEmpty()) item.discard();
+    else item.setItem(rest);
+    return true;
   }
 
   private boolean looseLogAllowed(ItemEntity item, Station station) {
@@ -474,7 +624,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
           l.getEntitiesOfClass(
               ItemEntity.class,
               new AABB(station.getBlockPos())
-                  .inflate(station.lumberRange(), Balance.ROOT_HEIGHT.get(), station.lumberRange()),
+                  .inflate(station.workRange(), Balance.ROOT_HEIGHT.get(), station.workRange()),
               e ->
                   looseLogAllowed(e, station)
                       && hasLineOfSight(e)
@@ -495,7 +645,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     if (target == null) return false;
     if (distanceToSqr(target) < 2) {
-      pickup();
+      pickupNearbyItems();
       if (target.isRemoved()
           || Inventories.insert(cargo, target.getItem(), true).getCount()
               == target.getItem().getCount()) {
@@ -521,7 +671,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public boolean inReach(BlockPos p) {
-    if (distanceToSqr(Vec3.atCenterOf(p)) > 7) return false;
+    if (job() >= 2 || p.equals(fallObstruction)
+        ? getEyePosition().distanceToSqr(Vec3.atCenterOf(p))
+            > Math.pow(Balance.MINING_REACH.get(), 2)
+        : distanceToSqr(Vec3.atCenterOf(p)) > 7) return false;
     var hit =
         level()
             .clip(
@@ -535,7 +688,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private boolean reachesFrom(Vec3 feet, BlockPos p) {
-    if (feet.distanceToSqr(Vec3.atCenterOf(p)) > 4) return false;
+    if (job() >= 2 || p.equals(fallObstruction)
+        ? feet.add(0, getEyeHeight(), 0).distanceToSqr(Vec3.atCenterOf(p))
+            > Math.pow(Balance.MINING_REACH.get(), 2)
+        : feet.distanceToSqr(Vec3.atCenterOf(p)) > 4) return false;
     var hit =
         level()
             .clip(
@@ -557,15 +713,23 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     Route cached = routes.get(p.asLong());
     if (cached != null && cached.until() > level().getGameTime()) return cached.path();
     List<BlockPos> candidates = new ArrayList<>();
-    for (int dx = -2; dx <= 2; dx++)
-      for (int dz = -2; dz <= 2; dz++)
-        for (int dy = -1; dy <= 1; dy++) {
-          if (dx == 0 && dz == 0) continue;
+    int horizontalReach = job() == 3 ? 3 : 2;
+    for (int dx = -horizontalReach; dx <= horizontalReach; dx++)
+      for (int dz = -horizontalReach; dz <= horizontalReach; dz++)
+        for (int dy = job() >= 2 ? -5 : -1; dy <= 1; dy++) {
+          if (dx == 0 && dz == 0 && job() < 2) continue;
           BlockPos q = p.offset(dx, dy, dz);
           Vec3 feet = Vec3.atBottomCenterOf(q);
           AABB box = getDimensions(Pose.STANDING).makeBoundingBox(feet);
           if (!level().hasChunkAt(q) || !level().hasChunkAt(q.above()) || !reachesFrom(feet, p))
             continue;
+          // A node visible only through an exact block corner is not a usable
+          // work stance: navigation has finite arrival tolerance.
+          if (job() >= 2
+              && (!reachesFrom(feet.add(.12, 0, 0), p)
+                  || !reachesFrom(feet.add(-.12, 0, 0), p)
+                  || !reachesFrom(feet.add(0, 0, .12), p)
+                  || !reachesFrom(feet.add(0, 0, -.12), p))) continue;
           if (level().getBlockState(q.below()).isFaceSturdy(level(), q.below(), Direction.UP)
               && level().noCollision(this, box)
               && !Timber.blocksWorker(level(), box)) candidates.add(q);
@@ -580,11 +744,40 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       }
       // Search all usable sides together; retrying the first side alone can starve alternatives.
       Path path = navigation.createPath(new LinkedHashSet<>(candidates), 0);
-      if (path != null && path.canReach()) {
+      if (Balance.DEBUG_WORK.get() && job() >= 2 && (path == null || !path.canReach()))
+        org.slf4j.LoggerFactory.getLogger("automatons.work")
+            .info(
+                "MINE PATH failed feet={} ground={} candidates={} path={} end={}",
+                position(),
+                onGround(),
+                candidates,
+                path,
+                path == null ? null : path.getEndNode());
+      // Couriers can make bounded progress on long routes without requiring one
+      // search to reach the final handoff. Arrival still requires inReach().
+      boolean progress = false;
+      if (path != null && path.getNodeCount() > 1 && path.getEndNode() != null) {
+        Vec3 end = Vec3.atBottomCenterOf(path.getEndNode().asBlockPos());
+        double before =
+            candidates.stream()
+                .mapToDouble(q -> position().distanceToSqr(Vec3.atBottomCenterOf(q)))
+                .min()
+                .orElse(0);
+        double after =
+            candidates.stream()
+                .mapToDouble(q -> end.distanceToSqr(Vec3.atBottomCenterOf(q)))
+                .min()
+                .orElse(before);
+        progress = after + 4 < before && position().distanceToSqr(end) > 1;
+      }
+      if (path != null && (path.canReach() || progress)) {
         routes.put(p.asLong(), new Route(path, level().getGameTime() + 20));
         return path;
       }
     }
+    if (Balance.DEBUG_WORK.get() && job() >= 2 && candidates.isEmpty())
+      org.slf4j.LoggerFactory.getLogger("automatons.work")
+          .info("MINE PATH no positions feet={} target={}", position(), p);
     routes.put(p.asLong(), new Route(null, level().getGameTime() + 40));
     return null;
   }
@@ -594,12 +787,26 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     return inReach(p) || pathTo(p) != null;
   }
 
-  private boolean travel(BlockPos p, String moving, String arrived) {
+  public boolean travelTo(BlockPos p, String moving, String arrived) {
     if (inReach(p)) {
       navigation.stop();
       blockedSince = -1;
       state(arrived);
       return true;
+    }
+    if (job() >= 2
+        && navigation.isDone()
+        && navigation.getPath() != null
+        && navigation.getPath().getEndNode() != null) {
+      BlockPos end = navigation.getPath().getEndNode().asBlockPos();
+      Vec3 feet = Vec3.atBottomCenterOf(end);
+      if (reachesFrom(feet, p)
+          && position().distanceToSqr(feet) < 2.25
+          && position().distanceToSqr(feet) > .000001) {
+        moveControl.setWantedPosition(feet.x, feet.y, feet.z, 1);
+        state(moving);
+        return false;
+      }
     }
     if (tickCount >= nextPath
         || pathTarget == null
@@ -625,7 +832,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void goHome(String arrival) {
-    if (home != null && level().hasChunkAt(home)) travel(home, "Returning home", arrival);
+    if (mining.returnToSurface()) return;
+    if (home != null && level().hasChunkAt(home)) travelTo(home, "Returning home", arrival);
     else {
       navigation.stop();
       state(home == null ? "Home missing" : "Dependency unloaded");
@@ -633,11 +841,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void clearPending() {
+    forestryAccess.finish();
     clearChop();
     landingBlockedSince = -1;
     resumeRoot = null;
     pendingLanding = null;
     pendingAction = null;
+    fallObstruction = null;
+    fallClearTicks = 0;
     nextLanding = 0;
     pending = null;
     workTicks = 0;
@@ -648,7 +859,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     long now = level().getGameTime();
     if (landingBlockedSince < 0) landingBlockedSince = now;
     if (now - landingBlockedSince < 60) {
-      state("Waiting for safe landing");
+      state("Checking fall area");
       return;
     }
     long root = pending.root().asLong();
@@ -664,6 +875,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   private void beginService(String reason) {
+    if (forestryAccess.active()) forestryAccess.finish();
     wantsJob = false;
     serviceReason = reason;
     if (!servicing) {
@@ -681,7 +893,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   /** A service visit empties every accepted stack before returning to the existing job. */
   private void service(Station s) {
     if (!serviceArrived) {
-      if (!travel(totem, "Returning totem", serviceReason)) return;
+      if (!travelTo(totem, "Returning totem", serviceReason)) return;
       serviceArrived = true;
     }
     if (tickCount < serviceRetry) {
@@ -689,6 +901,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       state(serviceReason);
       return;
     }
+    pathDeferred = false;
     BlockPos target = !cargoEmpty() ? Storage.choose(this, s, false) : null;
     if (target == null && pathDeferred) {
       state("Replanning");
@@ -701,13 +914,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     if (target != null) {
       String activity = cargoEmpty() ? "Restocking" : "Unloading";
-      if (travel(target, activity, activity)) Storage.transfer(this, s, target);
+      if (travelTo(target, activity, activity)) Storage.transfer(this, s, target);
       return;
     }
     // No accepted cargo remains at a reachable chest. Wait in place, not a repeated chest/totem
     // loop.
     servicing = false;
     serviceArrived = false;
+    harvestSince = -1;
     serviceRetry = tickCount + 40;
     state(serviceReason);
   }
@@ -736,6 +950,9 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         space = Storage.anySpace(this, s);
     if (exists && open && space) {
       alerts &= ~STORAGE;
+      // The temporary pillar is the return route. A normal ground path is unavailable
+      // until the worker recovers its supports, so do not interrupt the elevated cut.
+      if (forestryAccess.active()) return "Ready";
       storageCheckEpoch = -1;
       if (level().getGameTime() >= storageRouteUntil) {
         storageRouteAvailable = false;
@@ -811,6 +1028,16 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   private BlockPos approach(TreeFinder.Tree tree) {
     if (canReach(tree.root())) return tree.root();
     if (pathDeferred) return null;
+    for (BlockPos cut :
+        tree.logs().stream()
+            .filter(
+                p -> !p.equals(tree.root()) && TreeFinder.trunkCut((ServerLevel) level(), tree, p))
+            .sorted(
+                Comparator.<BlockPos>comparingInt(p -> p.getY()).thenComparingLong(p -> p.asLong()))
+            .toList()) {
+      if (canReach(cut)) return cut;
+      if (pathDeferred) return null;
+    }
     // Mangroves carry their trunk above a natural root arch. A grounded root is an
     // actionable base cut; the tree's ordering/range anchor stays at the trunk footprint.
     List<BlockPos> roots =
@@ -844,7 +1071,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       if (canReach(leaf)) return leaf;
       if (pathDeferred) return null;
     }
-    return null;
+    return forestryAccess.plan(tree.root()) ? tree.root() : null;
   }
 
   private boolean accessLeaf(TreeFinder.Tree tree, BlockPos p) {
@@ -881,6 +1108,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         continue;
       }
       if (t.claim(this)) {
+        scanWaitSince = -1;
         timberId = t.getUUID();
         timberAnchor = t.blockPosition();
         wantsJob = false;
@@ -890,8 +1118,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     for (TreeFinder.Tree tree : s.orderedTrees()) {
       if (!s.discoveredBefore(tree)) {
-        state("Seeking tree");
-        if (!cargoEmpty() && tickCount >= serviceRetry) beginService("Unloading while searching");
+        waitForTreeScan();
         return;
       }
       if (tree.logs().stream()
@@ -915,15 +1142,28 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       BlockPos action = approach(tree);
       if (action == null) {
         if (pathDeferred) return;
-        debugWork("No reachable cut for " + tree.root() + "; retry in 60 ticks");
-        failedTrees.put(tree.root().asLong(), l.getGameTime() + 60);
+        debugWork("No reachable cut for " + tree.root() + "; try other trees for 20 seconds");
+        failedTrees.put(tree.root().asLong(), l.getGameTime() + 400);
         blocked = true;
         continue;
       }
+      TreeFinder.Landing planned = null;
+      if (!TreeFinder.loose(tree)) {
+        if (!WorldEvents.budget(256) || !WorldEvents.planBudget()) return;
+        planned = TreeFinder.landing(l, tree, s, owner, this);
+        if (planned == null) planned = TreeFinder.landingWithClearing(l, tree, s, owner, this);
+        if (planned == null) {
+          failedTrees.put(tree.root().asLong(), l.getGameTime() + 400);
+          s.deferredFalls.put(tree.root().asLong(), l.getGameTime() + 400);
+          blocked = true;
+          continue;
+        }
+      }
       if (data.reserve(tree.logs(), getUUID())) {
+        scanWaitSince = -1;
         pending = tree;
         pendingAction = action;
-        pendingLanding = null;
+        pendingLanding = planned;
         workTicks = 0;
         wantsJob = false;
         alerts &= ~WOOD;
@@ -942,11 +1182,21 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       state("No eligible wood");
     } else {
       alerts &= ~WOOD;
-      state("Seeking tree");
-      if (!cargoEmpty() && tickCount >= serviceRetry) beginService("Unloading while searching");
+      waitForTreeScan();
       return;
     }
-    if (tickCount >= serviceRetry) beginService(status());
+    if (harvestCargoCount() > 0 && tickCount >= serviceRetry) beginService("Unloading harvest");
+  }
+
+  private void waitForTreeScan() {
+    state("Seeking tree");
+    if (scanWaitSince < 0) scanWaitSince = tickCount;
+    // A planted sapling restarts discovery. Give nearby work time to reappear before unloading,
+    // while still delivering cargo if repeated terrain changes keep the scan open indefinitely.
+    if (!cargoEmpty() && tickCount - scanWaitSince >= 200 && tickCount >= serviceRetry) {
+      scanWaitSince = -1;
+      beginService("Unloading while searching");
+    }
   }
 
   public BlockPos chopTarget() {
@@ -977,7 +1227,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     lookControl.setLookAt(pos.getX() + .5, pos.getY() + .5, pos.getZ() + .5, 360, 360);
   }
 
-  private void workVisual(BlockPos pos, int progress, int duration) {
+  public void workVisual(BlockPos pos, int progress, int duration) {
     if (!pos.equals(chopTarget())) clearChop();
     entityData.set(CHOP_TARGET, Optional.of(pos.immutable()));
     aimAt(pos);
@@ -1051,8 +1301,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   private void brain() {
     ServerLevel l = (ServerLevel) level();
     wantsJob = false;
+    showActionItem(Items.AIR);
     if (escapeFallingTimber()) return;
     selectTool();
+    if (owner != null && forestryAccess.cleaning() && forestryAccess.cleanup()) return;
     if (owner == null) {
       alerts = 0;
       state("Unassigned test worker — use a wand to claim");
@@ -1075,10 +1327,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       storageCondition(station());
     }
     if (h != null && h.recalled()) {
+      forestryHelp.release();
+      farming.release();
+      building.release();
+      mining.releaseWork();
       clearPending();
       suspendTimber();
       servicing = false;
-      goHome("Recalled");
+      if (job() == 3) running.idle("Recalled");
+      else goHome("Recalled");
       return;
     }
     if (!l.hasChunkAt(home)) {
@@ -1094,15 +1351,21 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     hs.registerHome();
     if (!authorized) {
+      forestryHelp.release();
       alerts = 0;
       navigation.stop();
       state("Paused at placement — Start Work");
       return;
     }
-    if (job() != 1) {
+    if (job() == 0) {
       alerts = 0;
+      if (mining.returnToSurface()) return;
       navigation.stop();
       state("Unassigned — choose a job");
+      return;
+    }
+    if (job() == WorkerJob.OPERATORTON) {
+      MachineOperator.tick(this);
       return;
     }
     if (!totemDimension.isEmpty() && !totemDimension.equals(l.dimension().location().toString())) {
@@ -1125,12 +1388,59 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       goHome("Totem missing");
       return;
     }
+    if (s.project() != null && s.project().home == null) {
+      s.project().home = homeId;
+      WorldData.get(l).setDirty();
+    }
+    if (job() == WorkerJob.BUILDINGTON) {
+      building.tick(s);
+      return;
+    }
+    if (job() == WorkerJob.MININGTON && forestryHelp.tick()) return;
+    if (job() != WorkerJob.RUNNINGTON && !s.worksiteReady()) {
+      alerts = 0;
+      running.idle(
+          s.purpose == WorksitePurpose.UNCONFIGURED
+              ? "Choose Totem purpose"
+              : "Waiting for worksite construction");
+      return;
+    }
+    if (job() == WorkerJob.MININGTON && s.purpose != WorksitePurpose.MINE) {
+      state("This worksite has no mine entrance");
+      return;
+    }
+    if (job() == WorkerJob.FARMINGTON) {
+      farming.tick(s);
+      return;
+    }
+    if (job() == 2) {
+      mining.tick(s);
+      return;
+    }
+    if (job() == 3) {
+      running.tick(s);
+      return;
+    }
+    if (mining.returnToSurface()) return;
     resourceAlerts(s);
     if (servicing) {
       service(s);
       return;
     }
     if (!storageReady(s)) return;
+    Timber plantingTimber = timber();
+    boolean deliveryDue = harvestDeliveryDue();
+    if (replantAt != null && (plantingTimber == null || plantingTimber.finished()) && replant(s))
+      return;
+    if (deliveryDue
+        && pending == null
+        && (plantingTimber == null || plantingTimber.finished())
+        && !forestryAccess.active()
+        && tickCount >= serviceRetry) {
+      beginService("Delivering harvest");
+      service(s);
+      return;
+    }
     if ((alerts & (TOOLS | CARGO)) != 0) {
       clearPending();
       if (tickCount >= serviceRetry)
@@ -1166,14 +1476,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         return;
       }
       timberBlockedSince = -1;
-      if (timber.progress() < timber.duration) {
+      if (timber.progress() < timber.duration || !timber.hasPlacedBlocks()) {
         navigation.stop();
         state("Felling");
         return;
       }
       int next = timber.next();
       BlockPos target = timber.targets.get(next);
-      if (!travel(target, "Travelling", "Processing timber")) {
+      if (!travelTo(target, "Travelling", "Processing timber")) {
         if (blockedSince >= 0 && l.getGameTime() - blockedSince > 100) deferBlockedTimber();
         return;
       }
@@ -1214,10 +1524,19 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (pendingAction == null) {
       state(pathDeferred ? "Replanning" : "Waiting for reachable work");
       if (!pathDeferred) {
-        failedTrees.put(pending.root().asLong(), l.getGameTime() + 80);
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
         clearPending();
-        beginService("Waiting for reachable work");
+        navigation.stop();
+        wantsJob = true;
+        state("Seeking other reachable work");
       }
+      return;
+    }
+    if (ForestryHelp.needsPickaxe(l.getBlockState(pendingAction))) {
+      ForestryHelp.request(this, pendingAction, pending.root());
+      failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
+      clearPending();
+      state("Requested Minington — seeking other trees");
       return;
     }
     if (!pending.logs().contains(pendingAction)
@@ -1233,7 +1552,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         clearChop();
         return;
       }
-      if (!travel(pendingAction, "Travelling", "Clearing leaves")) return;
+      if (!travelTo(pendingAction, "Travelling", "Clearing leaves")) return;
       if (!Permissions.allowed(l, pendingAction, owner, Permissions.Action.CUT)) {
         clearPending();
         return;
@@ -1258,11 +1577,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       }
       return;
     }
-    if (!travel(pendingAction, "Travelling", "Chopping")) {
+    if (pendingLanding != null && clearFallArea(s)) return;
+    if (forestryAccess.approach(pendingAction)) return;
+    if (!travelTo(pendingAction, "Travelling", "Chopping")) {
       if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160) {
-        failedTrees.put(pending.root().asLong(), l.getGameTime() + 80);
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
         clearPending();
-        beginService("Waiting for reachable work");
+        navigation.stop();
+        wantsJob = true;
+        state("Seeking other reachable work");
       }
       return;
     }
@@ -1295,17 +1618,20 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     }
     if (pendingLanding == null) {
       if (tickCount < nextLanding) {
-        state("Waiting for safe landing");
+        state("Checking fall area");
         return;
       }
       if (!WorldEvents.budget(256) || !WorldEvents.planBudget()) return;
       nextLanding = tickCount + 20;
       pendingLanding = TreeFinder.landing(l, pending, s, owner, this);
+      if (pendingLanding == null)
+        pendingLanding = TreeFinder.landingWithClearing(l, pending, s, owner, this);
     }
     if (pendingLanding == null) {
       waitForLanding(s);
       return;
     }
+    if (clearFallArea(s)) return;
     if (!TreeFinder.landingStillSafe(l, pending, pendingLanding, s, owner, this)) {
       pendingLanding = null;
       waitForLanding(s);
@@ -1324,6 +1650,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (workTicks >= duration && WorldEvents.conversionBudget()) {
       Timber t = Timber.commit(l, pending, pendingLanding, this, s);
       if (t != null) {
+        replantAt = pending.root().immutable();
+        replantRetries = 0;
         timberId = t.getUUID();
         timberAnchor = t.blockPosition();
         wear(pending.baseCount());
@@ -1346,6 +1674,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public String diagnostic() {
+    if (job() == 2) return mining.diagnostic();
     Timber t = timber();
     return status()
         + " pending="
@@ -1370,7 +1699,202 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         + servicing;
   }
 
+  private boolean replant(Station s) {
+    ServerLevel l = (ServerLevel) level();
+    BlockPos root = replantAt;
+    if (!l.hasChunkAt(root) || !TreeFinder.within(s, root)) {
+      replantAt = null;
+      return false;
+    }
+    for (int slot = 0; slot < cargo.getSlots(); slot++) {
+      ItemStack sapling = cargo.getStackInSlot(slot);
+      if (!sapling.is(net.minecraft.tags.ItemTags.SAPLINGS)
+          || !(sapling.getItem() instanceof BlockItem item)) continue;
+      var state = item.getBlock().defaultBlockState();
+      boolean square = item.getBlock() == net.minecraft.world.level.block.Blocks.DARK_OAK_SAPLING;
+      int amount = square ? 4 : 1;
+      if (mining.carried(sapling.getItem()) < amount) continue;
+      List<BlockPos> cells =
+          square ? List.of(root, root.east(), root.south(), root.east().south()) : List.of(root);
+      boolean valid = true;
+      for (BlockPos cell : cells)
+        if (!l.hasChunkAt(cell)
+            || !l.getBlockState(cell).canBeReplaced()
+            || !l.getFluidState(cell).isEmpty()
+            || !state.canSurvive(l, cell)
+            || WorldData.get(l).protectedAt(cell)
+            || WorldData.get(l).mineProtected(cell, null)
+            || WorldData.get(l).buildingProtected(l, cell)) valid = false;
+      if (!valid) continue;
+      if (!travelTo(root, "Returning to stump", "Replanting sapling")) {
+        if (++replantRetries > 80) replantAt = null;
+        return true;
+      }
+      Item planted = sapling.getItem();
+      for (BlockPos cell : cells) {
+        if (!inReach(cell) || !MiningRules.place(this, cell, state)) {
+          replantAt = null;
+          return false;
+        }
+        for (int source = 0; source < cargo.getSlots(); source++)
+          if (cargo.getStackInSlot(source).is(planted)) {
+            cargo.extractItem(source, 1, false);
+            break;
+          }
+      }
+      replantAt = null;
+      state("Replanted sapling");
+      smile();
+      s.changed();
+      return true;
+    }
+    return fetchSaplings(s, root);
+  }
+
+  private boolean fetchSaplings(Station s, BlockPos root) {
+    ServerLevel l = (ServerLevel) level();
+    if (saplingChest == null && l.getGameTime() < nextSaplingSearch) return false;
+    if (saplingChest == null) {
+      nextSaplingSearch = l.getGameTime() + 200;
+      for (BlockPos pos :
+          s.chests.stream()
+              .sorted(Comparator.comparingDouble(p -> distanceToSqr(Vec3.atCenterOf(p))))
+              .toList()) {
+        var h = Storage.handler(l, pos, s);
+        if (h == null) continue;
+        for (int slot = 0; slot < h.getSlots(); slot++) {
+          ItemStack stack = h.getStackInSlot(slot);
+          if (plantableSapling(stack, root) && canReach(pos)) {
+            saplingChest = pos;
+            break;
+          }
+        }
+        if (saplingChest != null || pathDeferred) break;
+      }
+    }
+    if (saplingChest == null) return false;
+    var h = Storage.handler(l, saplingChest, s);
+    if (h == null) {
+      saplingChest = null;
+      return false;
+    }
+    if (!travelTo(saplingChest, "Fetching saplings", "Restocking saplings")) {
+      if (++replantRetries > 120) {
+        saplingChest = null;
+        replantRetries = 0;
+      }
+      return true;
+    }
+    for (int slot = 0; slot < h.getSlots(); slot++) {
+      ItemStack stack = h.getStackInSlot(slot);
+      if (plantableSapling(stack, root)) {
+        Item sapling = stack.getItem();
+        for (int source = 0; source < h.getSlots(); source++)
+          if (h.getStackInSlot(source).is(sapling))
+            BuildingProject.move(h, source, cargo, Math.max(0, 16 - mining.carried(sapling)));
+        break;
+      }
+    }
+    saplingChest = null;
+    replantRetries = 0;
+    return true;
+  }
+
+  private boolean plantableSapling(ItemStack stack, BlockPos root) {
+    if (!stack.is(net.minecraft.tags.ItemTags.SAPLINGS)
+        || !(stack.getItem() instanceof BlockItem item)) return false;
+    if (mining.carried(stack.getItem()) >= 16) return false;
+    var state = item.getBlock().defaultBlockState();
+    boolean square = item.getBlock() == net.minecraft.world.level.block.Blocks.DARK_OAK_SAPLING;
+    for (BlockPos p :
+        square ? List.of(root, root.east(), root.south(), root.east().south()) : List.of(root))
+      if (!level().hasChunkAt(p)
+          || !level().getBlockState(p).canBeReplaced()
+          || !level().getFluidState(p).isEmpty()
+          || !state.canSurvive(level(), p)) return false;
+    return Inventories.insert(cargo, stack.copyWithCount(1), true).isEmpty();
+  }
+
   public BlockPos timberAnchor;
+
+  private BlockPos fallObstruction;
+  private int fallClearTicks;
+  public final ForestryHelp forestryHelp = new ForestryHelp(this);
+
+  private boolean clearFallArea(Station station) {
+    ServerLevel l = (ServerLevel) level();
+    List<BlockPos> obstacles =
+        new ArrayList<>(TreeFinder.fallObstructions(l, pending, pendingLanding));
+    if (obstacles.isEmpty()) {
+      fallObstruction = null;
+      fallClearTicks = 0;
+      if (forestryAccess.active()) {
+        forestryAccess.finish();
+        forestryAccess.cleanup();
+        return true;
+      }
+      return false;
+    }
+    obstacles.sort(
+        Comparator.<BlockPos>comparingInt(p -> inReach(p) ? 0 : 1)
+            .thenComparingDouble(p -> distanceToSqr(Vec3.atCenterOf(p))));
+    BlockPos target = obstacles.get(0);
+    if (ForestryHelp.needsPickaxe(l.getBlockState(target))) {
+      for (BlockPos p : obstacles) ForestryHelp.request(this, p, pending.root());
+      failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
+      station.deferredFalls.put(pending.root().asLong(), l.getGameTime() + 400);
+      clearPending();
+      navigation.stop();
+      wantsJob = true;
+      state("Requested Minington — seeking other trees");
+      return true;
+    }
+    if (!TreeFinder.canClearFallBlock(l, target, owner)) {
+      pendingLanding = null;
+      waitForLanding(station);
+      return true;
+    }
+    if (!target.equals(fallObstruction)) {
+      fallObstruction = target;
+      fallClearTicks = 0;
+    }
+    if (forestryAccess.approach(target)) return true;
+    if (!travelTo(target, "Clearing fall area", "Clearing fall area")) {
+      if (blockedSince >= 0 && l.getGameTime() - blockedSince > 160) {
+        pendingLanding = null;
+        waitForLanding(station);
+      }
+      return true;
+    }
+    BlockState block = l.getBlockState(target);
+    int duration = MiningRules.duration(activeTool(), block, l, target, station);
+    fallClearTicks += 5;
+    impact(target, fallClearTicks, duration);
+    if (fallClearTicks >= duration) {
+      if (MiningRules.breakPermission(this, target, block) < 0) {
+        failedTrees.put(pending.root().asLong(), l.getGameTime() + 400);
+        clearPending();
+        return true;
+      }
+      var drops =
+          net.minecraft.world.level.block.Block.getDrops(
+              block, l, target, null, this, activeTool());
+      if (l.destroyBlock(target, false, this)) {
+        for (ItemStack drop : drops) {
+          ItemStack rest = Inventories.insert(cargo, drop, false);
+          if (!rest.isEmpty()) net.minecraft.world.level.block.Block.popResource(l, target, rest);
+        }
+        wear(1);
+        WorldEvents.changedNear(l, target);
+      }
+      fallObstruction = null;
+      fallClearTicks = 0;
+      clearChop();
+      if (forestryAccess.active()) forestryAccess.finish();
+      routes.clear();
+    }
+    return true;
+  }
 
   @Override
   public InteractionResult mobInteract(Player p, InteractionHand hand) {
@@ -1434,17 +1958,23 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (home != null) n.putLong("Home", home.asLong());
     if (totem != null) n.putLong("Totem", totem.asLong());
     if (timberId != null) n.putUUID("Timber", timberId);
+    if (replantAt != null) n.putLong("Replant", replantAt.asLong());
     if (timberAnchor != null) n.putLong("TimberAnchor", timberAnchor.asLong());
     n.putString("HomeDimension", homeDimension);
     n.putString("TotemDimension", totemDimension);
     n.putInt("Job", job());
     n.putBoolean("Authorized", authorized);
+    if (machineId != null) n.putUUID("Machine", machineId);
+    n.putBoolean("ShowNames", showNames());
     n.putInt("DataVersion", 2);
     n.put("Tools", tools.serializeNBT());
     n.put("Cargo", cargo.serializeNBT());
+    n.put("Mining", mining.save());
+    n.put("ForestryAccess", forestryAccess.save());
     n.putInt("Active", activeSlot());
     n.putInt("Alerts", alerts);
     n.putInt("WorkTicks", workTicks);
+    n.putLong("HarvestSince", harvestSince);
     if (pending != null) n.putLong("PendingRoot", pending.root().asLong());
     else if (resumeRoot != null) n.putLong("PendingRoot", resumeRoot.asLong());
   }
@@ -1452,25 +1982,31 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void readAdditionalSaveData(CompoundTag n) {
     super.readAdditionalSaveData(n);
+    harvestSince = n.contains("HarvestSince") ? n.getLong("HarvestSince") : -1;
     owner = n.hasUUID("Owner") ? n.getUUID("Owner") : null;
     homeId = n.hasUUID("HomeId") ? n.getUUID("HomeId") : null;
     totemId = n.hasUUID("TotemId") ? n.getUUID("TotemId") : null;
     home = n.contains("Home") ? BlockPos.of(n.getLong("Home")) : null;
     totem = n.contains("Totem") ? BlockPos.of(n.getLong("Totem")) : null;
     timberId = n.hasUUID("Timber") ? n.getUUID("Timber") : null;
+    replantAt = n.contains("Replant") ? BlockPos.of(n.getLong("Replant")) : null;
     timberAnchor = n.contains("TimberAnchor") ? BlockPos.of(n.getLong("TimberAnchor")) : null;
     homeDimension = n.getString("HomeDimension");
     totemDimension =
         n.contains("TotemDimension")
             ? n.getString("TotemDimension")
             : level().dimension().location().toString();
-    entityData.set(JOB, n.contains("Job") ? n.getInt("Job") : 1);
+    entityData.set(JOB, n.contains("Job") ? WorkerJob.valid(n.getInt("Job")) : 1);
     authorized = !n.contains("Authorized") || n.getBoolean("Authorized");
+    machineId = n.hasUUID("Machine") ? n.getUUID("Machine") : null;
+    showNames(!n.contains("ShowNames") || n.getBoolean("ShowNames"));
     tools.deserializeNBT(n.getCompound("Tools"));
     CompoundTag savedCargo = n.getCompound("Cargo").copy();
     // Never truncate a legacy inventory when the configured capacity is reduced.
-    savedCargo.putInt("Size", Math.max(Balance.CARGO.get(), savedCargo.getInt("Size")));
+    savedCargo.putInt("Size", Math.max(Inventories.cargoSlots(job()), savedCargo.getInt("Size")));
     cargo.deserializeNBT(savedCargo);
+    mining.load(n.getCompound("Mining"));
+    forestryAccess.load(n.getCompound("ForestryAccess"));
     entityData.set(ACTIVE, Math.min(2, Math.max(0, n.getInt("Active"))));
     alerts = n.getInt("Alerts");
     workTicks = Math.max(0, n.getInt("WorkTicks"));

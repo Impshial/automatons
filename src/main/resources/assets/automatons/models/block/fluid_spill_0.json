@@ -1,0 +1,33 @@
+{
+  "render_type": "minecraft:translucent",
+  "textures": {
+    "particle": "minecraft:block/water_still",
+    "fluid": "minecraft:block/water_still"
+  },
+  "elements": [
+    {
+      "from": [
+        1,
+        0,
+        1
+      ],
+      "to": [
+        15,
+        0.25,
+        15
+      ],
+      "faces": {
+        "up": {
+          "texture": "#fluid",
+          "tintindex": 0,
+          "uv": [
+            1,
+            1,
+            15,
+            15
+          ]
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,62 @@
+MININGTON FOLLOW-UP: TORCH SUPPLIES AND AUTOMATIC MINE LIGHTING
+
+The previous Minington implementation prompt has already been supplied. Add the torch behavior below to that work in the existing Minecraft 1.20.1 Automatons project. This follow-up covers lighting and the inventory, GUI, scheduling, and recovery changes it requires.
+
+AUTOMATIC TORCH PLACEMENT AND MINE LIGHTING
+
+Miningtons require real ordinary Minecraft torches to light their shared mine as it develops. Players can put torches in a worker's cargo inventory or in an eligible totem supply chest. Torches are supplies, not tools, and do not occupy any of the three tool slots.
+
+Use these initial supply defaults:
+- Aim to carry 16 torches in the existing cargo inventory, normally occupying one partial-stack slot. This is a configurable restock target, not a requirement to have exactly 16 before any work can begin.
+- Before first descent or further excavation, ensure enough carried torches exist for the next bounded lighting task. Reserve supplied quantities against concurrent withdrawals.
+- Replenish toward the target during each normal totem service visit. Account for carried torch stock when evaluating cargo capacity.
+- Keep this bounded reserve during unloading; deposit excess torch stock when output storage accepts it.
+- Consume exactly one torch after a successful server-authorized placement. No free light sources or invisible torch inventory.
+- Use ordinary torches for this implementation. Do not substitute redstone or soul torches automatically, or craft torches from mined coal without an explicit crafting feature.
+
+Light the entrance/access, ladder landings, 3 x 3 x 3 chamber, every new tunnel section and turn, quarry staircase, and active quarry floor. Check eligible standing/spawning spaces over exposed floors and steps in the managed mine, including its return route. Bare vertical shaft cells without a support surface do not each require a torch.
+
+Use actual server block-light values and actual propagation through the geometry. Set a configurable default target of block light 8 or higher at the checked floor/step spaces. This is a conservative design margin, not a claim that vanilla monsters spawn at every lower value. Avoid relying on skylight, player brightness settings, client shaders, or a held-item lighting effect.
+
+For context, Mojang's Java 1.18 release notes introduced the ordinary monster-spawning rule requiring block light 0:
+https://feedback.minecraft.net/hc/en-us/articles/4415128577293-Minecraft-Java-Edition-1-18
+Validate the implementation against the project's actual 1.20.1 server rules. Do not present lighting as protection against existing mobs, mobs entering from adjacent caves, or every special spawning rule.
+
+Placement behavior:
+- Check the next excavation increment before mining it. If that change would leave newly exposed managed floor below the lighting target, place suitable lighting from an already reachable position first where possible.
+- Where the supporting face for a torch only becomes available after a break, reserve the torch/placement task in advance and perform it as the immediate next action. Do not advance farther or leave a finished section dark while mining elsewhere.
+- Place wall torches on stable retained blocks where possible, especially in the narrow tunnels and along quarry walls. Use a valid floor placement when needed and compatible with navigation.
+- Test reach, attachment, replaceability, collision/clearance, ownership, protection, and placement hooks. Never replace a ladder, trapdoor, occupied container, or essential support.
+- Check corners, height changes, chamber edges, and quarry treads individually. A fixed torch-every-N-blocks schedule can suggest candidates but must not stand in for light coverage checks.
+- Account for existing adequate lighting, including player-placed lights. Multiple miners share lighting tasks and placement claims, so they do not place duplicate torches for the same dark section.
+- Allow pending light-engine updates to settle before concluding that a successful placement failed. Use bounded rechecks and a neutral Updating lighting state rather than spamming redundant torches.
+- Keep the torch-bearing support when it is part of the completed route. If scheduled excavation must remove a mine-placed torch or its support, establish replacement lighting first, then recover its normal item exactly once if removal is authorized.
+- Recheck affected coverage after digging, placement, light removal, mode changes, and reload. Repair missing lighting with real supplies; do not trust a saved lit flag over the world state.
+- Do not expand the excavation into an unrelated cave just to light it. Treat unsafe exposed access or an unlightable managed section as a specific blocker and keep the worker on a usable return route.
+
+If torches run out:
+- Search all eligible reachable supply chests during service before declaring a shortage.
+- Stop excavation that requires additional lighting. Already-lit travel, hauling, and independently safe tasks may continue.
+- Return to the totem when possible, unload accepted harvested cargo, and restock. A routine successful supply trip is not a persistent error.
+- If supplies are unavailable, show Needs torches and contribute that reason to the existing beacon without hiding other workers' alerts.
+- Continue bounded supply checks. Once torches are added, restock physically, resolve any pending lighting task, and automatically resume authorized work.
+- If the problem is an invalid placement or damaged route rather than supply, report Lighting blocked or Access blocked instead. If no safe return route exists, wait at a safe reachable position rather than teleporting.
+
+GUI, SAVING, AND SHARED WORK
+
+- Add Placing torch, Updating lighting, Needs torches, and Lighting blocked to the existing worker statuses using the established Minecraft-style GUI.
+- Show carried torch count in worker details and available/missing torches in the totem's mining supplies panel.
+- Integrate lighting into the existing one-mine-per-totem scheduler. Lighting claims, supply reservations, and beacon reasons must cooperate with other workers and jobs.
+- Persist mine-placed torch positions and pending lighting tasks, reconcile claims on load, and derive actual coverage from current world light values.
+- Packing drops carried torches once with the real inventory. The packed Automaton item must not contain a duplicate supply. Job changes retain torch items normally and release obsolete mining reservations.
+- Keep scans and rechecks incremental and bounded. Lighting work must not force-load chunks; unavailable chunk/light data is a waiting state, not proof that an area is lit.
+
+VERIFY THE TORCH ADDITION
+
+- Check actual block-light coverage through the entrance, ladder landings, chamber, tunnel turns, quarry steps, and active floor, including dark pockets and removed lights.
+- Test existing player lighting, pending light updates, valid wall/floor attachment, blocked placements, protection, and preservation of ladders and return access.
+- Verify one-item consumption per placement, no loss on denied placement, concurrent miner claims, and torch recovery without duplication.
+- Exhaust torches before further dark excavation, check alternate supply chests, unload partial harvested cargo on return, and raise Needs torches only when supplies are unavailable.
+- Add torches to a supply chest and verify physical restocking, resolution of pending lighting, and automatic authorized work resumption.
+- Verify the torch reserve survives normal unloading, shared withdrawals cannot overdraw stock, and packing/save/reload preserves item counts without duplicate placements.
+- Update the existing guide with torch supplies, automatic lighting, shortage alerts, and recovery. Run relevant build/regression checks and report the torch changes and checks actually performed.

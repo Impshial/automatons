@@ -30,6 +30,7 @@ public final class ModGameTests {
     Station s = (Station) h.getLevel().getBlockEntity(h.absolutePos(pos));
     s.owner = OWNER;
     s.registerHome();
+    if (totem) WorksiteGameTests.readyFixture(s, WorksitePurpose.LUMBER);
     return s;
   }
 
@@ -81,8 +82,8 @@ public final class ModGameTests {
         w.getItemBySlot(EquipmentSlot.MAINHAND) == w.tools.getStackInSlot(0),
         "Rendered tool is a separate copy");
     h.assertTrue(
-        !w.cargo.insertItem(0, new ItemStack(Items.IRON_AXE), false).isEmpty(),
-        "Fourth axe can be inserted into cargo");
+        w.cargo.insertItem(0, new ItemStack(Items.IRON_AXE), false).isEmpty(),
+        "Spare tools cannot be stored as cargo");
     Station s = station(h, new BlockPos(3, 1, 3), true);
     s.inventory.insertItem(0, new ItemStack(Automatons.UPGRADES.get("storage_1").get()), false);
     h.assertTrue(
@@ -90,7 +91,7 @@ public final class ModGameTests {
             .insertItem(1, new ItemStack(Automatons.UPGRADES.get("storage_2").get()), false)
             .isEmpty(),
         "Conflicting upgrade accepted");
-    h.assertTrue(s.storageRange() == 8, "Storage upgrade not applied");
+    h.assertTrue(s.workRange() == Balance.LUMBER.get(), "Retired upgrade still changes range");
     CompoundTag saved = new CompoundTag();
     w.addAdditionalSaveData(saved);
     Lumberton copy = Automatons.LUMBERTON.get().create(h.getLevel());
@@ -114,7 +115,7 @@ public final class ModGameTests {
       Automatons.LEG.get()
     };
     for (int i = 0; i < 6; i++) s.inventory.setStackInSlot(i, new ItemStack(parts[i]));
-    int balance = Magica.balance(p);
+    int balance = Lumina.balance(p);
     WorkMenu menu = new WorkMenu(1, p.getInventory(), s, null);
     h.assertTrue(menu.slots.get(6).getItem().is(Automatons.AUTOMATON_ITEM.get()), "No preview");
     h.assertTrue(!menu.slots.get(6).getItem().hasTag(), "Preview allocated identity");
@@ -122,8 +123,8 @@ public final class ModGameTests {
     ItemStack made = menu.getCarried();
     h.assertTrue(made.is(Automatons.AUTOMATON_ITEM.get()), "Creation failed");
     h.assertTrue(
-        s.workers.size() == 1 && Magica.balance(p) == balance,
-        "Identity count or extra Magica charge");
+        s.workers.size() == 1 && Lumina.balance(p) == balance,
+        "Identity count or extra Lumina charge");
     for (int i = 0; i < 6; i++)
       h.assertTrue(s.inventory.getStackInSlot(i).isEmpty(), "Ingredients remain");
     h.assertTrue(s.assemble(p).isEmpty(), "Assembled twice");
@@ -208,7 +209,8 @@ public final class ModGameTests {
                   + w.blockPosition()
                   + " scan="
                   + s.scanReason);
-          h.assertTrue(h.getBlockState(base).isAir(), "Source trunk remains");
+          h.assertTrue(
+              !h.getBlockState(base).is(net.minecraft.tags.BlockTags.LOGS), "Source trunk remains");
         });
   }
 
@@ -588,7 +590,7 @@ public final class ModGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 100)
-  public static void staged_crown_loot_is_owned_once(GameTestHelper h) {
+  public static void felled_canopy_drops_immediately_without_axe_enchantments(GameTestHelper h) {
     floor(h);
     Station home = station(h, new BlockPos(3, 1, 3), false),
         s = station(h, new BlockPos(12, 1, 12), true);
@@ -600,36 +602,42 @@ public final class ModGameTests {
     w.assign(s);
     BlockPos base = new BlockPos(14, 1, 12);
     tree(h, base);
-    var t = TreeFinder.inspect(h.getLevel(), h.absolutePos(base), s).tree();
-    var landing = TreeFinder.landing(h.getLevel(), t, s, OWNER, w);
-    Timber timber = Timber.commit(h.getLevel(), t, landing, w, s);
+    var tree = TreeFinder.inspect(h.getLevel(), h.absolutePos(base), s).tree();
+    var crown = TreeFinder.exclusiveCrown(h.getLevel(), tree);
+    var landing = TreeFinder.landing(h.getLevel(), tree, s, OWNER, w);
+    Timber timber = Timber.commit(h.getLevel(), tree, landing, w, s);
     h.assertTrue(
-        timber != null && !timber.crownLoot.isEmpty(), "Exclusive crown was not transferred");
-    int expected = timber.crownLoot.stream().mapToInt(ItemStack::getCount).sum();
+        timber != null && timber.crownLoot.isEmpty(),
+        "Canopy loot still held until log processing");
+    h.assertTrue(
+        crown.stream()
+            .allMatch(p -> !h.getLevel().getBlockState(p).is(net.minecraft.tags.BlockTags.LEAVES)),
+        "Owned leaves not removed immediately");
+    var region = new net.minecraft.world.phys.AABB(h.absolutePos(base)).inflate(12);
+    h.assertTrue(
+        h
+            .getLevel()
+            .getEntitiesOfClass(net.minecraft.world.entity.item.ItemEntity.class, region)
+            .stream()
+            .noneMatch(e -> e.getItem().is(Items.OAK_LEAVES)),
+        "Cleanup inherited Silk Touch");
+    for (int slot = 0; slot < 9; slot++)
+      w.cargo.setStackInSlot(slot, new ItemStack(Items.COBBLESTONE, 64));
     h.runAfterDelay(
         45,
         () -> {
           BlockPos target = timber.targets.get(0);
           w.moveTo(target.getX() + .5, target.getY(), target.getZ() + 1.5, 0, 0);
-          for (int slot = 0; slot < 9; slot++)
-            w.cargo.setStackInSlot(slot, new ItemStack(Items.COBBLESTONE, 64));
-          h.assertTrue(!timber.process(0, w, s), "Full cargo accepted a timber payout");
-          h.assertTrue(
-              timber.crownLoot.isEmpty() && timber.pendingLoot != null,
-              "Foliage has two authoritative owners");
+          h.assertTrue(!timber.process(0, w, s), "Full cargo accepted timber payout");
           CompoundTag saved = timber.saveWithoutId(new CompoundTag());
           Timber copy = Automatons.TIMBER.get().create(h.getLevel());
           copy.load(saved);
           h.assertTrue(
-              copy.crownLoot.isEmpty() && copy.pendingLoot != null,
-              "Staged foliage did not persist");
+              copy.crownLoot.isEmpty()
+                  && copy.pendingLoot.stream().noneMatch(v -> v.is(Items.OAK_LEAVES)),
+              "Reload re-created leaf payout");
           for (int slot = 0; slot < 9; slot++) w.cargo.setStackInSlot(slot, ItemStack.EMPTY);
-          h.assertTrue(timber.process(0, w, s), "Staged payout did not recover");
-          int count = 0;
-          for (int slot = 0; slot < 9; slot++)
-            if (w.cargo.getStackInSlot(slot).is(Items.OAK_LEAVES))
-              count += w.cargo.getStackInSlot(slot).getCount();
-          h.assertTrue(count == expected, "Crown yield changed or duplicated");
+          h.assertTrue(timber.process(0, w, s), "Timber payout did not recover");
           h.succeed();
         });
   }

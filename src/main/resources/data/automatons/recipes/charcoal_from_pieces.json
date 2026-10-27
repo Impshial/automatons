@@ -1,0 +1,33 @@
+{
+  "type": "minecraft:crafting_shapeless",
+  "ingredients": [
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    },
+    {
+      "item": "automatons:charcoal_piece"
+    }
+  ],
+  "result": {
+    "item": "minecraft:charcoal",
+    "count": 1
+  }
+}

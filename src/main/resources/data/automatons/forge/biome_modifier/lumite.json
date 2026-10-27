@@ -1,0 +1,9 @@
+{
+  "type": "forge:add_features",
+  "biomes": "#minecraft:is_overworld",
+  "features": [
+    "automatons:lumite",
+    "automatons:deepslate_lumite"
+  ],
+  "step": "underground_ores"
+}

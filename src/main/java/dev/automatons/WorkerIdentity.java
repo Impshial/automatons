@@ -13,7 +13,7 @@ import net.minecraft.world.item.ItemStack;
 public final class WorkerIdentity {
   public static CompoundTag portable(Lumberton w) {
     CompoundTag n = new CompoundTag();
-    n.putInt("Version", 2);
+    n.putInt("Version", 3);
     n.putUUID("Id", w.getUUID());
     if (w.owner != null) n.putUUID("Owner", w.owner);
     if (w.homeId != null) n.putUUID("HomeId", w.homeId);
@@ -24,7 +24,9 @@ public final class WorkerIdentity {
     n.putString("TotemDimension", w.totemDimension);
     n.putInt("Job", w.job());
     n.putFloat("Health", w.getHealth());
-    if (w.hasCustomName()) n.putString("Name", Component.Serializer.toJson(w.getCustomName()));
+    if (w.hasCustomName()) WorkerNames.writeName(n, w.getCustomName().getString());
+    n.putBoolean("ShowNames", w.showNames());
+    n.put("ForestryAccess", w.forestryAccess.save());
     return n;
   }
 
@@ -40,6 +42,9 @@ public final class WorkerIdentity {
     w.setJob(n.getInt("Job"));
     w.setHealth(Math.max(.1f, Math.min(w.getMaxHealth(), n.getFloat("Health"))));
     if (n.contains("Name")) w.setCustomName(Component.Serializer.fromJson(n.getString("Name")));
+    w.showNames(!n.contains("ShowNames") || n.getBoolean("ShowNames"));
+    w.forestryAccess.load(n.getCompound("ForestryAccess"));
+    w.forestryAccess.finish();
     w.authorized = false;
   }
 
@@ -49,6 +54,7 @@ public final class WorkerIdentity {
 
   public static void update(Lumberton w, String state) {
     if (w.getServer() == null) return;
+    WorkerNames.sync(w);
     Ledger ledger = Ledger.get(w.getServer());
     CompoundTag old = ledger.workers.get(w.getUUID());
     CompoundTag n = portable(w);
@@ -58,8 +64,12 @@ public final class WorkerIdentity {
     n.putLong("Position", w.blockPosition().asLong());
     n.putString("Status", w.status());
     n.putBoolean("Authorized", w.authorized);
-    n.putInt("Alerts", w.job() == 1 && w.authorized ? w.alerts : 0);
-    n.putBoolean("ToolsReady", Inventories.axe(w.activeTool()));
+    n.putInt("Alerts", w.job() != 0 && w.authorized ? w.alerts : 0);
+    if (w.machineId != null) n.putUUID("Machine", w.machineId);
+    n.putBoolean(
+        "ToolsReady",
+        w.job() == WorkerJob.OPERATORTON || Inventories.tool(w.job(), w.activeTool()));
+    n.putInt("Torches", w.mining.carried(net.minecraft.world.item.Items.TORCH));
     if (!n.equals(old)) {
       ledger.workers.put(w.getUUID(), n);
       ledger.setDirty();
@@ -74,6 +84,7 @@ public final class WorkerIdentity {
     w.homeDimension = p.level().dimension().location().toString();
     w.setJob(0);
     w.authorized = false;
+    home.registerHome();
     update(w, "Packed");
     CompoundTag n = record(w).copy();
     home.workers.add(w.getUUID());
@@ -95,6 +106,7 @@ public final class WorkerIdentity {
         || !w.owns(player)) return false;
     CompoundTag previous = record(w);
     if (previous != null && !previous.getString("State").equals("Deployed")) return false;
+    WorkerNames.sync(w);
     w.packing = true;
     try {
       CompoundTag packed = portable(w);

@@ -10,12 +10,13 @@ import net.minecraftforge.event.TickEvent;
 import net.minecraftforge.event.level.BlockEvent;
 import net.minecraftforge.eventbus.api.*;
 
-/** Convert only after vanilla confirms the root was actually removed. */
+/** Convert only after vanilla confirms the selected trunk log was actually removed. */
 public final class PlayerFelling {
   private record Pending(
       ServerLevel level,
       ServerPlayer player,
       TreeFinder.Tree tree,
+      BlockPos cut,
       Map<BlockPos, BlockState> logs,
       ItemStack tool) {}
 
@@ -35,15 +36,21 @@ public final class PlayerFelling {
         || player instanceof FakePlayer
         || player.isCreative()
         || !eligible(player.getMainHandItem())) return;
-    var tree = TreeFinder.inspect(level, event.getPos(), null).tree();
-    if (tree == null || !tree.root().equals(event.getPos())) return;
+    var tree = TreeFinder.atTrunkCut(level, event.getPos(), null).tree();
+    if (tree == null) return;
     WorldData data = WorldData.get(level);
     if (tree.logs().stream().anyMatch(p -> data.reservations.containsKey(p.asLong()))) return;
     Map<BlockPos, BlockState> states = new LinkedHashMap<>();
     for (BlockPos p : tree.logs()) states.put(p, level.getBlockState(p));
     pending.putIfAbsent(
         level.dimension().location() + ":" + tree.root().asLong(),
-        new Pending(level, player, tree, states, player.getMainHandItem().copy()));
+        new Pending(
+            level,
+            player,
+            tree,
+            event.getPos().immutable(),
+            states,
+            player.getMainHandItem().copy()));
   }
 
   @SubscribeEvent
@@ -57,23 +64,23 @@ public final class PlayerFelling {
     ServerLevel l = job.level;
     BlockPos root = job.tree.root();
     if (!l.hasChunkAt(root)
-        || !TreeFinder.clearTimberSpace(l.getBlockState(root))
+        || !TreeFinder.clearTimberSpace(l.getBlockState(job.cut))
         || job.player.isRemoved()
         || job.player.level() != l) return;
     WorldData data = WorldData.get(l);
     for (var entry : job.logs.entrySet()) {
       BlockPos p = entry.getKey();
-      if (p.equals(root)) continue;
+      if (p.equals(job.cut)) continue;
       if (!l.hasChunkAt(p)
           || !l.getBlockState(p).equals(entry.getValue())
           || data.placedLogs.contains(p.asLong())
           || data.reservations.containsKey(p.asLong())) return;
     }
-    // Vanilla already paid for the broken base log and damaged the axe once.
+    // Vanilla already paid for the initiating log and damaged the axe once.
     var tree =
         new TreeFinder.Tree(
             root,
-            job.tree.logs().stream().filter(p -> !p.equals(root)).toList(),
+            job.tree.logs().stream().filter(p -> !p.equals(job.cut)).toList(),
             job.tree.leaves(),
             job.tree.baseCount());
     var landing = TreeFinder.landing(l, tree, null, job.player.getUUID(), job.player);

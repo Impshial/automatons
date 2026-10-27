@@ -1,0 +1,22 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "AR",
+    "AS"
+  ],
+  "key": {
+    "R": {
+      "item": "minecraft:redstone"
+    },
+    "A": {
+      "item": "minecraft:paper"
+    },
+    "S": {
+      "item": "automatons:infused_lumite_shard"
+    }
+  },
+  "result": {
+    "item": "automatons:program",
+    "count": 1
+  }
+}

@@ -34,6 +34,7 @@ public class WandItem extends Item {
   public static void select(ItemStack s, Lumberton w, boolean rebind) {
     CompoundTag n = s.getOrCreateTag();
     n.putUUID("Worker", w.getUUID());
+    n.putString("WorkerName", w.getDisplayName().getString());
     n.putString("Dimension", w.level().dimension().location().toString());
     n.putBoolean("Rebind", rebind);
     n.putLong("SelectedAt", w.level().getGameTime());
@@ -42,6 +43,7 @@ public class WandItem extends Item {
 
   public static void cancel(ItemStack s) {
     s.getOrCreateTag().remove("Worker");
+    s.getOrCreateTag().remove("WorkerName");
     s.getOrCreateTag().remove("Rebind");
   }
 
@@ -78,7 +80,9 @@ public class WandItem extends Item {
       } else if (w.owns(p)) {
         select(wand, w, false);
         p.displayClientMessage(
-            Component.literal("Automaton selected. Right-click your totem; sneak-click to cancel."),
+            Component.literal(
+                w.getDisplayName().getString()
+                    + " selected. Right-click your totem; sneak-click to cancel."),
             true);
       } else
         p.displayClientMessage(Component.literal("This Automaton belongs to someone else"), true);
@@ -100,9 +104,20 @@ public class WandItem extends Item {
   public InteractionResult useOn(UseOnContext c) {
     Player p = c.getPlayer();
     if (p == null) return InteractionResult.PASS;
+    if (p.isShiftKeyDown()
+        && c.getLevel().getBlockState(c.getClickedPos()).is(Luminall.TANK.get())) {
+      if (!c.getLevel().isClientSide) ReservoirBlock.pack((ServerPlayer) p, c.getClickedPos());
+      return InteractionResult.sidedSuccess(c.getLevel().isClientSide);
+    }
     if (c.getLevel().isClientSide) return InteractionResult.SUCCESS;
     ItemStack wand = c.getItemInHand();
     int mode = mode(wand);
+    if (mode == 0
+        && MachineParts.component(c.getLevel().getBlockState(c.getClickedPos()).getBlock())) {
+      p.displayClientMessage(
+          Component.literal(MachinePattern.form((ServerPlayer) p, c.getClickedPos())), true);
+      return InteractionResult.CONSUME;
+    }
     if (mode == 3) return InteractionResult.CONSUME;
     if (mode == 1 || mode == 2) {
       Network.requestProtection((ServerPlayer) p, c.getClickedPos(), mode == 1);
@@ -137,7 +152,8 @@ public class WandItem extends Item {
     if (l.getBlockEntity(c.getClickedPos()) instanceof Station s) {
       String result = n.getBoolean("Rebind") ? w.rebind(s) : w.assign(s);
       p.displayClientMessage(Component.literal(result), true);
-      if (result.equals("Home rebound") || result.equals("Lumberton assigned")) cancel(wand);
+      if (result.equals("Home rebound")
+          || s.isTotem() && s.identity.equals(w.totemId) && w.owner.equals(s.owner)) cancel(wand);
     } else
       p.displayClientMessage(
           Component.literal(
@@ -156,6 +172,11 @@ public class WandItem extends Item {
     if (s.hasTag() && s.getTag().hasUUID("Worker"))
       lines.add(
           Component.literal(
-              s.getTag().getBoolean("Rebind") ? "Select a replacement home" : "Worker selected"));
+              (s.getTag().getString("WorkerName").isEmpty()
+                      ? "Automaton"
+                      : s.getTag().getString("WorkerName"))
+                  + (s.getTag().getBoolean("Rebind")
+                      ? ": select a replacement home"
+                      : ": selected")));
   }
 }

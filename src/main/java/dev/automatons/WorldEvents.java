@@ -7,6 +7,12 @@ import net.minecraftforge.eventbus.api.SubscribeEvent;
 
 public final class WorldEvents {
   @SubscribeEvent
+  public static void started(net.minecraftforge.event.server.ServerStartedEvent event) {
+    NameRegistry.catalog();
+    Ledger.get(event.getServer());
+  }
+
+  @SubscribeEvent
   public static void reload(net.minecraftforge.event.AddReloadListenerEvent e) {
     e.addListener(new TreeSpecies());
   }
@@ -24,9 +30,9 @@ public final class WorldEvents {
   public static void changedNear(ServerLevel level, net.minecraft.core.BlockPos pos) {
     for (Station s : loadedStations)
       if (!s.isRemoved() && s.getLevel() == level) {
-        if (Math.abs(pos.getX() - s.getBlockPos().getX()) <= s.lumberRange() + 12
-            && Math.abs(pos.getZ() - s.getBlockPos().getZ()) <= s.lumberRange() + 12)
-          s.invalidateTrees();
+        if (Math.abs(pos.getX() - s.getBlockPos().getX()) <= s.workRange() + 12
+            && Math.abs(pos.getZ() - s.getBlockPos().getZ()) <= s.workRange() + 12)
+          s.terrainChanged(pos);
         if (Storage.inRange(s, pos)) s.refreshStorage();
       }
   }
@@ -84,7 +90,9 @@ public final class WorldEvents {
       Station station = scanners.removeFirst();
       queued.remove(station.identity);
       if (!station.isRemoved()
-          && (!station.workers.isEmpty() || station.worker != null)
+          && (!station.workers.isEmpty()
+              || station.worker != null
+              || station.project() != null && !station.project().ready)
           && station.getLevel() instanceof ServerLevel l
           && l.hasChunkAt(station.getBlockPos())) station.scanWork(l);
     }
@@ -119,21 +127,32 @@ public final class WorldEvents {
         && !w.deploying
         && (record.getString("State").equals("Packed")
             || record.getString("State").equals("Destroyed"))) e.setCanceled(true);
+    if (!e.isCanceled()) WorkerNames.sync(w);
   }
 
   @SubscribeEvent
   public static void leave(net.minecraftforge.event.entity.EntityLeaveLevelEvent e) {
     if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w) {
       w.clearChop();
+      w.farming.release();
+      if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy()) MachineOperator.leave(w);
+      if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy())
+        w.building.release();
+      w.mining.release();
       WorldData.get(l).release(w.getUUID());
     }
+  }
+
+  @SubscribeEvent
+  public static void trample(net.minecraftforge.event.level.BlockEvent.FarmlandTrampleEvent e) {
+    if (e.getEntity() instanceof Lumberton) e.setCanceled(true);
   }
 
   @SubscribeEvent
   public static void login(PlayerEvent.PlayerLoggedInEvent e) {
     if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) {
       Network.protections(p);
-      Magica.sync(p);
+      Lumina.sync(p);
     }
   }
 
@@ -141,7 +160,7 @@ public final class WorldEvents {
   public static void dimension(PlayerEvent.PlayerChangedDimensionEvent e) {
     if (e.getEntity() instanceof net.minecraft.server.level.ServerPlayer p) {
       Network.protections(p);
-      Magica.sync(p);
+      Lumina.sync(p);
     }
   }
 }

@@ -1,0 +1,441 @@
+AUTOMATONS: MININGTONS, SHARED MINES, AND MINECRAFT-STYLE GUIS
+
+Extend my existing Automatons mod with a fully functional Minington job, automatic mine construction, Tunnel and Quarry modes, one shared mine per totem, and a consistent vanilla Minecraft visual style across the mod's GUIs. Implement the feature in the existing project, verify it, and produce the next release.
+
+1. PROJECT AND CURRENT BEHAVIOR
+
+Development project: F:\Development\Codex\Automatons
+Assets, documentation, and releases: F:\Minecraft\Automatons
+Test CurseForge instance: C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester
+Target: Minecraft 1.20.1, Forge 47.4.10, Java 17, existing automatons namespace.
+
+Read AGENTS.md and applicable project instructions, then inspect the current implementation, changelog, player guide, balance documentation, saved data, menus, navigation, inventories, task scheduling, recipes, and tests. The provided development history records version 0.2.3. If the repository has advanced, preserve its compatible improvements.
+
+Build on the existing generic Automaton system. Preserve current saves and established functionality:
+- Generic portable Automaton items, placement/work authorization, selectable jobs, stable identity, ownership, name, health, home pedestal, assigned totem, recall/release, and Wrench packing.
+- Three real tool slots and nine cargo slots, shared multi-chest storage, per-worker alerts, and current totem upgrades.
+- Current Magica rewards, exact fractional accounting with whole-number displays, white/purple orbs, 50-Magica core infusion, and existing recipes.
+- Automaton Torso display name and its compatible internal ID; six-part assembly and the permanent tilted, rotating Automaton item above the Automaton Pedestal.
+- Existing Lumberton timing, connected tree felling, player-felled real log blocks, loose/stripped/player-placed log handling within authorized areas, dropped-log pickup, path recovery, and unloading during prolonged rescans.
+- Chunk protection, work-area rendering, owner checks, and optional JEI integration.
+
+Use the current repository as the implementation baseline. Run current checks yourself; the historical report of 67 passing tests is not a substitute for verification of this change.
+
+2. GENERIC AUTOMATONS AND JOB-AGNOSTIC TOTEMS
+
+Minington is a job on the existing Automaton, selected in its GUI. It uses supplied pickaxes and shovels. A job change costs no new body, core, or Magica.
+
+Totems are job agnostic. Any supported mix of Automatons can be assigned to the same totem. A totem can serve Lumbertons and Miningtons simultaneously, with independent work queues and common storage/upgrades where applicable. Do not lock the totem to its first worker's job or show only the most recently assigned worker's settings.
+
+Keep personal inventory, home, identity, ownership, and health independent of the totem's shared work. Job changes retain items; incompatible tools become inactive and remain removable. They are never deleted or automatically converted.
+
+EACH TOTEM CAN HAVE AT MOST ONE MINE:
+- All assigned Miningtons use that mine's entrance, ladder, underground chamber, and shared progress.
+- Extra miners join the existing mine instead of choosing additional sites.
+- A temporary shortage of miners, changing every miner to another job, packing workers, unloading chunks, or reloading the world must not erase the mine.
+- Adding a miner later resumes the same mine.
+- A worker reassigned to another totem joins that totem's mine; it does not bring the old mine with it.
+- A blocked, complete, or damaged mine remains registered. Do not create a replacement entrance automatically.
+- Each totem has its own mine record and cannot claim another totem's registered entrance or overlapping reserved infrastructure.
+
+Tunnel and Quarry are modes of this shared mine. Implement both. Use one active mining mode per totem, with Tunnel as the initial default. Mode selection affects assigned Miningtons only. Preserve each mode's progress when switching.
+
+3. AUTOMATIC SITE SELECTION AND MINE REGISTRATION
+
+Once an authorized Minington is assigned to a totem, it can start the mine automatically when it has appropriate tools, storage, and construction supplies. Players choose the mode through the totem GUI; they do not have to lay out every excavation cell manually.
+
+Find a suitable site within the mining work area:
+- Reachable from the totem and service chests.
+- Space for the complete entrance structure, central shaft, underground chamber, and an initial work area.
+- Suitable terrain and support, with no protected chunks, occupied containers, machines, other registered mines, or unavoidable immediate hazards.
+- A valid orientation for the ladder, chamber, and work face opposite the ladder.
+- Enough room for a complete initial 32-block tunnel leg and its first three-block sideways connection if Tunnel mode is selected, or the 5 x 5 footprint if Quarry mode is selected.
+
+Prefer the closest suitable site to the totem, with stable tie-breaking. Search incrementally and consider other orientations/sites after a genuine rejection. A single path failure or temporarily unloaded chunk must not permanently disqualify an otherwise usable site.
+
+Reserve the chosen location in server-owned totem data BEFORE construction starts. This reservation prevents two miners from building two entrances. Once the arch and central hole exist, register the location as the totem's mine. The registered mine initially has an access-under-construction state; workers must not descend into an unfinished shaft.
+
+Persist the reservation, builder claim, structure placement progress, and registered mine identity. If the first builder changes jobs, is packed, or becomes unavailable, another eligible miner continues that same construction.
+
+Use one active builder for the narrow entrance/shaft during initial construction unless additional independent tasks are demonstrably safe. Extra miners wait in a neutral state. Waiting for a colleague is not an error.
+
+4. ENTRANCE STRUCTURE AND CONSTRUCTION SUPPLIES
+
+Use the supplied arch schematic as the entrance's block layout and the supplied screenshots for appearance. Load/convert the reference during development and package the resulting structure or placement data with the mod. The installed mod must not depend on an external schematic editor.
+
+The reference is a 5 x 5 footprint, six blocks high, containing:
+- 38 cobblestone
+- 4 oak planks
+- 1 oak trapdoor
+- Air in the remaining cells
+
+It contains no ladders. Add the functional central shaft and ladder as part of mine construction.
+
+Preserve the arch's shape, four plank feet, and central opening. Treat the schematic origin/offset as placement metadata, not fixed world coordinates. Rotate block states correctly for the selected orientation, including trapdoor facing and ladder attachment.
+
+Construction uses real items:
+- Obtain cobblestone, oak planks, the oak trapdoor, and ladders from the worker's inventory or eligible supply chests around the totem.
+- Initial access descends five blocks and normally requires five ladder segments. Account for any genuinely necessary additional entrance clearance or backing in the displayed material requirement.
+- Use cobblestone for the arch. Quarry access steps can use cobblestone or dirt.
+- Miners may reuse suitable materials obtained during excavation. Do not require repeated supply trips when the required material is already carried.
+- Do not grant free blocks, conjure ladders, or fabricate the arch from the fact that a player owns a schematic.
+- No new recipe is needed for ordinary vanilla cobblestone, planks, trapdoors, dirt, or ladders.
+
+Place blocks progressively from physically reachable work positions. Consume an item only when its corresponding placement succeeds. Check protection, occupants, support, replaceability, world state, and any applicable denial hooks at commit. Never overwrite a container or an occupied solid block to fit the template.
+
+Air in the template defines required clearance, not permission to erase the entire surrounding volume. Clear only permitted terrain necessary for construction, collect normal drops, and find another site if the entrance requires destroying an existing structure.
+
+Before starting, show required/available/missing entrance materials and ensure enough supplies exist to make usable initial access. Reserve those quantities against competing miners. Distinguish supply-enabled chests from output-only chests.
+
+Construction stock remains real inventory. Within the existing cargo slots, track the quantities reserved for the next bounded construction tasks. On a totem visit:
+- Deposit harvested output and excess materials.
+- Keep or replenish the exact construction reserve needed to continue.
+- Do not unload every ladder or support block and then immediately return to fetch it.
+- Do not exempt unlimited stacks from unloading simply because they could be used for construction.
+- Release reservations when the associated task is cancelled or no longer needed.
+
+5. FIVE-BLOCK SHAFT AND UNDERGROUND CHAMBER
+
+After the entrance and central hole are built:
+1. Excavate the central access shaft five blocks down.
+2. Install a continuous usable ladder with valid backing as the shaft progresses.
+3. Clear a 3 x 3 x 3 underground chamber at the bottom.
+4. Start excavation from the chamber edge opposite the ladder, at the chamber's floor level.
+
+Define the five-block descent by the change in standing elevation: the chamber's walking surface is five blocks below the entrance walking surface. The 3 x 3 x 3 measurement describes the clear interior volume above its supporting floor. Use these conventions consistently in generation, UI, and tests.
+
+Begin the first tunnel directly at this floor level. The quarry entrance also connects at that level, then its perimeter staircase provides the excavation's descent.
+
+Implement actual ladder traversal for the existing 1.5-block Automaton:
+- It must enter, climb down, exit into the chamber, turn, climb back up with cargo, and step out of the entrance.
+- Handle the trapdoor so both navigation and its open/closed collision state work.
+- Do not assume ordinary ground pathfinding already handles this.
+- Use explicit ladder travel states and validated entry/exit positions where required.
+- Preserve sufficient headroom and a valid path through the chamber.
+- Never use teleportation or block phasing as routine traversal.
+
+Build each next shaft/access segment from an available work position, keeping an escape route. Validate reach and backing rather than excavating a deep hole remotely and installing every ladder afterward.
+
+Reserve the arch, ladder, its backing, trapdoor access, chamber floor, and necessary passage/support cells against ordinary mining. Only defined chamber exits may be opened for further work.
+
+If access is damaged, diagnose the actual missing segment. Repair registered missing access blocks from supplied materials when the space is safe and permitted. Do not overwrite a player's new obstruction or destroy terrain outside the authorized repair. If repair is impossible, pause affected work and show the reason. If the route out is unavailable, the worker waits safely where it can stand; it does not claim to have returned to the totem.
+
+6. TUNNEL MODE
+
+Base tunnel dimensions are one block wide and two blocks high. Each long leg is 32 blocks. The passage is level with the chamber floor, with solid support below it.
+
+The first leg begins at the wall opposite the ladder. The work pattern is:
+1. Excavate a 1 x 2 passage outward for 32 blocks.
+2. At its end, select a valid left or right direction randomly.
+3. Extend a 1 x 2 connection three blocks sideways.
+4. Turn back and excavate a parallel 32-block passage toward the chamber's starting plane.
+5. Continue alternating outward and return legs, using three-block sideways connections, while another complete pass fits the allowed area.
+
+Use the following implementation defaults to make the pattern deterministic and resumable:
+- Pick the lateral expansion direction at the first turn from the directions that can legally fit. Persist it and keep subsequent lanes expanding toward that same side.
+- If both sides fit, choose randomly once. If only one fits, choose that one. Do not reroll the direction after unloading, saving, or reloading.
+- A three-block lateral displacement means centerlines are three blocks apart, leaving two solid block columns between parallel one-block-wide passages.
+- Count the initial long leg as 32 excavation columns, including its first column immediately beyond the chamber.
+- Define each subsequent leg's endpoints from that first leg's start and end planes, avoiding cumulative off-by-one drift. Turning corners are shared cells, not extra length.
+- A return leg ends at the original starting plane. It need not cut through the chamber's side, ladder, or supporting floor. The completed connected passages already provide a route home.
+- Do not add deeper tunnel levels automatically in this implementation.
+
+The miner works forward from a currently reachable standing position. The solid front face is a target to remove, not a location the worker must already be able to stand inside. Clear a face in a safe order with adequate overhead clearance and revalidate falling material.
+
+Finish the current accessible face before advancing. Preserve the tunnel floor. Do not chase ore veins outside the planned volume or widen the passage around an obstruction.
+
+The planner may use an already-cleared passage only after checking support, access, and ownership. Air is not proof of a safe walking surface.
+
+Do not invent alternate entrances when a required passage is blocked. Try safe independent work within the same mine, or pause that frontier with a specific reason. A reach/path failure receives bounded retries and alternative standing-position checks.
+
+A single narrow frontier may support only one worker at a time. Other Miningtons can perform distinct ready construction or excavation tasks where safe; otherwise they wait without a beacon error. Shared access does not require every assigned miner to swing simultaneously.
+
+7. QUARRY MODE
+
+Start the quarry from the chamber edge opposite the ladder. Its entry connects at chamber floor level.
+
+The excavation has a fixed 5 x 5 outer footprint:
+- The central 3 x 3 is the main open shaft.
+- The outer one-block ring contains a continuous full-block staircase winding around the edge.
+- The completed accessible shaft remains 3 x 3 in the center because the perimeter is reserved for access.
+
+Use real cobblestone or dirt blocks to construct the steps and required support. Retain suitable existing terrain where it already provides the correct structure; placed blocks still consume supplied materials. These are full-block steps, not crafted stair items.
+
+Excavate from the top down, maintaining access as work progresses:
+- Plan the staircase in three dimensions, including turns, support, and clearance above each tread.
+- Each walking transition changes height by at most one block.
+- Every traversed step has enough clearance for the Automaton's collision box, including at corners and below higher turns.
+- Build and validate access to the next working elevation before exposing a floor the worker cannot leave.
+- Keep the staircase connected to the chamber and original ladder.
+- Reserve step/support cells against every worker's destructive tasks.
+- Never mine out a worker's current standing block or another worker's only route out.
+
+Continue downward as far as lawful, safe excavation allows, bounded by the dimension's build limits, unbreakable terrain, available access, protection, and hazards. Do not impose a separate arbitrary 16/32/64-layer depth limit. Plan in small increments instead of scanning down to bedrock every tick.
+
+A quarry should excavate all scheduled removable cells while leaving required perimeter access. It must not hollow out a deep 5 x 5 void and somehow add stairs afterward.
+
+Small gaps in required access can be supported with the permitted real materials when reachable and safe. Check actual support/placement validity and stay within the quarry's reserved geometry. Do not silently bridge a large cavern outside the footprint, plug fluids, or perform unrelated construction.
+
+Leave bedrock and other unbreakable cells intact. Continue other safe reachable excavation at that level. If they prevent further descent, report the actual stopping depth and remaining exclusions instead of repeatedly attempting the same block or claiming unreachable space was mined.
+
+At completion, leave the staircase, entrance, ladder, and chamber usable. Mine completion never triggers removal of access infrastructure.
+
+8. MODES, BOUNDS, AND UPGRADES
+
+Both modes belong to the single persistent mine. Switching mode pauses its current destructive tasks, releases transient claims, and preserves progress, placed infrastructure, inventories, and access.
+
+The other mode must use a compatible work section connected to the same chamber through its opposite-side exit. Reserve the existing mode's necessary floors, staircase, and return path. If the proposed section conflicts with those reservations or cannot fit, show the conflict and retain the requested mode as paused. Do not erase prior excavation, undermine a tunnel, or make a second mine.
+
+Use these centralized starting defaults for the new mining area:
+
+| Mining Range upgrade | Horizontal radius from totem | Square work-area size |
+| --- | ---: | ---: |
+| None | 32 blocks | 65 x 65 blocks |
+| Mining Range I | 48 blocks | 97 x 97 blocks |
+| Mining Range II | 64 blocks | 129 x 129 blocks |
+
+These are initial balance defaults. Use the existing square-range convention: the maximum absolute X/Z offset from the totem must be within the radius. Show both radius and full width in the GUI.
+
+The entrance walking elevation must initially be within 16 blocks above/below the totem. Underground mining can descend within legal dimension bounds. Chest discovery remains controlled by the storage radius and its existing vertical allowance.
+
+Require the complete arch footprint, shaft, chamber, excavation targets, and placed supports to stay within the mining area's horizontal boundary. Protected chunks further restrict it. A larger radius provides more site/lane space; it does not change the 32-block long legs, 1 x 2 tunnel, or 5 x 5 quarry footprint.
+
+Keep the existing four shared totem upgrade slots. Add Mining Range I and II to the current upgrade system:
+- Applicable workers use compatible installed effects.
+- Mining Range changes mining bounds; Lumber Range continues to change forestry coverage.
+- Storage Range, Work Speed, and effective Tool Enchantment upgrades apply to Miningtons where appropriate.
+- Tier II supersedes Tier I; duplicate tiers do not stack.
+- Preserve the current 20%/40% Work Speed duration reductions and established effective-enchantment combination rule.
+- Radius changes must not relocate the mine. Revalidate affected unfinished work. If required mining geometry is outside reduced bounds, pause it with a clear explanation while preserving safe travel home.
+- Restoring sufficient range resumes eligible work under existing authorization.
+
+Add these survival-accessible shapeless recipes, each producing one upgrade:
+
+| Item | Ingredients |
+| --- | --- |
+| Mining Range I | 1 Upgrade Plate, 1 compass, 2 iron ingots, 1 fully charged Magica Core |
+| Mining Range II | 1 Mining Range I, 1 compass, 1 diamond, 2 iron ingots, 2 fully charged Magica Cores |
+
+Each listed unit occupies its normal crafting ingredient slot. Reject empty/partially infused cores. Tier II consumes Tier I. Create distinct 16 x 16 sprites and concise localized effect descriptions, and expose recipes through the existing optional JEI integration.
+
+9. TOOLS, MINING SPEED, SOUNDS, AND LOOT
+
+Minington tool slots accept valid pickaxes and shovels, including compatible modded tools through appropriate existing tags/hooks. Keep three actual tool slots. Hold and animate the selected real tool.
+
+Use a shovel for suitable soil/gravel/sand work and a pickaxe for stone/ore work. Prefer the correct capable tool. A supplied pickaxe can work ordinary soil more slowly where normal rules allow its drops, but an insufficient pickaxe tier must not destroy ore that requires a stronger tool. Without a usable job tool, restock or wait.
+
+Check all carried tools and reachable supply chests before claiming no suitable tool exists. One ore requiring a stronger tier is a local blocker, not automatically a reason to stop all other safe work.
+
+Use actual block hardness, tool effectiveness, harvest requirements, applicable enchantments, and shared speed upgrades. Keep movement at the established worker speed; do not change Lumberton timings. Centralize mining timing and document measured representative stone/iron/diamond tool results.
+
+Preserve tool data, durability, names, enchantments, and capabilities. Damage the tool once for a successful break under the applicable rules, including Unbreaking. Apply effective enchantments once, using the established combination policy.
+
+While mining:
+- Face the target and perform a visible tool swing.
+- Display progressive block cracks.
+- Play the targeted material's appropriate hit and break sounds at the work location.
+- Synchronize nearby players without doubled audio.
+- Clear the old crack overlay on interruption, target change, packing, or unload.
+
+Use normal tool-aware drops, including supported Fortune and Silk Touch behavior. Perform one authoritative server break. Never both insert a full drop set into cargo and spawn another copy in the world.
+
+Stage or conservatively account for actual output so randomized loot cannot overflow silently. Do not independently roll preview loot and actual loot. Preserve any remainder safely without duplication or voiding.
+
+Collect the mine's reachable dropped output when space allows. Do not vacuum unrelated player items.
+
+Automaton mining generates no Magica. If normal mining emits vanilla XP, leave ordinary XP at the site; do not convert it to Magica or invent an automatic repair/XP bank mechanic.
+
+10. SHARED TASKS, TRAFFIC, AND RESOURCE OWNERSHIP
+
+The totem owns the mine, its mode, construction stage, excavation progress, reservations, and dispatch. Each worker owns its tools, cargo, movement state, and current claimed task.
+
+Use exclusive claims for targets and placement cells, including dimension, mine identity, and revision. Coordinate destructive/support reservations with other totems and job types so a Lumberton or neighboring mine cannot remove another worker's active infrastructure.
+
+Assign distinct tasks and protect standing positions, headroom, and support. Release uncommitted work when a miner unloads, changes job, is recalled, loses its usable tool, or is packed.
+
+Make narrow access usable by multiple workers:
+- Coordinate ladder occupancy and direction.
+- Prefer loaded workers exiting toward storage over empty workers entering.
+- Wait at safe surface/chamber positions and release passage claims after travel.
+- Avoid two miners climbing head-on or blocking the trapdoor indefinitely.
+- Apply yielding and bounded replanning in tunnels and quarry steps.
+- Workers may use ordinary entity interaction, but never rely on teleportation or walking through solid blocks.
+
+Multiple miners are allowed to wait for a shared frontier. Distinguish work owned by another worker from missing work. One worker's missing tool, storage issue, or hazard does not freeze otherwise eligible colleagues.
+
+Immediately before each break or placement, recheck the target state, claim, mine revision, worker authorization, reach, tool/material, capacity, and protection. Player changes between planning and execution must not cause duplicate drops, invalid placement, or stale-task destruction.
+
+11. STORAGE, SERVICE TRIPS, AND AUTOMATIC RECOVERY
+
+Reuse the existing storage system, including multiple chests around a totem, single/double-chest handling, input/output permissions, partial stacks, accepted-item checks, and alternate reachable storage.
+
+Keep mining while cargo can accept the next required output. Do not return after each block, face, row, or tunnel leg. A routine unloading trip starts when cargo is effectively full for the next collection.
+
+Whenever a worker must return to its totem for any reason, unload all accepted harvested cargo, even if its inventory is only partly filled. Preserve only the bounded construction reserve described above. Restock appropriate tools and materials during that same visit.
+
+This applies to tool shortages, needed supplies, sustained hazards, unavailable work, scan/planning waits, completion, and normal full-cargo service. Preserve the current useful handling of long rescan waits without causing a trip on every brief scheduling delay.
+
+Search all eligible chest alternatives before reporting full storage or missing supplies. A failed path to one chest or a full nearest chest does not rule out the others. Respect worker-specific reachability.
+
+On arrival, unload across available chests until accepted output is deposited. Keep quantities storage rejects. Do not free one slot and immediately return to the mine when more carried output can be unloaded.
+
+Server-side transfer must account for concurrent workers/players and actual accepted quantities. Reservations and simulated capacity are hints until committed; they cannot authorize overdrawing stacks or duplicating items.
+
+If storage is full, keep cargo, return when possible, raise the appropriate beacon reason, and keep checking. Newly added chests, freed space, supplied tools, and construction materials should restore work automatically when every remaining blocker is resolved.
+
+A confirmed broken chest with other valid storage available does not stop the mine. If all storage is truly gone, use the existing dependency-loss/home-return policy. An unloaded chest or totem is not a broken one.
+
+All item pickup, deposit, and supply extraction require physical access. The totem's shared planning does not teleport cargo between a deep mine and a surface chest.
+
+12. HAZARDS, PROTECTION, ALERTS, AND COMPLETION
+
+Check full-height chunk protection and relevant external permission/denial hooks for excavation AND construction. A reserved mine does not override a newly protected chunk.
+
+Before committing work, check predictable immediate hazards:
+- Water or lava that would flow into the face, occupied space, or return route.
+- Falling sand/gravel over the worker.
+- Missing floor/support or an unsafe drop.
+- Occupants and required infrastructure.
+- Containers, machines, and other excluded block entities.
+
+Do not automatically destroy protected structures, inventories, spawners, totems, pedestals, or player infrastructure to advance the mine. Use data-driven excavation rules for ordinary terrain and ores rather than unrestricted demolition.
+
+Handle a local blocker locally where independent safe work remains. Recheck changed conditions with bounded retries. Avoid permanent generic Error states caused by a single failed approach, busy worker, incomplete scan, or transient path request.
+
+Use clear statuses such as:
+Finding mine site; Waiting for builder; Building entrance; Installing ladder; Clearing chamber; Mining; Collecting; Waiting for passage; Unloading; Restocking; Needs ladders; Needs building blocks; Needs capable tool; Storage full; Access blocked; Fluid ahead; Protected area; Area unloaded; Recalled; Work complete.
+
+Unresolved actionable blockers contribute independent reasons to the existing totem beacon. Clearing one reason or one worker's alert must not hide another worker's problem, including a Lumberton's.
+
+If no ready work remains because another miner owns the frontier, wait neutrally. If genuine work exhaustion or a sustained blocker remains, return when possible, unload, display the reason, and monitor recovery. Cargo-full service follows the current beacon behavior and clears after successful service.
+
+Do not mark tasks in unloaded chunks complete or treat unavailable infrastructure as destroyed. No automatic chunk force-loading.
+
+For Tunnel mode, completion means all legal planned passes are finished or no further complete pass fits. For Quarry mode, show the reached depth, exclusions, and reason no further safe descent remains. Do not describe unresolved reachable work as complete.
+
+Before finishing a mining run, collect reachable pending mine output, return, and unload. Use the existing work-exhausted/completion beacon behavior. Keep construction and excavation records intact. Automatically resume unfinished authorized work if its blocker clears or a range expansion creates additional valid tunnel passes.
+
+Home recall outranks work and routine totem service. Stop new destructive actions, release transient claims, and go home using real access. If the route passes through a normal totem service point, unload there when possible, but do not force a separate storage detour ahead of recall. Release resumes under the existing rules.
+
+Totem loss sends its workers home under the existing lifecycle. Job changes, packing, or all miners leaving never transfer or duplicate its registered mine.
+
+13. VANILLA MINECRAFT GUI STYLE THROUGHOUT THE MOD
+
+Audit every existing mod screen and dialog and make its appearance consistent with Minecraft 1.20.1's inventory/container menus:
+- Gray panels, beveled edges, recessed item slots, pixel borders, and Minecraft's font.
+- Familiar rectangular buttons with clear hover, pressed, disabled, and selected states.
+- Crisp pixel art and appropriate texture sampling at supported GUI scales.
+- Standard item rendering, tooltips, inventory/hotbar spacing, and keyboard interactions.
+- Clear titles, concise labels, and readable numerical values.
+- White/purple accents for Magica, with distinct status symbols and text.
+- Predictable margins/alignment and enough room for translations and small screens.
+
+Use native components and menu/slot behavior where appropriate. Menu textures may be atlases larger than 16 x 16; the requirement is coherent pixel density and vanilla-style rendering. Block/item sprites remain 16 x 16 and model texels stay consistent with 16 pixels per block.
+
+Preserve working inventory semantics, including shift-click, partial stacks, slot validity, output extraction, and authoritative server validation. Cosmetic changes must not change recipes or duplicate items.
+
+Apply the style to the Automaton Pedestal, Automaton GUI, Totem GUI, job/settings screens, protection/revocation confirmations, and any other actual mod dialogs. Use appropriate vanilla presentation in the existing JEI categories as well.
+
+Automaton Pedestal:
+- Keep six component slots in the golem arrangement: head above; arm, torso, arm across the middle; two legs below.
+- Keep a separate output slot on the right and the current Magica balance display.
+- Preserve output-take assembly semantics, recipe access, and existing home recall/release controls.
+- Preserve the current recipe-defined cost. The balance display must not charge Magica again on assembly.
+- Keep the permanent rotating, tilted item above the block independent of GUI inventory.
+
+Automaton GUI:
+- Show identity/name, selected job, job-appropriate tools, nine cargo slots, home/totem assignment, and concise status.
+- Allow job changes using the existing workflow.
+- Mark incompatible retained tools clearly and allow removal.
+- Keep controls usable across all current jobs.
+
+Totem GUI:
+- Use a shared Overview and Workers section with the complete mixed-job roster, individual status, storage settings, and four upgrade slots.
+- Provide job-specific tabs/panels for the assigned workforce. A mixed Lumberton/Minington totem exposes both forestry and mining controls.
+- Keep the mining panel accessible when a mine exists even if no miner is currently assigned.
+- Opening one worker's details must not hide another job or change the totem's identity.
+- Mining controls include Tunnel/Quarry selection, Start/Resume, Pause, and Show/Hide Work Area.
+- Show the one mine's entrance coordinates, construction stage, required/available supplies, working miners, current depth or lane progress, and actual blockers.
+- Show meaningful progress for the active construction stage or tunnel leg. A quarry of initially unknown final depth should show depth/layers, not a misleading total-percent estimate.
+- Surface conflicting mode changes or insufficient range clearly without erasing the mine.
+
+The Infusing Pedestal remains operated in the world with no GUI. Retain its core interaction and visible Magica transfer.
+
+14. WORK-AREA DISPLAY AND MODEL PRESENTATION
+
+Extend the existing Show Work Area / Hide Work Area feature:
+- Preserve blue storage coverage and green forestry coverage.
+- Add amber mining coverage and clear optional job-specific visibility controls.
+- Show the mine entrance, reserved access, active frontier, tunnel direction/spacing, and quarry footprint/steps as appropriate.
+- Use bounded overlays and a concise legend so mixed jobs remain readable.
+- Keep overlays nonphysical, efficient, and cleaned up on logout/removal.
+- Distinguish planned excavation from reserved support/access.
+- If showing underground planning through terrain, display only the plan geometry, not hidden ores or unrelated world features.
+
+Keep Protect and Revoke displays and confirmations separate from work previews. Their full-height protection continues to apply to all destructive mining and construction actions.
+
+Retain the current 1.5-block Automaton body, face design, expression system, and consistent model pixel density. Integrate held pickaxes/shovels and digging expressions/animations through job-driven presentation. Preserve identity and the common rig when jobs change.
+
+15. PERSISTENCE, SECURITY, AND PERFORMANCE
+
+Persist enough authoritative information to resume without rebuilding or duplicating:
+- Totem/mine identity, dimension, site reservation, anchor, orientation, and mode.
+- Arch placements and construction stage; material reservations and their reconciliation.
+- Ladder and chamber geometry; access/support reservations.
+- Tunnel starting plane, direction, chosen lateral expansion side, lane index, front progress, and completed turns.
+- Quarry footprint, staircase plan/progress, active layer/depth, exclusions, and unfinished tasks.
+- Mode-specific progress and revision; relevant reasons for retry.
+- Worker links and item/cargo state through the existing lifecycle.
+
+Transient path objects and claims may be reconstructed, but stale ownership must be released/reconciled. Already-cleared blocks produce no extra loot. Already-placed matching structure blocks do not consume materials twice.
+
+Packing drops real tools, cargo, and construction stock once. The packed item retains permitted metadata, not a second copy of inventory. Release its claims. The mine remains at the totem for other miners.
+
+Safely migrate existing saves and stable job identifiers. Adding Minington must not shift numeric values so existing Lumbertons change jobs. Maintain compatible block/item IDs.
+
+Validate every GUI/network request on the server against ownership, current menu/context, dimension, mine revision, settings, and actual state. Clients request intent; they do not dictate trusted drop lists or arbitrary blocks to destroy.
+
+Use bounded site searches, incremental geometry planning, path attempts, neighbor checks, and task dispatch. Multiple totems share sensible server budgets. Do not scan the entire maximum-radius volume or all underground depth every tick.
+
+Persist compact progress and revalidate affected fronts incrementally. Restrict preview and animation packets to relevant players. Avoid stale crack overlays and per-tick diagnostic spam.
+
+Expose useful development diagnostics for target, approach position, ladder state, claim, tools, supplies, storage, and pause reason. Ordinary GUI feedback should use player-friendly terms.
+
+16. VERIFICATION AND ACCEPTANCE
+
+Implement both modes and the GUI pass, then run the current build, existing regression checks, resource/recipe validation, and focused tests for the failure-prone behavior below. Use real client and dedicated-server checks when available. Report what actually ran.
+
+Required checks:
+- Existing worlds and current Lumberton, Magica, infusion, assembly, protection, recall, packing, JEI, and storage behaviors still work.
+- A mixed-job totem serves Lumbertons and multiple Miningtons together; either job's alert does not cancel healthy work.
+- Two miners starting simultaneously reserve one site and create exactly one entrance/mine. Interrupting the builder lets another continue the same structure.
+- Arch placement matches the supplied reference in all cardinal orientations. Exact item costs, invalid terrain, protected cells, insufficient materials, and reload during construction behave correctly.
+- Five-block descent and 3 x 3 x 3 clear chamber use the specified elevations. Tunnel begins at chamber floor level.
+- The actual entity climbs down/up, uses the trapdoor, unloads at surface chests, returns to depth, and responds to home recall. Test with multiple miners and a damaged ladder.
+- A full tunnel pattern has exact 32-column legs, three-block lateral offsets, two intact columns between lanes, correct floor/headroom, persistent random side, and correct endpoints in all orientations, including negative coordinates.
+- A miner approaches and breaks a solid tunnel face without needing a path through unmined blocks.
+- Quarry develops a 5 x 5 footprint with a 3 x 3 center and a usable winding full-block stair. Exercise several staircase turns, corner/headroom clearance, deeper work, surface delivery, and return to the active floor.
+- Quarry consumes actual cobblestone/dirt for placements, reuses carried material, and keeps needed stock across unloading. No free structure/support blocks or resource duplication.
+- Test insufficient tools/tier, tool break and backup, shovel work, Fortune/Silk Touch, ordinary XP, no Magica, actual durability, and randomized loot conservation.
+- Multiple miners claim distinct work, yield at ladders/narrow passages, preserve colleagues' support, and wait neutrally when a single frontier is occupied.
+- Test nearest chest full with a farther usable chest, partial stacks, storage filters, supply-only/output-only restrictions, simultaneous withdrawals, added/removed chests, and storage changing during a transfer.
+- Routine delivery waits for effectively full cargo. Every other required totem visit unloads partial harvested cargo while retaining only its bounded construction reserve.
+- Test caves/gaps, fluids, falling gravel/sand, bedrock, containers, protected chunks, and unloaded dependencies. Report local blockers accurately and resume after resolution.
+- Switch modes without a second mine, erased progress, or destroyed access. Reject incompatible geometry safely.
+- Remove all miners, pack/redeploy one, switch jobs, and reassign to another totem. The original mine stays registered and the new totem never inherits it.
+- Save/reload during site reservation, partial arch/ladder, mining, return travel, service, mode pause, and completion. No duplicate blocks, loot, materials, or worker identities.
+- Verify Mining Range recipes and effective bounds; upgrade removal must preserve access and pause affected work correctly.
+- Inspect every changed screen in the actual client at multiple GUI scales and a small window. Check inventory interactions, tooltips, tab switching with mixed jobs, long names, confirmations, sound, cracks, held-tool alignment, and overlays.
+- Test more than one loaded totem for bounded work and a dedicated server without JEI.
+
+17. RELEASE AND HANDOFF
+
+Update the player guide with the survival setup for each mode: choosing Minington, supplying picks/shovels and entrance materials, assigning a shared totem, mine construction, storage service, mode controls, upgrades, alerts, and recovery.
+
+Update the changelog, balance defaults, limitations, and verification notes. Document any terrain case that still needs player intervention rather than hiding it behind a generic error.
+
+Build the next versioned distributable JAR using the repository's release conventions. Preserve prior releases and use the established backup/hash-check installation workflow for Rackworks Tester when it is closed. If the game is running, stage the tested release and report it as staged.
+
+Archive source, editable assets, structure data, recipes, documentation, JAR, and verification evidence under F:\Minecraft\Automatons. Preserve unrelated projects, saves, and custom settings.
+
+The handoff must identify the JAR/version, installation state, controls, required startup supplies, tests actually performed, and concrete remaining limitations. Both mining modes must perform real construction, mining, hauling, and resumption. A menu option or simulation alone is not a completed implementation.

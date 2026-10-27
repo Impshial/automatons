@@ -1,0 +1,56 @@
+[
+  {
+    "id": "01-track",
+    "name": "Track Block",
+    "count": 6,
+    "detail": "ONE short one-block-long section of a dark iron caterpillar track. A solid low rectangular track housing with squared front and rear ends, flat dark iron pixel tread markings across its top and sides, and simple pixel-painted squared wheel hints on its side. Iron chain tread plates only, no copper, no wood, no purple glow, no rubber tire. This is one modular block, NOT a complete long caterpillar track and not an entire vehicle."
+  },
+  {
+    "id": "02-frame",
+    "name": "Frame",
+    "count": 10,
+    "detail": "ONE cubic open structural chassis frame. Four stout gray iron corner posts linked by simple warm copper crossbars forming the twelve edges of an open cube. Hollow center visible through faces. Basic construction scaffold about one Minecraft block cubed. No machinery, no wheels, no purple glow, no greebles. Iron and copper match the reference vehicle."
+  },
+  {
+    "id": "03-attachment-mount",
+    "name": "Attachment Mount",
+    "count": 1,
+    "detail": "ONE cubic front attachment mount block. A simple gray iron casing with copper side brackets around a short central vanilla-style piston and two sturdy square attachment sockets on the FRONT. Open-frame support behind it. The piston protrudes only slightly. One block sized, practical and chunky, no drill, no blade, no whole vehicle. Materials iron, copper and piston."
+  },
+  {
+    "id": "04-operator-station",
+    "name": "Operator Station",
+    "count": 1,
+    "detail": "ONE low open operator station component, an EMPTY small wooden seat with dark brown leather cushion and low backrest on a squat iron base. Two simple iron-sided hand levers in front of the seat. Tiny redstone detail and a single small purple infused-shard indicator in the front controls. Recessed compact seating, no cab roof, NO DRIVER, no character, no entire vehicle. Simple coarse vanilla oak planks and brown leather pixels."
+  },
+  {
+    "id": "05-cargo-compartment",
+    "name": "Cargo Compartment",
+    "count": 4,
+    "detail": "ONE iron-reinforced wooden chest block. A plain oak chest enclosed by thick flat gray iron corner and edge bands, a modest square latch at the front, visible blocky wooden paneling. Recognizable cargo storage, one block cube, no purple glow, no gears, no legs, no whole vehicle. This is a chest surrounded by iron as suggested by its crafting recipe."
+  },
+  {
+    "id": "06-tank",
+    "name": "Tank",
+    "count": 1,
+    "detail": "ONE simple cubic EMPTY glass tank, the SAME generic tank used in the Lumina collector. Vanilla Minecraft glass-like pixel edges form a transparent cube with thin pale gray borders and a tiny dull gray Empty Core at the bottom center inside. A tiny plain base is okay. NO copper enclosure, no metal pipes, no ports, no taps, no fluid inside, no fancy machinery. Mostly glass, as its recipe is eight glass blocks surrounding one Empty Core. Transparent empty interior should be clearly recognizable."
+  },
+  {
+    "id": "07-lumina-engine",
+    "name": "Lumina Engine",
+    "count": 1,
+    "detail": "ONE block-shaped Lumina engine. Simple gray iron casing with a few warm copper corner accents. Four small clearly distinct glowing violet-white core windows arranged two-by-two on its front face, reflecting the four Lumina Cores in its recipe. A small redstone red detail on top. Same purple engine styling as the reference vehicle, simplified to one Minecraft block. No smoke, no exhaust, no pipes, no steampunk clutter."
+  },
+  {
+    "id": "08-blade-attachment",
+    "name": "Blade Attachment",
+    "count": 0,
+    "detail": "ONE complete detachable bulldozer BLADE ATTACHMENT, approximately three Minecraft blocks wide and about one block high. Broad single simple gray iron blade face, slightly angled lower cutting strip, two short square side flanges, compact frame and two square mounting arms visible behind it. Three small subtle violet shard insets along its upper support reflect its infused-shard recipe. Make the blade recognizable and low, not a giant wall. NO tracks, no machine body, no driver."
+  },
+  {
+    "id": "09-bore-attachment",
+    "name": "Bore Attachment",
+    "count": 0,
+    "detail": "ONE complete detachable BORE ATTACHMENT: a square thin iron/copper backing frame THREE Minecraft blocks wide by THREE blocks tall, bearing EXACTLY NINE equal small drill heads in a clearly countable 3 columns by 3 rows grid. All nine point forward. Show its front almost face-on with slight right side depth so no drill overlaps another. Each is a short simple stepped taper of three progressively smaller chunky cuboids, iron body with a tiny pale cyan diamond cutting tip. Thin copper collars around each mount. Nine heads ONLY, no central tenth head. Simple rear frame brackets, no tracks, no vehicle, no driver."
+  }
+]

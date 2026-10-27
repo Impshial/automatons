@@ -1,0 +1,77 @@
+RUNNINGTON WAREHOUSE: CHEST IDENTIFICATION FRAME
+
+Only the identification frame and its displayed chest were added. The existing
+warehouse structure, flat oak slab roof, 16 storage chest blocks, door, torches,
+totem and block-entity data are preserved.
+- Building footprint remains 7 wide x 8 deep; interior remains 5 wide x 6 deep.
+- Four full layers of interior headroom; flat roof at local Y=5.
+- Eight double chests, four along each 6-block-long wall, at Y=1 and Y=3.
+- Schematic size is now 7 X x 6 Y x 9 Z. One AIR column layer was added in front
+  to enclose the hanging frame. This is not an extra row of building blocks.
+- Existing totem / paste anchor: (3,1,8); WEOffset=(-3,-1,-8).
+- Door lower half: (3,1,1). Frame tile: (3,3,0), attached to (3,3,1).
+- All former Z coordinates increase by one; anchor-relative placement is unchanged.
+- 236 structural non-air cells and one item-frame entity.
+- Requires Automatons for automatons:totem (block entity automatons:station).
+- 17 chest items total: 16 for storage plus ONE for the frame.
+
+REQUIRED FINISHED ITEMS (excluding the existing totem)
+ 17  Chest
+ 26  Cobblestone
+ 12  Glass
+  1  Item Frame
+  1  Oak Door
+ 38  Oak Log
+ 81  Oak Planks
+ 56  Oak Slab
+  4  Torch
+FORMAT AND IMPORT
+Minecraft Java 1.20.1, DataVersion 3465, Sponge Schematic v2.
+All coordinates below refer to the exported schematic, unless labeled body coordinates.
+Every building is anchored to the player-placed totem, which remains exposed
+and usable in the completed structure. All future buildings must follow this rule.
+The builder derives the footprint, entrance, floor and placements from that
+totem's position and the worksite's chosen orientation. Do not choose another
+center and then relocate the totem. Save orientation and reserved bounds before
+construction so retries cannot rotate or shift an existing project.
+WorldEdit origin is stored in WEOffset and Offset=(0,0,0). Foundation blocks go
+one block below normal walking level, so the entrance is flush with the ground.
+Load the file by its basename with //schem load, stand at the specified anchor,
+and use //paste on a disposable test site. Entity pasting must be enabled.
+Do not paste a template over an operational worksite or an assigned totem.
+
+ITEM FRAME
+The identifier is a real minecraft:item_frame entity in the schematic's Entities
+list, not a block or a block entity. It is north-facing, visible, removable,
+not invulnerable and contains one real item. It carries no fixed UUID.
+When importing this template into the mod's construction system, process its
+Entities list as well as blocks. Place the support block first; then create the
+frame and insert the displayed item, consuming one frame and one display item.
+Transform position, hanging tile, support and facing together when rotating.
+Do not double-charge or duplicate the frame or display item after retries or
+reload. Identification is cosmetic: changing the display must not change the
+totem's purpose. Do not take a worker's active tool to fill a display frame.
+Resource totals include the frame and its display item. Door halves consume
+one door item together. Each chest block consumes one chest item. Double slabs
+consume two slab items, and wall torches consume ordinary torch items.
+
+CONSTRUCTION
+Reserve the occupied site and approach, respect protection and existing work,
+and validate support, access and supplies before placing. Build from real
+inventory with persistent progress. Schematic air is not blanket permission to
+erase terrain, player buildings or containers. Preserve the current totem's
+identity, links, owner, purpose, upgrades, inventory and other saved data by
+skipping both block placement AND block-entity loading at the existing totem.
+Registered chest inventories are empty and contain no loot tables. Install
+supports before attached lights and frames. Supply the exact rotated chest
+facings and pairs. These files do not implement worker behavior or new items.
+
+VALIDATION
+Decoded the written NBT and compared every block, block entity, entity and
+anchor. Checked frame support and orientation data, chest pairs and lid air,
+roof coverage and central access where applicable. Source comparisons prove
+the warehouse has no structural changes and the mine adds only eight rear wall
+planks and one totem, preserving every original block.
+No Minecraft client paste, mob navigation or build-animation test was run here.
+Rendered previews use block data; chests, totem and framed item visuals are
+illustrative. The actual files contain their named registry IDs.

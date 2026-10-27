@@ -15,11 +15,11 @@ public final class InfuserRenderer implements BlockEntityRenderer<Infuser> {
   private static Object visibleLevel;
   private static final Map<Long, double[]> visible = new HashMap<>();
 
-  private static final int MAX_MOTES = 48;
+  private static final int MAX_MOTES = 12;
   private static final float[][] QUAD = {
     {-1, -1, 0, .25f}, {1, -1, .25f, .25f}, {1, 1, .25f, 0}, {-1, 1, 0, 0}
   };
-  private final Map<Infuser, Spray> sprays = new WeakHashMap<>();
+  private final Map<Infuser, Spray[]> sprays = new WeakHashMap<>();
 
   private static final class Spray {
     UUID donor;
@@ -56,64 +56,76 @@ public final class InfuserRenderer implements BlockEntityRenderer<Infuser> {
   @Override
   public void render(
       Infuser s, float partial, PoseStack pose, MultiBufferSource buffers, int light, int overlay) {
-    if (s.core.isEmpty() || s.getLevel() == null) return;
-    double time = s.getLevel().getGameTime() + (double) partial;
-    double bob = Math.sin(time / 24) * .025;
-    Vec3 end = new Vec3(.5, .9 + bob, .5);
-    int charge = CoreItem.charge(s.core);
-    float pulse = (float) Math.max(0, 1 - (time - s.lastTransfer) / 10) * .06f;
-    pose.pushPose();
-    pose.translate(end.x, end.y, end.z);
-    pose.mulPose(Axis.YP.rotationDegrees((float) (time * 2 % 360)));
-    pose.scale(.45f + pulse, .45f + pulse, .45f + pulse);
-    int glow =
-        LightTexture.pack(Math.max((light >> 4) & 15, 5 + charge * 10 / 50), (light >> 20) & 15);
-    Minecraft.getInstance()
-        .getItemRenderer()
-        .renderStatic(
-            s.core,
-            ItemDisplayContext.FIXED,
-            glow,
-            OverlayTexture.NO_OVERLAY,
-            pose,
-            buffers,
-            s.getLevel(),
-            0);
-    pose.popPose();
-    if (!effects(s)) return;
-    spray(s, partial, time, end, pose, buffers);
-    if (charge == 50)
-      for (int i = 0; i < 4; i++) {
-        double a = time / 18 + i * Math.PI / 2;
-        dot(
-            pose,
-            buffers,
-            end.add(Math.cos(a) * .19, Math.sin(a * 2) * .05, Math.sin(a) * .19),
-            .018f,
-            0xff8df0a4);
-      }
+    if (s.getLevel() == null) return;
+    for (int corner = 0; corner < 4; corner++) {
+      if (s.shards[corner].isEmpty()) continue;
+      double time = s.getLevel().getGameTime() + (double) partial;
+      double bob = Math.sin(time / 24) * .025;
+      Vec3 end = Infuser.offset(corner).add(0, bob, 0);
+      int charge = LumiteShardItem.paid(s.shards[corner]);
+      float pulse = (float) Math.max(0, 1 - (time - s.lastTransfer[corner]) / 10) * .06f;
+      pose.pushPose();
+      pose.translate(end.x, end.y, end.z);
+      pose.mulPose(Axis.YP.rotationDegrees((float) (time * 2 % 360)));
+      pose.scale(.45f + pulse, .45f + pulse, .45f + pulse);
+      int glow =
+          LightTexture.pack(Math.max((light >> 4) & 15, 5 + charge * 10 / 75), (light >> 20) & 15);
+      Minecraft.getInstance()
+          .getItemRenderer()
+          .renderStatic(
+              s.shards[corner],
+              ItemDisplayContext.FIXED,
+              glow,
+              OverlayTexture.NO_OVERLAY,
+              pose,
+              buffers,
+              s.getLevel(),
+              0);
+      pose.popPose();
+      if (!effects(s)) continue;
+      spray(s, corner, partial, time, end, pose, buffers);
+      if (charge == 75)
+        for (int i = 0; i < 4; i++) {
+          double a = time / 18 + i * Math.PI / 2;
+          dot(
+              pose,
+              buffers,
+              end.add(Math.cos(a) * .19, Math.sin(a * 2) * .05, Math.sin(a) * .19),
+              .018f,
+              0xff8df0a4);
+        }
+    }
   }
 
   private void spray(
-      Infuser s, float partial, double time, Vec3 end, PoseStack pose, MultiBufferSource buffers) {
-    Spray spray = sprays.computeIfAbsent(s, key -> new Spray());
-    if (!Objects.equals(spray.donor, s.donor)) {
+      Infuser s,
+      int corner,
+      float partial,
+      double time,
+      Vec3 end,
+      PoseStack pose,
+      MultiBufferSource buffers) {
+    Spray spray =
+        sprays
+            .computeIfAbsent(
+                s, key -> new Spray[] {new Spray(), new Spray(), new Spray(), new Spray()})[corner];
+    if (!Objects.equals(spray.donor, s.donors[corner])) {
       spray.motes.clear();
-      spray.donor = s.donor;
+      spray.donor = s.donors[corner];
       spray.lastBurst = Long.MIN_VALUE;
     }
     spray.motes.removeIf(mote -> time - mote.born >= mote.lifetime || time < mote.born);
-    var donor = s.donor == null ? null : s.getLevel().getPlayerByUUID(s.donor);
+    var donor = s.donors[corner] == null ? null : s.getLevel().getPlayerByUUID(s.donors[corner]);
     long burst = (long) Math.floor(time / 3);
-    if (s.transferring
+    if (s.transferring[corner]
         && donor != null
         && burst != spray.lastBurst
-        && time - s.lastTransfer < Math.max(12, Balance.INFUSE_INTERVAL.get() + 2)) {
+        && time - s.lastTransfer[corner] < Math.max(12, Balance.INFUSE_INTERVAL.get() + 2)) {
       spray.lastBurst = burst;
       Random random =
           new Random(
               s.getBlockPos().asLong()
-                  ^ s.donor.getLeastSignificantBits()
+                  ^ s.donors[corner].getLeastSignificantBits()
                   ^ burst * 0x9E3779B97F4A7C15L);
       double yaw =
           Math.toRadians(net.minecraft.util.Mth.rotLerp(partial, donor.yBodyRotO, donor.yBodyRot));
@@ -182,7 +194,7 @@ public final class InfuserRenderer implements BlockEntityRenderer<Infuser> {
     pose.pushPose();
     pose.translate(p.x, p.y, p.z);
     pose.mulPose(Minecraft.getInstance().getEntityRenderDispatcher().cameraOrientation());
-    VertexConsumer out = buffers.getBuffer(RenderType.entityTranslucent(MagicaOrbRenderer.TEXTURE));
+    VertexConsumer out = buffers.getBuffer(RenderType.entityTranslucent(LuminaOrbRenderer.TEXTURE));
     int r = color >> 16 & 255, g = color >> 8 & 255, b = color & 255;
     for (float[] v : QUAD)
       out.vertex(pose.last().pose(), v[0] * size, v[1] * size, 0)

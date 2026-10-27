@@ -1,0 +1,464 @@
+# Implement The Machine and Operatorton
+
+Implement this complete feature in the existing Automatons mod for Minecraft 1.20.1. The Machine is a Lumina-powered, rideable multiblock vehicle that can clear land, bore tunnels, follow simple programs, and be operated by a new automaton job called Operatorton.
+
+Read the repository instructions and inspect the current implementation before editing. Reuse the project's loader, mappings, registries, networking, automaton jobs, pedestal network, Lumina systems, protection checks, inventories, rendering, and GUI conventions. Do not change the Minecraft version or introduce a second framework. Implement the feature, build it, and run relevant checks. Do not stop after writing a plan or producing placeholders. You can organize the work into internal stages, but the requested result is the complete feature.
+
+This prompt is self-contained. Where it conflicts with older Machine notes, use this version. Its final attachment rule is particularly important: attachments cannot be toggled; they are physically installed or removed through the GUI while The Machine is stopped.
+
+1. SCOPE AND TERMINOLOGY
+
+- The vehicle's displayed name is "The Machine". Do not call it Dozer or Bulldozer in player-facing text.
+- The driver job is "Operatorton".
+- Use Lumina terminology consistently. Reuse the existing registered Lumina/Core items rather than making duplicates under slightly different names.
+- The attachments are "Blade Attachment" and "Bore Attachment". Earlier references to a Drill Attachment mean the Bore Attachment.
+- The reusable instruction item is named "Program". Do not use books, written books, or loose paper as the programming interface.
+- The Machine has Manual, Chunk, and Program modes.
+- A player or an Operatorton can occupy its single Operator Station. It also supports unattended Chunk and Program work without a seated pilot.
+- Implement all necessary items, assembly blocks, recipes, models, textures, sounds, interfaces, persistence, and multiplayer synchronization.
+
+The following defaults settle details that were not specified numerically. Keep them easy to adjust, and mention any changed default in your completion notes:
+
+- Communication range: a horizontal circular radius of 48 blocks from the linked pedestal, equivalent to three chunks. Check the whole vehicle footprint, including an attachment, rather than only its center. This is an explicit implementation default for the previously ambiguous word "radius".
+- Manual movement uses cardinal headings, with smooth animations between them. A/D request 90-degree turns. This keeps driving consistent with the grid, clearance rules, and program language.
+- Chunk mode is a surface-clearing job for the Blade. It does not excavate the entire vertical chunk or create a quarry. Bore work uses Manual or Program mode.
+- Program item recipe: the inexpensive reusable recipe in section 13. This recipe is a new default, not an existing mod recipe.
+- Startup, travel, turning, breaking, fuel rates, and tank capacity should use existing balancing conventions where possible. Keep new numbers together in configuration or clearly named constants, rather than scattering magic numbers through the code.
+
+2. MULTIBLOCK CONSTRUCTION
+
+The unformed construction is exactly 3 blocks wide, 2 blocks tall, and 4 blocks long: 24 occupied positions. There are no empty cells.
+
+Read each layer from FRONT to REAR. Left and right are as seen from behind The Machine while facing forward. Each row has Left | Center | Right positions.
+
+BOTTOM LAYER:
+Row 1: Frame       | Frame | Frame
+Row 2: Track Block | Frame | Track Block
+Row 3: Track Block | Frame | Track Block
+Row 4: Track Block | Frame | Track Block
+
+TOP LAYER:
+Row 1: Frame             | Attachment Mount | Frame
+Row 2: Cargo Compartment | Operator Station | Cargo Compartment
+Row 3: Cargo Compartment | Tank             | Cargo Compartment
+Row 4: Frame             | Lumina Engine    | Frame
+
+Exact component totals:
+- 6 Track Blocks, in two side runs of three.
+- 10 Frames.
+- 4 Cargo Compartments.
+- 1 Attachment Mount.
+- 1 Operator Station.
+- 1 Tank.
+- 1 Lumina Engine.
+
+The front bottom corners are Frames, not tracks. Two Cargo Compartments sit beside the Operator Station and two more sit beside the Tank. Use the same registered Tank as the passive Lumina Collector, including its existing recipe and appearance.
+
+Right-click the complete structure with the Automaton Wand to form The Machine. Detect all four cardinal orientations, deriving the front from the Attachment Mount and Operator Station. Invalid structures must remain intact and provide a concise useful error. Validate the entire conversion before removing any assembly blocks. Transfer any component data that the existing blocks support without duplication or loss.
+
+Formation compacts the body from four blocks long to three. This is an intentional part of the design:
+- Unformed assembly: 3 wide x 2 tall x 4 long.
+- Formed bare chassis: 3 wide x 2 tall x 3 long.
+- With Blade: 3 wide x 2 tall x 4 long.
+- With Bore: 3 wide x 3 tall x 4 long.
+
+Preserve all 24 components' contributions after compaction, particularly the full cargo capacity. Align the shortened chassis predictably within the original assembly footprint, facing the same way. Formation creates a parked Machine with its engine off and no attachment installed.
+
+Blade and Bore are separately crafted items installed after formation. Neither occupies one of the 24 assembly positions. Use the formed dimensions for movement, collision, work, and path validation. Do not accidentally leave a four-block chassis and make the attached vehicle five blocks long.
+
+3. MODEL, TEXTURES, AND SOUND
+
+Build simple Minecraft-style models with native pixel art. Use the supplied component drawings and lowered-cab vehicle reference if available, plus the existing mod's actual assets. The drawings are concept art, not ready-to-import texture atlases.
+
+- Keep texture density equivalent to vanilla 16x16 pixels per block face. Larger organized atlases are fine when required by the model; do not use high-resolution painted surfaces or blurred downscales.
+- Use iron structure, copper brackets, wooden cargo compartments, a leather/wood seat, glass Tank, and restrained violet-white Lumina details reflecting the crafting ingredients.
+- The Operator Station is low and recessed, without a tall enclosed cab. Both a seated player and Operatorton need real head clearance inside a 3x3 tunnel. Lowering only the visual model while leaving an obstructing rider collision shape is insufficient.
+- Show two side track runs, the front attachment mount, four cargo compartments, the Tank, and the engine coherently in the compacted chassis.
+- The Blade is one broad, low, three-block-wide cutting attachment.
+- The Bore is a square bank of exactly nine smaller drills: three columns by three rows. It is not one enormous drill. Each head can use a few stepped cuboids, with diamond-colored tips matching the recipe.
+- Animate tracks during movement and drills while actually working. Stop work animations when stationary or blocked.
+- Include a distinct engine startup, running loop, movement/work sounds, and shutdown. Synchronize sound transitions so loops do not stack, continue after stopping, or restart every tick.
+
+Use the existing vanilla-style mod GUI design. Item tooltips should be short descriptions of purpose; do not put crafting instructions or implementation details in them.
+
+4. ENGINE, TERRAIN, AND MOVEMENT
+
+The Machine consumes Lumina. Reuse the existing Lumina accounting and the shared Tank/Luminall infrastructure where applicable. Do not invent another magic resource or silently assume that one fluid unit equals one Lumina. Use the existing conversion, or define one documented configurable conversion if the project does not have one.
+
+Provide a working survival refueling interaction through the GUI using the existing mod's supported fuel or fluid containers. Preserve normal container return behavior. Do not leave survival fueling dependent on commands or creative mode.
+
+Engine states are Off, Starting, Running, and Stopping. Starting has a short sound and animation; travel is disabled until startup completes. Stopping halts travel, turning, and block processing immediately, then plays the shutdown presentation. Starting the engine alone must not resume an old program or move The Machine. Explicit Start Work or Resume commands may orchestrate startup and then continue their requested job.
+
+If fuel is exhausted, stop and retain the current task and exact remaining movement. Fuel use and recovery are server-authoritative. A stopped engine consumes no fuel. Do not create an idle fuel loop that defeats the player's ability to park the vehicle.
+
+Travel rules:
+- Move along cardinal directions and maintain a stable grid-aligned logical position. Animations can interpolate smoothly.
+- Rotate around the central vertical axis of the compacted 3x3 chassis. The attachment is offset in front of that pivot.
+- Check the swept chassis, attachment, and rider clearance through a turn. Do not check only the destination bounding box or allow the attachment to swing through walls.
+- A turn by itself does not mine or clear blocks.
+- Use collision that allows a correctly aligned Bore and seated operator to travel through a 3x3 tunnel. Do not use an oversized collision envelope that makes the tunnel it creates impassable.
+- Climb one block only when there is a supported step across the full three-block travel width and adequate body/rider clearance. A single narrow raised block is not a climbable step.
+- Do not hop, bridge gaps, climb two blocks, or fall off unsupported edges. As a practical default, permit supported one-block descents with adequate clearance.
+- Check terrain before movement. A Blade can remove eligible soft obstructions in its cutting area, but it does not make unsupported terrain into a valid step.
+- Reverse movement must be supported for manual driving and returning through narrow tunnels. The attachment remains physically at the front; reversing does not turn it into a rear attachment or clear behind the vehicle.
+- Stop on an obstruction, fuel shortage, unsafe terrain, or range boundary and show a specific short reason.
+
+Link The Machine to the existing pedestal network using the project's ownership/assignment conventions. Provide a clear GUI method to select an eligible pedestal if association cannot be inferred. Use the same 48-block default limit for Manual, Chunk, and Program operation. Validate each movement and turn against the boundary. Do not allow a remote move simply because the driver is a player.
+
+Use existing chunk-loading and protection behavior. Do not force-load unlimited terrain or bypass protected chunks and block interaction permissions. If required terrain is unavailable, pause with a clear status instead of treating missing chunks as empty space.
+
+5. ATTACHMENTS: FINAL RULES
+
+There is one dedicated Attachment slot in The Machine's GUI.
+
+- Install or remove the Blade/Bore only while The Machine is deliberately parked or its job is paused, with no translation, turning, or block operation in progress.
+- A brief zero-velocity instant between route steps is not permission to swap equipment during an active job.
+- Validate the replacement attachment's occupied space before accepting it.
+- The operation transfers the actual item to/from player inventory without voiding or duplicating it. Handle a full player inventory correctly.
+- Attachment changes happen through the GUI. The wand forms the multiblock but does not swap attachments.
+- No attachment toggle button, keybind, enabled flag, or HUD control exists.
+- There is no hidden transport mode that disables an installed attachment. Forward movement into eligible blocks performs its work automatically.
+- An installed attachment does not break blocks merely because the engine is idling. Work requires an actual advance into the relevant cutting area.
+- With no attachment, The Machine is a small Lumina-powered vehicle with cargo storage. It cannot break obstacles, clear land, bore, or harvest Lumina.
+
+Blade:
+- Clears a three-block-wide line in front of the vehicle.
+- Can break ordinary breakable blocks that do not require a pickaxe. Shovel blocks are explicitly allowed: dirt, grass blocks, sand, gravel, and similar materials.
+- Also clears eligible logs/trees, leaves, grass, flowers, crops, pumpkins, melons, and similar vegetation or materials.
+- Pickaxe-required blocks stop the Blade. Do not mistakenly restrict the Blade to plants or exclude blocks because a shovel is the preferred tool.
+- Determine compatibility from the game's tool requirements and the mod's existing harvesting rules, with appropriate support for other mods. Do not implement a tiny hard-coded whitelist of only the examples above.
+- Unbreakable blocks remain unbreakable. Respect the existing protected-area and block-entity handling rules.
+- Reuse tree recognition/felling where appropriate so the land-clearing behavior handles real trees coherently. Do not indiscriminately flood-fill connected wooden structures as trees.
+- Collect normal item drops into cargo. Collect Lumina from eligible cleared blocks using the mod's current yield rules, and credit that Lumina to The Machine's fuel supply exactly once.
+- Do not invent new yields, multiply rewards across a tree, or credit the same yield to both The Machine and its rider.
+
+Bore:
+- Cuts a three-block-wide by three-block-high square immediately ahead, leaving supporting ground beneath the tunnel intact.
+- The nine visible drills correspond to that 3x3 work area.
+- Breaks blocks requiring a pickaxe, subject to the intended tool tier and unbreakable-block restrictions. Use diamond-equivalent capability as the default, matching its three diamond-pickaxe recipe.
+- Collects normal mined item drops, but never collects Lumina or calls the Blade's harvesting behavior.
+- Soft terrain/vegetation outside its supported block category is an obstruction, not something it clears using Blade logic.
+- Plan multi-block cutting safely. Stop before advancing into remaining obstructions or overflowing cargo. Do not leave The Machine embedded in an incompletely cut face.
+
+When cargo is full, prevent further breaking that would overflow it. Retain the ability to reverse or drive through already clear space to unload. Do not add an attachment-disable control to solve full storage.
+
+6. PLAYER RIDING AND HUD
+
+Players can mount and drive The Machine directly.
+
+- Right-clicking the empty Operator Station/seat mounts the player immediately, without opening the driving GUI first.
+- Right-clicking the body opens its GUI and storage, including while it is moving. Keep attachment/Program slot restrictions enforced even when the screen is open.
+- Boarding an otherwise unattended automatic Machine first stops and pauses its job, then safely mounts the player in Manual mode. It must not continue advancing while control transfers.
+- An occupied seat is occupied. Do not silently delete, duplicate, or eject Operatorton to accept a player. Expose the controlled Release Operator action described below.
+- Only one pilot can control movement at a time.
+
+Display a driving HUD only while the local player is seated. Keep the crosshair and world view usable. Show:
+- Engine state: Off, Starting, Running, or Stopping.
+- Lumina fuel bar.
+- Cargo capacity and a full warning.
+- Installed attachment: Blade, Bore, or None. This is informational, not toggleable.
+- Relevant status such as Path blocked, Out of Lumina, or Pedestal range reached.
+- Compact key prompts using the player's actual configured bindings.
+
+Controls:
+- Forward/backward movement bindings: forward and reverse.
+- Left/right movement bindings: request left/right cardinal turns.
+- A configurable engine key, default R if practical: start/stop engine.
+- Normal dismount binding, default Shift: stop/park and dismount safely.
+- A configurable Machine Inventory key while seated: open the same programming/storage GUI without requiring a dismount.
+- Space has no attachment-toggle action. Do not add vehicle jumping.
+
+HUD prompts are key hints; players must not need to release mouse-look and click HUD buttons to drive. Suppress movement input while editing a GUI. Opening a screen alone does not automatically pause unrelated unattended Machines.
+
+Dismounting parks this Machine and leaves the saved automatic job paused. It must not resume a program or let Operatorton take over until explicitly requested. Find a safe dismount position rather than placing the player inside the drills, terrain, or a wall.
+
+7. PROGRAM ITEM AND EDITOR
+
+Add a reusable, non-stackable, read/write item named Program. It stores a user-chosen name and the instruction text. Use a small physical card/chip-style pixel-art icon consistent with paper, redstone, and an infused shard. It is not a book UI.
+
+The Machine has one dedicated Program slot separate from cargo and the attachment slot.
+
+- A Program must be inserted to start or continue Program mode. No executing an invisible retained copy after the item is removed.
+- Edit and save the name/text directly to the inserted Program through the Machine GUI.
+- The Program can be removed and used in another Machine. Its name and instructions travel with it.
+- Inserting a Program never starts a job automatically.
+- Pause before editing, replacing, or removing a Program. Ordinary removal is locked during execution. Unexpected removal through any other valid path must stop execution immediately and preserve cargo.
+- Running progress belongs to the Machine's active job, not to the transferable recipe-like Program item. Do not carry another vehicle's coordinates or stale progress into a new Machine by moving the card.
+- Editing the instruction text invalidates the previous continuation. Starting the changed program creates a new job from the current location.
+- Manual and Chunk modes do not require a Program item.
+
+Program editor:
+- Numbered multiline text field, program name, Save, Validate, Start Work, Pause, Resume, and Cancel Job controls as appropriate.
+- Show the current instruction and remaining movement during execution.
+- Provide simple insertion controls for Move(direction, distance), Turn(direction), Wait(seconds), and Drop Off. These write the same simple language into the editor; they are not a separate scripting system.
+- Show a plain-language explanation of the selected instruction, such as "Face north and move 20 blocks."
+- Report errors at the relevant line/character with an understandable message.
+- Provide a route preview from the job's start, with the working width visible. Do not present a preview as a guarantee that terrain, loaded chunks, or future cargo capacity will permit the route.
+- Do not add variables, loops, functions, braces, macros, or a separate coding machine for this version.
+
+8. PROGRAM LANGUAGE
+
+Keep the language deliberately tiny. Accept uppercase and lowercase. Spaces and newlines separate instructions but are optional between unambiguous tokens. Newlines do not add delays.
+
+Commands:
+- N, S, E, W alone: turn to face that absolute cardinal direction, without moving.
+- N<number>, S<number>, E<number>, W<number>: face that direction, then move exactly that many blocks.
+- A distance must be an explicit positive integer. N does not mean N1. Reject zero, negative, fractional, missing/overflowed distance forms with clear validation where applicable.
+- Each period means wait one second. ... waits three seconds; ..... waits five seconds.
+- DROPOFF: return to this job's saved start location and unload into eligible connected/nearby chests there.
+
+Use the game's simulation timing for pauses. Persist remaining pause time through a normal save/load. Validate the entire text before execution so an unknown command in a later line does not become a surprise halfway through work. Put reasonable bounds on text size and numeric distances; reject impossible numeric inputs instead of overflowing or freezing the server.
+
+Examples:
+- E means face east and stay where you are.
+- E1 means face east and move one block.
+- N20 E E20 is valid. The standalone E is redundant because E20 also faces east, but it must remain valid.
+- N16EE15SS15WW14NN14EE13 is a valid compact sequence.
+- A request to face the current heading is a harmless no-op, not another 90-degree turn.
+
+Use this route as an example Program:
+N20
+E
+E20
+S
+S17
+W
+W17
+N
+N14
+E
+E14
+S
+S11
+W
+W11
+.....
+N
+N8
+E
+E8
+S
+S5
+W
+W5
+N
+N2
+E
+E2
+
+This demonstrates a spiral with successive runs decreasing by three blocks to suit the Blade's width. Do not label it a mathematically guaranteed 20x20 cleared footprint; vehicle position, attachment offset, and cutting width must be included in the actual preview.
+
+Do not introduce a player-facing reverse command in this version. Internal reverse navigation is still required for driving and return trips.
+
+9. JOB STATE, DROPOFF, AND CARGO
+
+The four Cargo Compartments provide exactly 108 slots, equal to two double chests. Use one scrollable cargo view, not a huge off-screen inventory. Support normal stack transfers, shift-clicking, and existing inventory integration. Track capacity using actual mergeable stacks, not simply whether all slot indices are occupied.
+
+At a new job start, capture the start/docking position, heading, linked pedestal, and relevant context. Do not redefine the start when pausing, loading a save, switching screens, or making an automatic unload trip.
+
+Track exact instruction progress. For example, if N20 is interrupted after seven completed blocks, resuming runs the remaining thirteen. Include turn completion and pause duration in saved state. A stop during visual interpolation must not grant a free movement step, repeat block rewards, or shift the logical route.
+
+Explicit DROPOFF:
+- Navigate physically to the saved start; never teleport.
+- Unload into valid chests associated with that location using existing storage discovery/permissions.
+- Keep the Program and Attachment in their own slots. Only cargo is unloaded.
+- When unloading succeeds, the next instruction begins from the start location. Explicit DROPOFF does not implicitly return to the place where the command was encountered.
+- If no chest exists, every destination is full, or the route is blocked, retain all items and wait with a useful status. Use the existing Runnington request system when appropriate. Never drop the inventory on the ground as a fallback.
+
+Full cargo without a pilot:
+- Stop work before overflow.
+- Request a Runnington through the pedestal's existing job/notification system to collect cargo.
+- Expose The Machine as a valid collection destination/source as required by that system.
+- Deduplicate the request. Do not send a new job every tick.
+- If the original job is still active and space becomes available, resume it. A user-paused or cancelled job must stay paused/cancelled.
+
+Full cargo with Operatorton:
+- Save the exact work position, heading, instruction, and remaining distance.
+- The driver returns to the saved start, deposits into chests, travels back to the saved work position, restores the heading where clearance permits, and resumes the unfinished work.
+- This automatic unloading detour is different from an explicit DROPOFF command.
+- Partial unloading must not cause an endless departure/return loop when there is still no useful capacity for the pending work.
+- If unloading or navigation is impossible, retain the job and cargo, wait visibly, and request Runnington assistance where possible.
+
+Full cargo with a player driving:
+- Show the warning and prevent work that would overflow cargo.
+- Keep movement through clear space and reversing available so the player can drive back.
+- Do not take control away from the player to perform an automatic return trip.
+
+Record or otherwise retain a valid traversable return route while working. Narrow tunnels require reversing along the cleared route rather than assuming a 180-degree turn is possible. Validate the return route again because terrain can change. Keep attachment behavior consistent: do not secretly disable an installed attachment during return travel. Prefer already clear terrain, and stop if a new obstruction cannot be handled safely under the normal rules.
+
+Resume, Cancel Job, and Start New Job must have distinct behavior. Pausing or stopping the engine retains progress. Cancel Job clears the active job's continuation, but not the Program's text, cargo, or fuel. Resuming is refused if the saved continuation is no longer compatible with the current Program, position, attachment, or world state. In particular, manual driving must not silently resume an old coordinate-dependent instruction at the wrong location; safely return to the saved work pose when possible, or require starting a new job with a clear explanation.
+
+10. CHUNK MODE
+
+Chunk mode clears the selected/current chunk's reachable surface using the Blade, without requiring a Program. Show the target chunk boundary before starting. Validate that the target and required maneuvering space are within communication range.
+
+- Plan passes three blocks wide, accounting for the 16-block chunk width. The final pass needs overlap or a reduced work mask; do not leave a strip uncleared.
+- The cutting mask must stay inside the selected chunk. Adjacent vegetation must not be destroyed just because the Blade is three blocks wide at an edge.
+- The Machine may use safe already-clear maneuvering space outside the target chunk within its pedestal range, but must not clear that area as part of the chunk job.
+- Follow reachable supported surface terrain with the same one-block/full-width climb rules. Clear eligible Blade obstacles; do not mine pickaxe-required terrain or excavate every Y level.
+- Do not claim success if blocked/unreachable portions remain. Mark the job blocked or partial with a reason and preserve enough state to continue after the obstacle is addressed.
+- Use the same fuel, cargo, Runnington, Operatorton unloading, protection, and resume logic as Program mode.
+- At completion, park and shut down. Do not silently move on to adjacent chunks.
+
+11. OPERATORTON: COMPLETE DRIVER JOB
+
+Add Operatorton as a selectable job for the existing generic automaton. Reuse the existing automaton crafting and job-change systems. This is not a separately crafted species with a new body recipe.
+
+Provide the full job behavior, not only a label, texture, or stationary passenger:
+
+A. Registration and appearance
+- Register the job everywhere the existing jobs need to appear: assignment UI, job listings, localization, persistence, and relevant pedestal/totem data.
+- Preserve the automaton's individual name, ownership, inventory, and other shared state when its job changes.
+- Give it a modest driver-themed visual variation consistent with the existing small automaton and 16x16 texture density. A simple cap or workwear detail is sufficient. Preserve the established face and proportions.
+- Do not require pickaxes, shovels, or the builder's Hammer to drive. The installed Machine attachment supplies the work capability.
+
+B. Assignment and boarding
+- Add an Operator section to the Machine GUI with Assign Operator and Release Operator actions, using eligible available Operatortons from the same existing network/ownership context.
+- Follow existing wand assignment conventions where they already fit; do not add another wand mode solely for this job.
+- Maintain a persistent one-to-one assignment between an Operatorton and a Machine. Prevent two drivers claiming one seat and prevent one driver controlling multiple Machines.
+- Assignment can send the driver to the parked Machine and board it, but assignment alone does not start cutting terrain. Work starts only after an explicit Start Work/Resume request.
+- Navigate to a reachable boarding position, verify that the seat is vacant and the vehicle is stopped, then mount the real seat as its passenger.
+- If boarding is blocked or the seat is occupied, wait with a visible status rather than teleporting or overwriting the current passenger.
+
+C. Driving work
+- Operatorton runs the selected Chunk or Program job through The Machine's shared movement/work controller. Do not build a second conflicting parser or terrain-breaking implementation inside the automaton AI.
+- Program mode still requires an inserted Program while Operatorton is driving.
+- The driver performs startup when an authorized job begins, waits for the engine, drives the route, observes clearance and range, and shuts down when the job finishes or is explicitly stopped.
+- Handle waits, turns, blocked paths, exhausted fuel, and range limits using the same rules as unattended operation.
+- At full cargo, perform the automatic return/unload/return-to-work behavior in section 9, including reversing out of a 3x3 tunnel when necessary.
+- Never fabricate steering authority from an assignment alone if the actual driver has left the seat or is unavailable.
+
+D. Lifecycle and control transfer
+- Release Operator first stops/parks the vehicle, preserves or cancels the job according to the user's selected action, dismounts the driver safely, and clears the assignment.
+- Changing the automaton's job, removing/destroying the assigned Machine, driver removal/death, ownership changes, or invalid network association must clean up both sides of the relationship.
+- Unexpected loss of an active driver pauses the Machine. Do not silently switch an ongoing piloted job into unattended execution.
+- Save/load and chunk unload/reload must preserve identities, assignment, passenger relationship, and job continuation without spawning duplicate automatons or creating invisible permanent passengers.
+- A player cannot occupy the same seat. After Release Operator, the player can board directly and use the HUD.
+- Use short job states in the existing worker UI, such as Going to Machine, Waiting to board, Driving, Returning to unload, Unloading, Returning to work, Waiting for cargo space, and Parked.
+
+Operatorton's benefit is that it manages the physical return/unload/resume cycle. A pilotless Machine can still execute Chunk/Program work, but waits for a Runnington when full instead of granting itself the driver's automatic unloading behavior.
+
+12. MACHINE GUI
+
+Use a compact vanilla-style screen with Controls, Program, and Storage sections or tabs.
+
+Controls:
+- Selected mode and status.
+- Linked pedestal and communication status.
+- Fuel display/refueling.
+- Start/Stop Engine, plus Start Work, Pause, Resume, and Cancel Job where relevant.
+- Attachment slot and installed type.
+- Program slot and loaded program name.
+- Operator assignment, driver name, and Release Operator action.
+
+Program:
+- The editor and validation tools described above.
+- Read-only execution progress while running.
+
+Storage:
+- All 108 cargo slots through scrolling, plus normal player inventory interaction.
+
+Right-clicking the body while moving must still permit viewing the GUI and accessing storage. Lock only actions that require a parked state. Viewing is not an automatic engine-stop command. Server-side checks must enforce every lock and permission, not just greyed-out client buttons.
+
+13. CRAFTING RECIPES
+
+Use existing item registrations and normal shaped recipes. Each recipe below lists its three rows. "Iron" means iron ingot, "Copper" means copper ingot, "Infused Shard" means the existing Infused Lumite Shard, and "Core" means the existing infused/Lumina Core made from an Empty Core and four infused shards. Reuse the actual registered core name in the repository. "Empty" is an empty crafting slot.
+
+Track Block -> 2:
+Iron | Chain | Iron
+Iron | Empty | Iron
+Iron | Chain | Iron
+
+Frame -> 2:
+Iron   | Copper | Iron
+Copper | Empty  | Copper
+Iron   | Copper | Iron
+
+Attachment Mount -> 1:
+Iron   | Piston | Iron
+Copper | Frame  | Copper
+Iron   | Empty  | Iron
+
+Blade Attachment -> 1:
+Frame         | Frame         | Frame
+Infused Shard | Infused Shard | Infused Shard
+Iron          | Iron          | Iron
+
+Bore Attachment -> 1:
+Diamond Pickaxe | Diamond Pickaxe | Diamond Pickaxe
+Frame           | Core            | Frame
+Iron            | Copper          | Iron
+
+The three pickaxes craft the whole nine-drill attachment. Require undamaged pickaxes to avoid crafting it from nearly depleted tools; implement that constraint using the project's supported recipe mechanism.
+
+Operator Station -> 1:
+Empty  | Leather       | Empty
+Iron   | Redstone Dust | Iron
+Planks | Infused Shard | Planks
+
+Accept any appropriate vanilla/modded wooden planks through the project's plank ingredient convention.
+
+Cargo Compartment -> 1:
+Iron | Iron  | Iron
+Iron | Chest | Iron
+Iron | Iron  | Iron
+
+Lumina Engine -> 1:
+Iron   | Core           | Iron
+Core   | Redstone Block | Core
+Copper | Core           | Copper
+
+Tank -> 1, REUSE THE EXISTING RECIPE:
+Glass | Glass      | Glass
+Glass | Empty Core | Glass
+Glass | Glass      | Glass
+
+Program -> 1, NEW DEFAULT RECIPE (2x2):
+Paper | Redstone Dust
+Paper | Infused Shard
+
+The Program output is blank and reusable, with no durability consumption when edited or run. No separate Operatorton crafting recipe is needed because it is a job assigned to an existing automaton.
+
+Register recipes and ingredients with the project's existing recipe viewer integration if present. Ensure all components and items have names, icons, and normal survival acquisition paths.
+
+14. PERSISTENCE, NETWORKING, AND CORRECTNESS
+
+Keep world changes, fuel, cargo, job advancement, assignment, and inventory mutations server-authoritative. Client packets request allowed actions; they do not supply trusted inventory contents, break targets, or unrestricted movement.
+
+Persist the information needed to continue correctly: identity/owner/network, fuel, 108-slot cargo, attachment, Program item/text, engine/job state, mode, start/docking location, target chunk, instruction cursor, remaining distance/wait, saved work pose, return route/context, assigned Operatorton, and outstanding haul/unload state.
+
+Integrate with existing save/unload conventions. A normal unload/reload must not erase work, duplicate loot, or consume the same blocks twice. A driver disconnect or invalid passenger state must park safely. Do not automatically resume player-paused or cancelled work during load.
+
+Use the existing Machine/entity dismantling or removal conventions where available. Any implemented destruction or dismantling path must preserve/recover cargo and installed items exactly once. Formation, pickup, save/load, and removal must not offer a duplication loop.
+
+Limit scans/pathfinding sensibly, cache routes when valid, and avoid scanning an entire chunk every tick. Treat path previews as client presentation of validated state, not client authority to break blocks.
+
+15. VALIDATION AND DELIVERY
+
+Run the project's relevant build, resource/datagen, and test checks. Add meaningful tests for the new parser and state transitions where the existing test infrastructure supports them. Verify these behaviors with automated checks and/or a clearly reported in-game smoke test:
+
+- Valid 24-block structures form in all four directions; invalid structures remain untouched.
+- Counts, shortened dimensions, attachment offsets, collision, and the lowered seat are correct.
+- Native texture density is consistent with the existing mod; the Bore has nine visible drills.
+- The Blade clears dirt/sand/gravel and vegetation, but stops at pickaxe-required blocks.
+- The Bore cuts exactly 3x3, preserves the supporting floor, and collects zero Lumina.
+- No attachment behaves as a normal drivable cargo vehicle.
+- No toggle exists; attachment swaps succeed only through the GUI in a parked/paused state.
+- Player mounting opens the HUD directly; engine startup, stop, reverse, turning, safe dismount, and GUI access work.
+- Full-width steps are climbable; narrow/tall/unsupported steps and obstructed turns are rejected.
+- A player and Operatorton each fit through the tunnel produced by the Bore.
+- The 108-slot cargo view scrolls and transfers items correctly without overflow.
+- Programs require the physical item, save changes to it, and remain portable between Machines.
+- N turns without moving; N1 moves one; compact/newline/lowercase forms parse consistently; periods wait correctly; invalid input is rejected before execution.
+- Mid-instruction pause/unload resumes only the remaining distance, without repeating drops or rewards.
+- Explicit DROPOFF resumes from start; Operatorton's full-inventory detour returns to the interrupted work location.
+- Missing/full chests, absent Runningtons, exhausted fuel, and blocked return routes preserve items and show useful waiting states.
+- Pilotless full cargo posts one haul request and resumes only when the active job permits it.
+- Operatorton can be selected as a job, assigned, navigate to the vehicle, board, start work, unload, return, resume, park, and be released.
+- Two drivers cannot claim one Machine, one driver cannot control two, and player takeover cannot duplicate/eject a passenger unexpectedly.
+- Driver job changes, disconnect/removal, chunk reloads, and server restart do not corrupt assignments or job state.
+- Chunk mode covers the 16-block width without clearing neighboring chunks and reports unfinished blocked areas honestly.
+- Range/protection rules apply consistently to manual and automatic movement/work.
+- Existing automaton jobs, collector Tank behavior, and the pedestal network continue working.
+
+In your completion report, describe what changed, list the checks actually performed, identify any remaining limitation honestly, and give concise instructions for building, fueling, programming, driving, and assigning an Operatorton. Do not claim an in-game test passed if you only compiled. If balancing values or the documented defaults required a concrete choice, report that choice.

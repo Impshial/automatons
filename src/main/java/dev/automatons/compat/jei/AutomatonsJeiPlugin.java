@@ -53,10 +53,16 @@ public final class AutomatonsJeiPlugin implements IModPlugin {
   private static final IGuiContainerHandler<WorkScreen> SCREENS =
       new IGuiContainerHandler<>() {
         @Override
+        public List<net.minecraft.client.renderer.Rect2i> getGuiExtraAreas(WorkScreen screen) {
+          return screen.hasPopup()
+              ? List.of(new net.minecraft.client.renderer.Rect2i(0, 0, screen.width, screen.height))
+              : List.of();
+        }
+
+        @Override
         public Collection<IGuiClickableArea> getGuiClickableAreas(
             WorkScreen screen, double x, double y) {
-          if (screen.getMenu().isWorker || screen.getMenu().isTotem) return List.of();
-          return List.of(IGuiClickableArea.createBasic(128, 6, 46, 16, ASSEMBLY));
+          return List.of();
         }
       };
 
@@ -66,8 +72,23 @@ public final class AutomatonsJeiPlugin implements IModPlugin {
   }
 
   @Override
+  public void registerAdvanced(IAdvancedRegistration registration) {
+    if (net.minecraftforge.fml.ModList.get().isLoaded("jeresources"))
+      dev.automatons.compat.jer.JerEstimateDecorator.register(registration);
+  }
+
+  @Override
   public void onRuntimeAvailable(IJeiRuntime available) {
     runtime = available;
+    available
+        .getIngredientManager()
+        .removeIngredientsAtRuntime(
+            VanillaTypes.ITEM_STACK,
+            Automatons.ITEMS.getEntries().stream()
+                .map(i -> i.get())
+                .filter(Automatons::retired)
+                .map(ItemStack::new)
+                .toList());
   }
 
   @Override
@@ -83,7 +104,7 @@ public final class AutomatonsJeiPlugin implements IModPlugin {
     var factory = runtime.getJeiHelpers().getFocusFactory();
     ItemStack result =
         infusion
-            ? CoreItem.vessel(CoreItem.CAPACITY)
+            ? new ItemStack(Automatons.INFUSED_LUMITE.get())
             : new ItemStack(Automatons.AUTOMATON_ITEM.get());
     var focus = factory.createFocus(RecipeIngredientRole.OUTPUT, VanillaTypes.ITEM_STACK, result);
     long matches =
@@ -91,12 +112,41 @@ public final class AutomatonsJeiPlugin implements IModPlugin {
             ? manager.createRecipeLookup(INFUSION).limitFocus(List.of(focus)).get().count()
             : manager.createRecipeLookup(ASSEMBLY).limitFocus(List.of(focus)).get().count();
     if (matches < 1) throw new IllegalStateException("JEI output recipe lookup is empty");
-    if (!infusion && Minecraft.getInstance().screen instanceof WorkScreen screen) {
-      var areas = SCREENS.getGuiClickableAreas(screen, 140, 12);
-      if (areas.size() != 1) throw new IllegalStateException("Missing pedestal recipe link");
-      areas.iterator().next().onClick(factory, runtime.getRecipesGui());
-    } else runtime.getRecipesGui().show(focus);
+    runtime.getRecipesGui().show(focus);
     System.out.println(
         "AUTOMATONS_JEI " + (infusion ? "infusion" : "assembly") + " outputMatches=" + matches);
+  }
+
+  @SuppressWarnings({"unchecked", "rawtypes"})
+  public static void reviewOre(boolean deep) {
+    if (!Boolean.getBoolean("automatons.visualSmoke") || runtime == null)
+      throw new IllegalStateException("JER review requires isolated Lab and JEI runtime");
+    var type =
+        runtime
+            .getRecipeManager()
+            .createRecipeCategoryLookup()
+            .get()
+            .map(c -> c.getRecipeType())
+            .filter(t -> t.getUid().toString().equals("jeresources:worldgen"))
+            .findFirst()
+            .orElseThrow();
+    var item =
+        new ItemStack(deep ? Automatons.DEEPSLATE_LUMITE_ORE.get() : Automatons.LUMITE_ORE.get());
+    var focus =
+        runtime
+            .getJeiHelpers()
+            .getFocusFactory()
+            .createFocus(RecipeIngredientRole.OUTPUT, VanillaTypes.ITEM_STACK, item);
+    long count =
+        runtime
+            .getRecipeManager()
+            .createRecipeLookup((RecipeType) type)
+            .limitFocus(List.of(focus))
+            .get()
+            .count();
+    if (count != 1)
+      throw new IllegalStateException("Expected one JER ore entry: " + item + " matches=" + count);
+    runtime.getRecipesGui().show(focus);
+    System.out.println("CURRENT_JER_VALID deep=" + deep + " entries=" + count);
   }
 }

@@ -2,18 +2,20 @@
   "type": "minecraft:crafting_shaped",
   "pattern": [
     " G ",
-    "GAG",
+    "GSG",
     " G "
   ],
   "key": {
     "G": {
       "item": "minecraft:glass"
     },
-    "A": {
-      "item": "minecraft:amethyst_shard"
+    "S": {
+      "item": "automatons:lumite_shard",
+      "type": "forge:nbt"
     }
   },
   "result": {
-    "item": "automatons:empty_magica_core"
+    "item": "automatons:empty_magica_core",
+    "count": 1
   }
 }

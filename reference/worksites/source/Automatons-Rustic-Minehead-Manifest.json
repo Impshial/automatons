@@ -1,0 +1,1287 @@
+{
+  "name": "Mine Entrance",
+  "key": "mine",
+  "basename": "Automatons-Rustic-Minehead",
+  "dimensions": [
+    7,
+    7,
+    7
+  ],
+  "origin_local": [
+    3,
+    1,
+    5
+  ],
+  "translation_from_body_coordinates": [
+    0,
+    0,
+    0
+  ],
+  "blocks": [
+    {
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        0,
+        1,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        1,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        3,
+        1
+      ],
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        3,
+        5
+      ],
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        0,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        0,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        0,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        1,
+        0
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        1,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        1,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        1,
+        1,
+        6
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        2,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        1,
+        2,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        1,
+        3,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        1,
+        3,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        1,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        1,
+        4,
+        2
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        1,
+        4,
+        3
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        1,
+        4,
+        4
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        1,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        1,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        1,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        2
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        3
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        4
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        1,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        2,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        3,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        2,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        2,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        2,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        2,
+        6,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        2,
+        6,
+        2
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        2,
+        6,
+        3
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        2,
+        6,
+        4
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        2,
+        6,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=east,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        2
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        3
+      ],
+      "state": "minecraft:oak_trapdoor[facing=north,half=top,open=false,powered=false,waterlogged=false]"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        4
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        1,
+        5
+      ],
+      "state": "automatons:totem"
+    },
+    {
+      "pos": [
+        3,
+        2,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        3,
+        3,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        3,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        3,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        3,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        3,
+        6,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        3,
+        6,
+        2
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        3,
+        6,
+        3
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        3,
+        6,
+        4
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        3,
+        6,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        2
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        3
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        4
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        1,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        2,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        3,
+        5
+      ],
+      "state": "minecraft:oak_planks"
+    },
+    {
+      "pos": [
+        4,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        4,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        4,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        4,
+        6,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        4,
+        6,
+        2
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        4,
+        6,
+        3
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        4,
+        6,
+        4
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        4,
+        6,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        1,
+        0
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=south,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        1,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        1,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        5,
+        1,
+        6
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=north,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        2,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        5,
+        2,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        5,
+        3,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        5,
+        3,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=y]"
+    },
+    {
+      "pos": [
+        5,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        5,
+        4,
+        2
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        5,
+        4,
+        3
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        5,
+        4,
+        4
+      ],
+      "state": "minecraft:oak_log[axis=z]"
+    },
+    {
+      "pos": [
+        5,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        5,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        5,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        0
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        1
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        2
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        3
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        4
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        5
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        0,
+        6
+      ],
+      "state": "minecraft:cobblestone"
+    },
+    {
+      "pos": [
+        6,
+        1,
+        1
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        1,
+        5
+      ],
+      "state": "minecraft:cobblestone_stairs[facing=west,half=bottom,shape=straight,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        3,
+        1
+      ],
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        3,
+        5
+      ],
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        4,
+        1
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        6,
+        4,
+        5
+      ],
+      "state": "minecraft:oak_log[axis=x]"
+    },
+    {
+      "pos": [
+        6,
+        5,
+        1
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        5,
+        2
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        5,
+        3
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        5,
+        4
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    },
+    {
+      "pos": [
+        6,
+        5,
+        5
+      ],
+      "state": "minecraft:cobblestone_slab[type=bottom,waterlogged=false]"
+    }
+  ],
+  "counts": {
+    "minecraft:cobblestone": 59,
+    "minecraft:oak_planks": 16,
+    "minecraft:oak_trapdoor": 1,
+    "minecraft:cobblestone_stairs": 28,
+    "minecraft:oak_log": 33,
+    "minecraft:lantern": 4,
+    "minecraft:cobblestone_slab": 10,
+    "automatons:totem": 1
+  },
+  "required_placed_items": {
+    "minecraft:cobblestone": 59,
+    "minecraft:oak_planks": 16,
+    "minecraft:oak_trapdoor": 1,
+    "minecraft:cobblestone_stairs": 28,
+    "minecraft:oak_log": 33,
+    "minecraft:lantern": 4,
+    "minecraft:cobblestone_slab": 10,
+    "minecraft:item_frame": 1,
+    "minecraft:stone_pickaxe": 1
+  },
+  "double_chests": 0,
+  "chest_pairs": [],
+  "frame": {
+    "tile": [
+      3,
+      4,
+      0
+    ],
+    "support": [
+      3,
+      4,
+      1
+    ],
+    "facing": "north",
+    "facing_id": 2,
+    "position": [
+      3.5,
+      4.5,
+      0.96875
+    ],
+    "item": "minecraft:stone_pickaxe",
+    "item_count": 1
+  },
+  "requires_mod": true,
+  "existing_blocks_preserved": true,
+  "new_structural_cells": 9,
+  "source_sha256": "7c51f081214a1e24c44de7444ce020ff33ff789a4efe2312cd03dac673938194",
+  "validation": "NBT roundtrip, full cell comparison, origins, frame support, exact item inventory, chest pairing and clear lids passed. Not tested in a Minecraft client."
+}

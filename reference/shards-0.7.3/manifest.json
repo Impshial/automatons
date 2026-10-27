@@ -1,0 +1,10 @@
+{
+  "raw_shard_texture.png": {
+    "target": "lumite_shard.png",
+    "sha256": "445d5201ebcc29fbe83cd6664d09a89e19965214506af707d8c4026e23743b82"
+  },
+  "infused_shard_texture.png": {
+    "target": "infused_lumite_shard.png",
+    "sha256": "f76c96c5c34ab128e444015770ce039e307ec320d1d96fb0c969c410934527f4"
+  }
+}

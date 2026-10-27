@@ -1,13 +1,34 @@
-param([string]$ReleaseDirectory = (Join-Path (Split-Path -Parent $PSScriptRoot) 'build\libs'))
+param(
+    [string]$ReleaseDirectory = '',
+    [string]$HandbookDirectory = ''
+)
 $ErrorActionPreference = 'Stop'
 $instanceRoot = [System.IO.Path]::GetFullPath('C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester')
 $running = Get-CimInstance Win32_Process -Filter "Name='javaw.exe' OR Name='java.exe'" | Where-Object { $_.CommandLine -and ($_.CommandLine.Replace('/','\') -match [regex]::Escape($instanceRoot)) }
 if ($running) { throw 'Save and close Rackworks Tester before installing. No game process or files were changed.' }
-$sourceJar = Join-Path $ReleaseDirectory 'automatons-0.2.4.jar'
+$releaseVersion = '0.9.1'
+if (-not $ReleaseDirectory) {
+    if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "automatons-$releaseVersion.jar")) { $ReleaseDirectory = $PSScriptRoot }
+    else { $ReleaseDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'build\libs' }
+}
+if (-not $HandbookDirectory) {
+    $releasedPack = Join-Path $ReleaseDirectory "$releaseVersion\resourcepacks\Automatons-Guide"
+    if (Test-Path -LiteralPath $releasedPack) { $HandbookDirectory = $releasedPack }
+    else { $HandbookDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'resourcepacks\Automatons-Guide' }
+}
+$sourceJar = Join-Path $ReleaseDirectory "automatons-$releaseVersion.jar"
 $expected = (Get-FileHash -LiteralPath $sourceJar -Algorithm SHA256).Hash
 $modsRoot = (Resolve-Path -LiteralPath (Join-Path $instanceRoot 'mods')).Path
-$targetJar = Join-Path $modsRoot 'automatons-0.2.4.jar'
-$stagedJar = Join-Path $modsRoot 'automatons-0.2.4.jar.pending'
+$guideJar = Join-Path $modsRoot 'guideme-20.1.15.jar'
+if (-not (Test-Path -LiteralPath $guideJar)) { throw 'Install required GuideME 20.1.15 before this release. No mod files were changed.' }
+$packInstaller = Join-Path $PSScriptRoot 'install_handbook_pack.py'
+$releasedInstaller = Join-Path $PSScriptRoot "install_handbook_pack-$releaseVersion.py"
+if (Test-Path -LiteralPath $releasedInstaller) { $packInstaller = $releasedInstaller }
+if (-not (Test-Path -LiteralPath (Join-Path $HandbookDirectory 'pack.mcmeta'))) { throw 'Missing external handbook resource pack. No mod files were changed.' }
+if (-not (Test-Path -LiteralPath $packInstaller)) { throw 'Missing handbook installer. No mod files were changed.' }
+Get-Command python -ErrorAction Stop | Out-Null
+$targetJar = Join-Path $modsRoot "automatons-$releaseVersion.jar"
+$stagedJar = Join-Path $modsRoot "automatons-$releaseVersion.jar.pending"
 $backupRoot = [System.IO.Path]::GetFullPath((Join-Path $instanceRoot ('.automatons-release-backups\' + (Get-Date -Format 'yyyyMMdd-HHmmss-fff'))))
 if (-not $backupRoot.StartsWith($instanceRoot + '\')) { throw 'Backup path outside the designated instance' }
 $oldJars = @(Get-ChildItem -LiteralPath $modsRoot -Filter 'automatons-*.jar' -File)
@@ -16,6 +37,10 @@ New-Item -ItemType Directory -Path $backupRoot -Force | Out-Null
 foreach ($oldJar in $oldJars) { Copy-Item -LiteralPath $oldJar.FullName -Destination (Join-Path $backupRoot $oldJar.Name) }
 Copy-Item -LiteralPath $sourceJar -Destination $stagedJar
 if ((Get-FileHash -LiteralPath $stagedJar -Algorithm SHA256).Hash -ne $expected) { throw 'Staged JAR hash mismatch; old mods remain installed' }
+# Install the guide before switching to a JAR that no longer contains its pages.
+# The pack installer backs up options and changed defaults, retaining local edits.
+python $packInstaller --source $HandbookDirectory --instance $instanceRoot --backup $backupRoot
+if ($LASTEXITCODE -ne 0) { throw 'Handbook installation failed; old mods remain installed' }
 try {
     foreach ($oldJar in $oldJars) { Remove-Item -LiteralPath $oldJar.FullName }
     Move-Item -LiteralPath $stagedJar -Destination $targetJar
@@ -28,22 +53,3 @@ try {
 Write-Output "Installed $targetJar"
 Write-Output "SHA256 $expected"
 Write-Output "Previous releases preserved in $backupRoot"
-
-# Migrate the previous stock display height only; retain custom heights and back up each config.
-$configPaths = @((Join-Path $instanceRoot 'defaultconfigs\automatons-server.toml'))
-$configPaths += @(Get-ChildItem -LiteralPath (Join-Path $instanceRoot 'saves') -Directory | ForEach-Object { Join-Path $_.FullName 'serverconfig\automatons-server.toml' })
-foreach ($configPath in $configPaths) {
-    if (-not (Test-Path -LiteralPath $configPath)) { continue }
-    $full = (Resolve-Path -LiteralPath $configPath).Path
-    if (-not $full.StartsWith($instanceRoot + '\')) { throw 'Config outside designated instance' }
-    $contents = [IO.File]::ReadAllText($full)
-    $updated = [regex]::Replace($contents, '(?m)^(\s*displayHeight\s*=\s*)1\.75([ \t]*)(\r?)$', '${1}1.4${2}${3}')
-    if ($updated -ne $contents) {
-        $relative = $full.Substring($instanceRoot.Length + 1)
-        $backupConfig = Join-Path $backupRoot $relative
-        New-Item -ItemType Directory -Path (Split-Path -Parent $backupConfig) -Force | Out-Null
-        Copy-Item -LiteralPath $full -Destination $backupConfig
-        [IO.File]::WriteAllText($full, $updated, [Text.UTF8Encoding]::new($false))
-        Write-Output "Updated stock pedestal height: $relative"
-    }
-}

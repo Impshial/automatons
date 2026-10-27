@@ -103,7 +103,7 @@ public final class VisualSmoke {
                         e2 instanceof Lumberton
                             || e2 instanceof Timber
                             || e2 instanceof net.minecraft.world.entity.item.ItemEntity
-                            || e2 instanceof MagicaOrb)
+                            || e2 instanceof LuminaOrb)
                 .forEach(net.minecraft.world.entity.Entity::discard);
             WorldData.get(l).protection.clear();
             Network.protections(p);
@@ -164,13 +164,41 @@ public final class VisualSmoke {
             p.setItemInHand(
                 net.minecraft.world.InteractionHand.MAIN_HAND,
                 new ItemStack(Automatons.WAND.get()));
-            Magica.clear(p);
-            Magica.add(p, 500);
+            Lumina.clear(p);
+            Lumina.add(p, 500);
             p.giveExperiencePoints(140);
           });
       return;
     }
     ticks++;
+    if (Boolean.getBoolean("automatons.machineReview")) {
+      MachineVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.luminallReview")) {
+      LuminallVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.currentReview")) {
+      CurrentRunVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.luminaReview")) {
+      LuminaVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.worksiteReview")) {
+      WorksiteVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.runningReview")) {
+      RunningVisualSmoke.tick(ticks);
+      return;
+    }
+    if (Boolean.getBoolean("automatons.miningReview")) {
+      MiningVisualSmoke.tick(ticks);
+      return;
+    }
     if (ticks == 80) {
       image("01-model-hud");
       server(
@@ -230,17 +258,17 @@ public final class VisualSmoke {
             p.teleportTo(p.serverLevel(), -3, 64, 3.3, 180, -5);
             Station home = (Station) p.serverLevel().getBlockEntity(HOME);
             for (int i = 0; i < 6; i++) home.inventory.setStackInSlot(i, ItemStack.EMPTY);
-            Magica.clear(p);
+            Lumina.clear(p);
           });
     if (ticks == 310) image("06-empty-pedestal-hologram");
     if (ticks == 330)
       server(
           p -> {
             p.teleportTo(p.serverLevel(), -2, 64, 7.5, 165, 20);
-            Magica.add(p, 50);
+            Lumina.add(p, 50);
             Infuser inf = (Infuser) p.serverLevel().getBlockEntity(INFUSER);
-            inf.core = CoreItem.vessel(0);
-            inf.donor = p.getUUID();
+            inf.shards[0] = new ItemStack(Automatons.LUMITE_SHARD.get());
+            inf.donors[0] = p.getUUID();
             inf.changed();
           });
     if (Boolean.getBoolean("automatons.infusionReview")) {
@@ -268,16 +296,16 @@ public final class VisualSmoke {
             Infuser inf = (Infuser) p.serverLevel().getBlockEntity(INFUSER);
             System.out.println(
                 "AUTOMATONS_INFUSION charge="
-                    + CoreItem.charge(inf.core)
+                    + LumiteShardItem.paid(inf.shards[0])
                     + " balance="
-                    + Magica.balance(p));
+                    + Lumina.balance(p));
           });
     }
     if (ticks == 552)
       server(
           p -> {
             for (int i = 0; i < 2; i++) {
-              MagicaOrb orb = Automatons.MAGICA_ORB.get().create(p.serverLevel());
+              LuminaOrb orb = Automatons.LUMINA_ORB.get().create(p.serverLevel());
               orb.setValue(7);
               orb.setSmall(i == 0);
               orb.setPos(p.position().add(i == 0 ? -.55 : .55, 1.1, -2.8));
@@ -286,14 +314,14 @@ public final class VisualSmoke {
               p.serverLevel().addFreshEntity(orb);
             }
           });
-    if (ticks == 560) image("12-magica-orbs");
-    if (ticks == 568) image("20-fractional-magica");
+    if (ticks == 560) image("12-lumina-orbs");
+    if (ticks == 568) image("20-fractional-lumina");
     if (ticks == 569)
       server(
           p ->
               System.out.println(
-                  "AUTOMATONS_MAGICA_PICKUP points="
-                      + Magica.format(Magica.balance(p), Magica.remainder(p))
+                  "AUTOMATONS_LUMINA_PICKUP points="
+                      + Lumina.format(Lumina.balance(p), Lumina.remainder(p))
                       + " xp="
                       + p.totalExperience));
     if (ticks == 570)

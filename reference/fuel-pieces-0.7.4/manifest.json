@@ -1,0 +1,18 @@
+{
+  "piece_of_coal.png": {
+    "source": "F:\\Development\\MCreator\\BetterWorlds\\build\\resources\\main\\assets\\betterworlds\\textures\\items\\piece_of_coal.png",
+    "sha256": "9919774fa5dba825e5592683b93298d576bf5af1438b96e16024704ed431a8db",
+    "size": [
+      16,
+      16
+    ]
+  },
+  "piece_of_charcoal.png": {
+    "source": "F:\\Development\\MCreator\\BetterWorlds\\build\\resources\\main\\assets\\betterworlds\\textures\\items\\piece_of_charcoal.png",
+    "sha256": "b129136e26ced6e0d7026dab57ee5622f21412b14f1985f0c5ff5a8a04bc7c99",
+    "size": [
+      16,
+      16
+    ]
+  }
+}

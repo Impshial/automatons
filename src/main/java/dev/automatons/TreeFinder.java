@@ -95,18 +95,19 @@ public final class TreeFinder {
   }
 
   public static boolean within(Station s, BlockPos p) {
-    return Math.abs(p.getX() - s.getBlockPos().getX()) <= s.lumberRange()
-        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= s.lumberRange();
+    return Math.abs(p.getX() - s.getBlockPos().getX()) <= s.workRange()
+        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= s.workRange();
   }
 
   public static boolean rootWithin(Station s, Tree t) {
-    return Math.abs(t.centerX() - s.getBlockPos().getX() - .5) <= s.lumberRange()
-        && Math.abs(t.centerZ() - s.getBlockPos().getZ() - .5) <= s.lumberRange()
+    return Math.abs(t.centerX() - s.getBlockPos().getX() - .5) <= s.workRange()
+        && Math.abs(t.centerZ() - s.getBlockPos().getZ() - .5) <= s.workRange()
         && Math.abs(t.root().getY() - s.getBlockPos().getY()) <= Balance.ROOT_HEIGHT.get();
   }
 
   private static boolean workFootprint(Station s, Tree t, BlockPos p) {
-    // The root selects the job. A full-length tree may fall beyond its former upright footprint.
+    // The root selects the job. A full-length tree may fall beyond its former upright
+    // footprint.
     return (s == null || rootWithin(s, t))
         && Math.abs(p.getX() - t.root.getX()) <= 64
         && Math.abs(p.getZ() - t.root.getZ()) <= 64;
@@ -118,6 +119,8 @@ public final class TreeFinder {
 
   /** Natural trees retain felling; other in-range logs are ordinary one-block jobs. */
   public static Result work(ServerLevel l, BlockPos at, Station station) {
+    if (Timber.reserves(l, at, null)) return new Result(null, "Fallen logs already assigned");
+    if (WorldData.get(l).buildingProtected(l, at)) return new Result(null, "Worksite structure");
     if (!l.getBlockState(at).is(BlockTags.LOGS)) return new Result(null, "Not a log");
     ArrayDeque<BlockPos> queue = new ArrayDeque<>();
     Set<BlockPos> seen = new HashSet<>();
@@ -141,6 +144,26 @@ public final class TreeFinder {
             && Permissions.allowed(l, at, station.owner, Permissions.Action.CUT)
         ? new Result(single, "Log")
         : new Result(null, "Log outside range or protected");
+  }
+
+  /** Only actual rooted columns in the detected footprint can initiate a whole-tree fall. */
+  public static boolean trunkCut(ServerLevel level, Tree tree, BlockPos cut) {
+    int height = cut.getY() - tree.root().getY();
+    if (height < 0 || height > 2 || !tree.logs().contains(cut)) return false;
+    BlockPos base = new BlockPos(cut.getX(), tree.root().getY(), cut.getZ());
+    if (!tree.logs().contains(base) || !isRoot(level, base)) return false;
+    for (int y = 0; y <= height; y++) if (!tree.logs().contains(base.above(y))) return false;
+    return true;
+  }
+
+  public static Result atTrunkCut(ServerLevel level, BlockPos cut, Station station) {
+    for (int depth = 0; depth <= 2; depth++) {
+      BlockPos base = cut.below(depth);
+      if (!isRoot(level, base)) continue;
+      Result result = inspect(level, base, station);
+      if (result.tree() != null && trunkCut(level, result.tree(), cut)) return result;
+    }
+    return new Result(null, "Not within the lowest three rooted trunk levels");
   }
 
   public static Result inspect(ServerLevel l, BlockPos candidate, Station station) {
@@ -168,6 +191,7 @@ public final class TreeFinder {
         return new Result(null, "Connected wood exceeds species bounds");
       if (data.placedLogs.contains(pos.asLong()))
         return new Result(null, "Player-placed structural wood");
+      if (data.buildingProtected(l, pos)) return new Result(null, "Worksite structure");
       if (station != null && data.protectedAt(pos)) return new Result(null, "Protected tree");
       if (isRoot(l, pos)) roots.add(pos);
       logs.add(pos.immutable());
@@ -373,6 +397,51 @@ public final class TreeFinder {
       Station station,
       UUID owner,
       net.minecraft.world.entity.Entity worker) {
+    return landing(l, tree, station, owner, worker, false);
+  }
+
+  public static Landing landingWithClearing(
+      ServerLevel l, Tree tree, Station station, UUID owner, Lumberton worker) {
+    return landing(l, tree, station, owner, worker, true);
+  }
+
+  public static boolean canClearFallBlock(ServerLevel l, BlockPos p, UUID owner) {
+    return canPrepareFallBlock(l, p, owner) && !ForestryHelp.needsPickaxe(l.getBlockState(p));
+  }
+
+  public static boolean canPrepareFallBlock(ServerLevel l, BlockPos p, UUID owner) {
+    if (!l.hasChunkAt(p) || l.isOutsideBuildHeight(p)) return false;
+    BlockState state = l.getBlockState(p);
+    return !state.hasBlockEntity()
+        && state.getFluidState().isEmpty()
+        && state.getDestroySpeed(l, p) >= 0
+        && !WorldData.get(l).placedLogs.contains(p.asLong())
+        && !Timber.reserves(l, p, null)
+        && Permissions.allowed(l, p, owner, Permissions.Action.CUT);
+  }
+
+  public static List<BlockPos> fallObstructions(ServerLevel l, Tree tree, Landing plan) {
+    List<BlockPos> crown = exclusiveCrown(l, tree);
+    if (crown == null) return List.of();
+    Set<BlockPos> allowed = new HashSet<>(tree.logs());
+    allowed.addAll(crown);
+    Set<BlockPos> targets = new HashSet<>(plan.targets());
+    return plan.sweep().stream()
+        .filter(p -> !allowed.contains(p))
+        .filter(
+            p ->
+                !clearFallSpace(l, p)
+                    || targets.contains(p) && l.getBlockState(p).is(BlockTags.LEAVES))
+        .toList();
+  }
+
+  private static Landing landing(
+      ServerLevel l,
+      Tree tree,
+      Station station,
+      UUID owner,
+      net.minecraft.world.entity.Entity worker,
+      boolean clearing) {
     List<BlockPos> crown = exclusiveCrown(l, tree);
     if (crown == null) {
       if (station != null) station.scanReason = "Canopy crosses unavailable area";
@@ -385,7 +454,10 @@ public final class TreeFinder {
       }
     Set<BlockPos> source = new HashSet<>(tree.logs), canopy = new HashSet<>(crown);
     String failure = "No resting support";
-    // One rigid transform preserves trunk/branch offsets. Prefer the lowest clear resting height.
+    Landing best = null;
+    int bestCost = Integer.MAX_VALUE;
+    // One rigid transform preserves trunk/branch offsets. Prefer the lowest clear resting
+    // height.
     for (int lift = -8; lift <= 8; lift++)
       for (Direction d : Direction.Plane.HORIZONTAL) {
         List<BlockPos> targets = new ArrayList<>();
@@ -398,7 +470,8 @@ public final class TreeFinder {
               || Timber.reserves(l, target, worker)
               || (!source.contains(target)
                   && !canopy.contains(target)
-                  && !clearFallSpace(l, target))) {
+                  && !clearRestingSpace(l, target, worker)
+                  && !(clearing && canPrepareFallBlock(l, target, owner)))) {
             valid = false;
             break;
           }
@@ -423,12 +496,10 @@ public final class TreeFinder {
                   || !l.hasChunkAt(at)
                   || l.isOutsideBuildHeight(at)
                   || WorldData.get(l).protectedAt(at)
-                  || (!source.contains(at) && !canopy.contains(at) && !clearFallSpace(l, at))
-                  || !l.getEntities(
-                          worker,
-                          new AABB(at),
-                          e -> e instanceof net.minecraft.world.entity.LivingEntity)
-                      .isEmpty()) {
+                  || (!source.contains(at)
+                      && !canopy.contains(at)
+                      && !clearFallSpace(l, at)
+                      && !(clearing && canPrepareFallBlock(l, at, owner)))) {
                 failure =
                     d
                         + " lift="
@@ -444,8 +515,29 @@ public final class TreeFinder {
           }
           if (!valid) break;
         }
-        if (valid) return new Landing(targets, sweep, d);
+        if (valid) {
+          Landing candidate = new Landing(targets, sweep, d);
+          if (!clearing) return candidate;
+          List<BlockPos> obstacles = fallObstructions(l, tree, candidate);
+          // Do not excavate away the selected resting support or flatten an entire hillside.
+          boolean supportRemains =
+              targets.stream()
+                  .anyMatch(
+                      p ->
+                          !source.contains(p.below())
+                              && !canopy.contains(p.below())
+                              && !obstacles.contains(p.below())
+                              && l.getBlockState(p.below())
+                                  .isFaceSturdy(l, p.below(), Direction.UP));
+          // Prefer clearing at ground level to a smaller job on top of an inaccessible wall.
+          int cost = obstacles.size() * 16 + Math.abs(lift) * 128;
+          if (supportRemains && obstacles.size() <= 128 && cost < bestCost) {
+            best = candidate;
+            bestCost = cost;
+          }
+        }
       }
+    if (best != null) return best;
     if (station != null) station.scanReason = "No clear connected fall: " + failure;
     return null;
   }
@@ -561,23 +653,22 @@ public final class TreeFinder {
       net.minecraft.world.entity.Entity worker) {
     if (new HashSet<>(plan.targets).size() != plan.targets.size()) return false;
     Set<BlockPos> source = new HashSet<>(tree.logs);
-    Set<BlockPos> canopy = new HashSet<>(tree.leaves);
+    List<BlockPos> owned = worker instanceof Lumberton ? exclusiveCrown(l, tree) : tree.leaves;
+    if (owned == null) return false;
+    Set<BlockPos> canopy = new HashSet<>(owned);
     for (BlockPos p : plan.sweep) {
       if (!workFootprint(s, tree, p) || !Permissions.allowed(l, p, owner, Permissions.Action.FALL))
         return false;
       if (!source.contains(p)
           && !clearFallSpace(l, p)
           && !(canopy.contains(p) && naturalAttachment(l, p))) return false;
-      if (!l.getEntities(
-              worker, new AABB(p), e -> e instanceof net.minecraft.world.entity.LivingEntity)
-          .isEmpty()) return false;
     }
     boolean supported = false;
     for (BlockPos p : plan.targets) {
       if (!workFootprint(s, tree, p)
           || Timber.reserves(l, p, worker)
           || !Permissions.allowed(l, p, owner, Permissions.Action.FALL)
-          || (!clearFallSpace(l, p)
+          || (!clearRestingSpace(l, p, worker)
               && !source.contains(p)
               && !(canopy.contains(p) && naturalAttachment(l, p)))) return false;
       supported |=
@@ -587,6 +678,14 @@ public final class TreeFinder {
     }
     if (!supported) return false;
     return true;
+  }
+
+  private static boolean clearRestingSpace(
+      ServerLevel l, BlockPos pos, net.minecraft.world.entity.Entity actor) {
+    // Workers preserve neighboring canopy. A soft leaf can remain in the animated sweep,
+    // but cannot occupy a section's final resting cell or the committed fall would stall.
+    return clearFallSpace(l, pos)
+        && (!(actor instanceof Lumberton) || !l.getBlockState(pos).is(BlockTags.LEAVES));
   }
 
   public static boolean revalidate(ServerLevel l, Tree tree, Station s, UUID owner) {

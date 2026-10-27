@@ -1,0 +1,23 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "FFF",
+    "SSS",
+    "III"
+  ],
+  "key": {
+    "F": {
+      "item": "automatons:machine_frame"
+    },
+    "I": {
+      "item": "minecraft:iron_ingot"
+    },
+    "S": {
+      "item": "automatons:infused_lumite_shard"
+    }
+  },
+  "result": {
+    "item": "automatons:blade_attachment",
+    "count": 1
+  }
+}

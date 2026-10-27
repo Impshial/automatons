@@ -1,0 +1,8 @@
+{
+  "feature": "automatons:deepslate_lumite",
+  "placement": [
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}

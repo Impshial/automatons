@@ -9,6 +9,59 @@ import net.minecraftforge.items.ItemStackHandler;
 
 public final class Inventories {
   public static final TagKey<Item> AXES = TagKey.create(Registries.ITEM, Automatons.id("axes"));
+  public static final TagKey<Item> PICKS =
+      TagKey.create(Registries.ITEM, Automatons.id("pickaxes"));
+  public static final TagKey<Item> SHOVELS =
+      TagKey.create(Registries.ITEM, Automatons.id("shovels"));
+
+  public static boolean pick(ItemStack s) {
+    return usable(s)
+        && !s.is(Automatons.HAMMER.get())
+        && (s.getItem() instanceof PickaxeItem
+            || s.is(PICKS)
+            || s.canPerformAction(net.minecraftforge.common.ToolActions.PICKAXE_DIG));
+  }
+
+  public static boolean shovel(ItemStack s) {
+    return usable(s)
+        && (s.getItem() instanceof ShovelItem
+            || s.is(SHOVELS)
+            || s.canPerformAction(net.minecraftforge.common.ToolActions.SHOVEL_DIG));
+  }
+
+  private static boolean usable(ItemStack s) {
+    return !s.isEmpty() && (!s.isDamageableItem() || s.getDamageValue() < s.getMaxDamage());
+  }
+
+  public static boolean tool(int job, ItemStack s) {
+    if (job == WorkerJob.BUILDINGTON) return usable(s) && s.is(Automatons.HAMMER.get());
+    if (job == WorkerJob.FARMINGTON)
+      return usable(s)
+          && (s.getItem() instanceof HoeItem
+              || s.canPerformAction(net.minecraftforge.common.ToolActions.HOE_TILL));
+    return job == 1
+        ? axe(s)
+        : job == 2 ? pick(s) || shovel(s) : job == 3 && (axe(s) || pick(s) || shovel(s));
+  }
+
+  public static int cargoSlots(int job) {
+    return Balance.CARGO.get() * (job == WorkerJob.RUNNINGTON ? 2 : 1);
+  }
+
+  /** Commit a shrink only after a complete metadata-preserving packing simulation. */
+  public static boolean resize(ItemStackHandler inventory, int size) {
+    if (inventory.getSlots() == size) return true;
+    ItemStackHandler packed = new ItemStackHandler(size);
+    if (size > inventory.getSlots()) {
+      for (int i = 0; i < inventory.getSlots(); i++)
+        packed.setStackInSlot(i, inventory.getStackInSlot(i).copy());
+    } else {
+      for (int i = 0; i < inventory.getSlots(); i++)
+        if (!insert(packed, inventory.getStackInSlot(i), false).isEmpty()) return false;
+    }
+    inventory.deserializeNBT(packed.serializeNBT());
+    return true;
+  }
 
   public static boolean axe(ItemStack s) {
     return !s.isEmpty()
@@ -18,21 +71,25 @@ public final class Inventories {
 
   public static class Tools extends ItemStackHandler {
     private final Runnable changed;
-    private final java.util.function.BooleanSupplier enabled;
+    private final java.util.function.IntSupplier job;
 
     public Tools(Runnable changed) {
       this(changed, () -> true);
     }
 
     public Tools(Runnable changed, java.util.function.BooleanSupplier enabled) {
+      this(changed, (java.util.function.IntSupplier) () -> enabled.getAsBoolean() ? 1 : 0);
+    }
+
+    public Tools(Runnable changed, java.util.function.IntSupplier job) {
       super(3);
       this.changed = changed;
-      this.enabled = enabled;
+      this.job = job;
     }
 
     @Override
     public boolean isItemValid(int slot, ItemStack s) {
-      return enabled.getAsBoolean() && axe(s);
+      return tool(job.getAsInt(), s);
     }
 
     @Override

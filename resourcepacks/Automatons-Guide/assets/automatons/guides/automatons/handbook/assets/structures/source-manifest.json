@@ -1,0 +1,122 @@
+{
+  "minehead": {
+    "source": "src/main/resources/data/automatons/buildings/minehead.json",
+    "sha256": "d921e3cb644cf0471283f76bdd67f28a2f337f70593462ebc845fb73e1f5edbe",
+    "size": [
+      7,
+      7,
+      7
+    ],
+    "anchor": [
+      3,
+      1,
+      5
+    ],
+    "framesExcludedFromScene": [
+      {
+        "tile": [
+          3,
+          4,
+          0
+        ],
+        "item": "minecraft:stone_pickaxe"
+      }
+    ]
+  },
+  "warehouse": {
+    "source": "src/main/resources/data/automatons/buildings/warehouse.json",
+    "sha256": "e94f78fd9d6690e9be1d8172ff106bc64dab9b210ef3bfc23e33a46107bdb1e1",
+    "size": [
+      7,
+      6,
+      9
+    ],
+    "anchor": [
+      3,
+      1,
+      8
+    ],
+    "framesExcludedFromScene": [
+      {
+        "tile": [
+          3,
+          3,
+          0
+        ],
+        "item": "minecraft:chest"
+      }
+    ]
+  },
+  "builder": {
+    "source": "src/main/resources/data/automatons/buildings/builder.json",
+    "sha256": "fcead7ebcd6748078025679290e7fa843598594f52a60f3bafc87c1547a03817",
+    "size": [
+      9,
+      7,
+      9
+    ],
+    "anchor": [
+      4,
+      1,
+      7
+    ],
+    "framesExcludedFromScene": [
+      {
+        "tile": [
+          4,
+          3,
+          0
+        ],
+        "item": "automatons:hammer"
+      }
+    ]
+  },
+  "lumber": {
+    "source": "src/main/resources/data/automatons/buildings/lumber.json",
+    "sha256": "b3209a649ff7177b14f91966b3b865bdfbc7195d21b6a525427968321e02f645",
+    "size": [
+      9,
+      6,
+      9
+    ],
+    "anchor": [
+      4,
+      1,
+      7
+    ],
+    "framesExcludedFromScene": [
+      {
+        "tile": [
+          4,
+          3,
+          0
+        ],
+        "item": "minecraft:stone_axe"
+      }
+    ]
+  },
+  "farm": {
+    "source": "src/main/resources/data/automatons/buildings/farm.json",
+    "sha256": "062d23cd93609c6ccbeb28d22f029fe1dee600d326ca7567dc58973eee6424f0",
+    "size": [
+      9,
+      7,
+      9
+    ],
+    "anchor": [
+      4,
+      1,
+      7
+    ],
+    "framesExcludedFromScene": [
+      {
+        "tile": [
+          4,
+          3,
+          0
+        ],
+        "item": "minecraft:stone_hoe"
+      }
+    ]
+  }
+}

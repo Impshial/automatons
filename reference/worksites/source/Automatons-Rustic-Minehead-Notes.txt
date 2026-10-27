@@ -1,0 +1,82 @@
+MINE ENTRANCE: EXPOSED REAR TOTEM AND PICKAXE FRAME
+
+The existing closed-roof mine entrance gains a closed rear wall with an exposed
+totem at its bottom center, plus an item frame containing a stone pickaxe above
+the front opening. All original blocks remain in their original relative positions.
+- Same 7 X x 7 Y x 7 Z schematic and full 7 x 7 foundation.
+- Same ordinary oak log frame, closed cobblestone roof and four corner lanterns.
+- Clear central 3 x 3 landing with four blocks of headroom.
+- Rear wall: Z=5, X=1..5, Y=1..4, bounded by the original posts and crossbeam.
+  Eight new oak planks fill the bay; the ninth bay cell is the existing totem.
+- Totem and NEW paste/construction anchor: (3,1,5), exposed on both wall faces.
+- WEOffset=(-3,-1,-5); bury the foundation to make the ENTRANCE flush with terrain.
+- Center hatch: (3,0,3), two blocks in front of the totem and one block lower.
+  Shaft placement is derived from this totem, not a random point in its radius.
+- Frame tile: (3,4,0), attached to the front crossbeam at (3,4,1), facing north.
+- 152 structural non-air cells including the totem, and one item-frame entity.
+- Front and both side approaches remain open; the rear approach is now the wall.
+- The surface hatch connects to the existing mining shaft system. Underground
+  shaft, ladders, chambers, depots and lighting are not included in this schematic.
+- No mining depth, mining route or excavation behavior changes are included.
+- Requires Automatons for automatons:totem (block entity automatons:station).
+
+REQUIRED FINISHED ITEMS (excluding the existing totem)
+ 59  Cobblestone
+ 10  Cobblestone Slab
+ 28  Cobblestone Stairs
+  1  Item Frame
+  4  Lantern
+ 33  Oak Log
+ 16  Oak Planks
+  1  Oak Trapdoor
+  1  Stone Pickaxe
+FORMAT AND IMPORT
+Minecraft Java 1.20.1, DataVersion 3465, Sponge Schematic v2.
+All coordinates below refer to the exported schematic, unless labeled body coordinates.
+Every building is anchored to the player-placed totem, which remains exposed
+and usable in the completed structure. All future buildings must follow this rule.
+The builder derives the footprint, entrance, floor and placements from that
+totem's position and the worksite's chosen orientation. Do not choose another
+center and then relocate the totem. Save orientation and reserved bounds before
+construction so retries cannot rotate or shift an existing project.
+WorldEdit origin is stored in WEOffset and Offset=(0,0,0). Foundation blocks go
+one block below normal walking level, so the entrance is flush with the ground.
+Load the file by its basename with //schem load, stand at the specified anchor,
+and use //paste on a disposable test site. Entity pasting must be enabled.
+Do not paste a template over an operational worksite or an assigned totem.
+
+ITEM FRAME
+The identifier is a real minecraft:item_frame entity in the schematic's Entities
+list, not a block or a block entity. It is north-facing, visible, removable,
+not invulnerable and contains one real item. It carries no fixed UUID.
+When importing this template into the mod's construction system, process its
+Entities list as well as blocks. Place the support block first; then create the
+frame and insert the displayed item, consuming one frame and one display item.
+Transform position, hanging tile, support and facing together when rotating.
+Do not double-charge or duplicate the frame or display item after retries or
+reload. Identification is cosmetic: changing the display must not change the
+totem's purpose. Do not take a worker's active tool to fill a display frame.
+Resource totals include the frame and its display item. Door halves consume
+one door item together. Each chest block consumes one chest item. Double slabs
+consume two slab items, and wall torches consume ordinary torch items.
+
+CONSTRUCTION
+Reserve the occupied site and approach, respect protection and existing work,
+and validate support, access and supplies before placing. Build from real
+inventory with persistent progress. Schematic air is not blanket permission to
+erase terrain, player buildings or containers. Preserve the current totem's
+identity, links, owner, purpose, upgrades, inventory and other saved data by
+skipping both block placement AND block-entity loading at the existing totem.
+Registered chest inventories are empty and contain no loot tables. Install
+supports before attached lights and frames. Supply the exact rotated chest
+facings and pairs. These files do not implement worker behavior or new items.
+
+VALIDATION
+Decoded the written NBT and compared every block, block entity, entity and
+anchor. Checked frame support and orientation data, chest pairs and lid air,
+roof coverage and central access where applicable. Source comparisons prove
+the warehouse has no structural changes and the mine adds only eight rear wall
+planks and one totem, preserving every original block.
+No Minecraft client paste, mob navigation or build-animation test was run here.
+Rendered previews use block data; chests, totem and framed item visuals are
+illustrative. The actual files contain their named registry IDs.

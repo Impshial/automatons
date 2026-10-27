@@ -1,0 +1,8 @@
+{
+  "feature": "automatons:lumite",
+  "placement": [
+    {
+      "type": "minecraft:biome"
+    }
+  ]
+}
