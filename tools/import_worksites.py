@@ -14,7 +14,7 @@ from import_mine_arch import read_nbt
 
 ROOT = Path(__file__).resolve().parents[1]
 NAMES = {'builder': 'Builders-Shed', 'farm': 'Farmers-Shed', 'lumber': 'Lumber-Yard',
-         'warehouse': 'Runnington-Warehouse', 'minehead': 'Rustic-Minehead'}
+         'warehouse': 'Runnerton-Warehouse', 'minehead': 'Rustic-Minehead'}
 
 
 def string(s):

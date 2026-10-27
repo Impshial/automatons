@@ -21,10 +21,14 @@ public final class MachineOperator {
   public static String assign(Machine m, Lumberton w) {
     if (m.locked() || !m.getPassengers().isEmpty())
       return "Park The Machine and empty its seat first";
-    if (!eligible(m, w)) return "Choose an Operatorton on this pedestal network";
+    if (w.isGuard() || !w.isAlive() || w.packing || w.level() != m.level()
+        || m.owner == null || m.homeId == null || !Objects.equals(m.owner, w.owner)
+        || !Objects.equals(m.homeId, w.homeId)) return "Choose an ordinary automaton on this pedestal network";
     if (m.operator != null && !m.operator.equals(w.getUUID())
         || w.machineId != null && !w.machineId.equals(m.getUUID()))
       return "Operator or Machine already assigned";
+    if (!w.setJob(WorkerJob.OPERATORTON)) return "Make cargo space for the worker's tools";
+    w.unassign();
     m.operator = w.getUUID();
     w.machineId = m.getUUID();
     w.authorized = true;

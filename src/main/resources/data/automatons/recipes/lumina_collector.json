@@ -2,7 +2,7 @@
   "type": "automatons:collector",
   "pattern": [
     "SCS",
-    "CTC",
+    " T ",
     "SCS"
   ],
   "key": {
@@ -10,7 +10,7 @@
       "item": "minecraft:stone"
     },
     "C": {
-      "item": "automatons:magica_core"
+      "item": "automatons:infused_lumite_shard"
     },
     "T": {
       "item": "automatons:tank"

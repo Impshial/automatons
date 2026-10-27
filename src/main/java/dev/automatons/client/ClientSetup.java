@@ -45,6 +45,7 @@ public final class ClientSetup {
     e.registerEntityRenderer(Automatons.LUMINA_ORB.get(), LuminaOrbRenderer::new);
     e.registerBlockEntityRenderer(Automatons.INFUSER_BE.get(), InfuserRenderer::new);
     e.registerEntityRenderer(Automatons.LUMBERTON.get(), LumbertonRenderer::new);
+    e.registerEntityRenderer(Automatons.GUARDINGTON.get(), LumbertonRenderer::new);
     e.registerEntityRenderer(Automatons.TIMBER.get(), TimberRenderer::new);
     e.registerEntityRenderer(MachineParts.ENTITY.get(), MachineRenderer::new);
     e.registerBlockEntityRenderer(Automatons.STATION.get(), TotemRenderer::new);

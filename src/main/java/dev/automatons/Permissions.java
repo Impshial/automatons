@@ -24,6 +24,7 @@ public final class Permissions {
     if (WorldData.get(level).mineProtected(pos, null)) return false;
     if (WorldData.get(level).buildingProtected(level, pos)) return false;
     if (WorldData.get(level).farmProtected(pos)) return false;
+    if (SiteLayout.protectedBed(level, pos)) return false;
     // Claim mods that honor Forge's standard break event can veto destructive work.
     var actor = FakePlayerFactory.get(level, new GameProfile(owner, "[Automatons]"));
     return !MinecraftForge.EVENT_BUS.post(

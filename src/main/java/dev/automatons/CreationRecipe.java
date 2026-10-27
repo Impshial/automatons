@@ -38,7 +38,12 @@ public record CreationRecipe(ResourceLocation id, List<Ingredient> components)
 
   @Override
   public ItemStack getResultItem(RegistryAccess a) {
-    return new ItemStack(Automatons.AUTOMATON_ITEM.get());
+    ItemStack result = new ItemStack(Automatons.AUTOMATON_ITEM.get());
+    if (components.get(2).test(new ItemStack(Automatons.ARMORED_BODY.get()))) {
+      result.getOrCreateTag().putBoolean("Armored", true);
+      result.getOrCreateTag().putInt("Job", WorkerJob.GUARDINGTON);
+    }
+    return result;
   }
 
   @Override

@@ -1,0 +1,668 @@
+AUTOMATONS: FULL EXPANSION IMPLEMENTATION PROMPT
+Minecraft 1.20.1 / Forge 47.4.10
+
+Implement the complete expansion below in the existing Automatons repository. This is one coordinated update, not a request for a proposal or a partial scaffold. Read AGENTS.md and the relevant source, assets, build scripts, and project documentation first. Preserve working systems unless a requirement below changes them. Complete the implementation, assets, recipes, runtime structure templates, documentation, and appropriate verification.
+
+The project is unreleased. Breaking registry and save changes are acceptable. We will use fresh worlds. Do not spend time on legacy registry aliases, data migration, or compatibility with old worlds. Keep the repository's normal prerelease versioning and packaging workflow.
+
+This specification is self-contained and supersedes older planning notes where they conflict. All dimensions are Minecraft blocks. Use they/them for automatons. Their names may be of any gender. Do not add worker experience, learning, job levels, hunger, sleep, or unrelated professions.
+
+1. FINAL SCOPE AND NAMES
+
+Keep these thirteen professions, using these exact names consistently in code-facing terminology where practical and in all player-facing text:
+
+Profession | Function | Distinct appearance
+Lumberton | Existing tree cutting, collection, and optional replanting | Red-and-black buffalo-check lumberjack shirt and boots.
+Minington | Fixed multi-level strip mine described below | Actual mining helmet, reinforced knees, and boots.
+Farmington | Configured wheat, carrot, potato, and beetroot strips | Wide straw hat, patched overalls, and boots.
+Runnerton | Network collection and delivery | Large backpack, chest straps, ballcap, and boots.
+Buildington | Existing construction, expanded with the new structures | Apron, tool belt, and boots.
+Operatorton | Existing Machine operation | Goggles, gloves, and boots.
+Hunterton | Adult, unprotected passive-animal hunting | Camo hat and jacket, quiver, and boots.
+Crafterton | Network crafting, smelting, blasting, and supply production | Thick leather apron, protective gloves, and goggles resting on their head.
+Fisherton | Assigned dock fishing | Wide bucket hat, green shirt with fishing lures, and waders.
+Guardington | Patrol and defense using a separately crafted armored body | Broad armored torso, substantial shoulder plates, heavy limbs, wider stance, and a helmet framing the expressive eyes.
+Rancherton | Sheep, cow, chicken, and pig management | Cowboy hat, gloves, and boots.
+Quarryton | Dedicated 15x15 excavation | Minington-style reinforced workwear and boots, with goggles instead of a mining helmet.
+Luminariton | Collector care, bottling, shard infusion, plant/crop maintenance, and healing; never plants trees | Purple robe and pointed wizard's hat, retaining visible expressive eyes.
+
+Rename Runnington to Runnerton everywhere: registries, identifiers, enums, classes where applicable, assets, localization, tags, recipes, tests, documentation, GUI strings, and generated resources. Remove obsolete references rather than preserving compatibility aliases.
+
+Make the professions visibly recognizable through actual model geometry as well as clothing textures. Hats, backpacks, straps, quivers, aprons, and armor need appropriate shapes. Preserve the shared expressive face and eyes. Preserve ordinary workers' existing approximately 0.7-wide by 1.625-high collision size. Do not enlarge their hats or accessories into movement-blocking collision shapes.
+
+Use the existing Minecraft pixel-art style and texel density. Ordinary block and item textures should use the established 16-pixel-per-block style. Do not force a complex entity's entire atlas into a single 16x16 image; preserve or sensibly extend the existing atlas and UV workflow.
+
+2. OWNERSHIP, PROFESSIONS, AND NETWORK RULES
+
+Retain the existing pedestal, ownership, naming, wand, claim protection, network registration, inventory, construction, recall, and persistence systems. Integrate the new work into them rather than creating a second unrelated colony system.
+
+Each production totem supports at most SIX assigned ordinary workers. Guardington protection assignments do not consume these six places. Do not count an Operatorton assigned directly to a Machine as a worker at an unrelated totem.
+
+A totem must have a selected profession before an ordinary worker can be assigned. Enforce this on the server for every entry point, including menus, wand use, packets, and saved assignment restoration. Assigning a compatible ordinary automaton automatically gives them the totem's profession. Remove manual profession selection from the ordinary Automaton GUI.
+
+There are eleven production-totem choices: lumber, mining, farming, transport, building, hunting, crafting, fishing, ranching, quarrying, and Lumina service. Guardingtons use protection assignments instead of production assignments. Operatortons receive their profession through the existing Machine assignment workflow.
+
+An assigned building does NOT have to be complete before workers can be assigned. In particular, preserve the first Buildington's ability to bootstrap a workshop from a configured totem and partial supplies.
+
+Reassignment preserves identity, name, ownership, health, energy, inventory, and valid equipment. Return incompatible equipment to available cargo or linked storage without losing it. Release old task claims and reservations. A profession change must never grant free operating energy or replenish a service reserve.
+
+Guardingtons are a distinct armored body type. An ordinary automaton cannot become a Guardington through assignment, and a Guardington cannot become another profession. Assigning a guard to protect a production totem does not change their profession.
+
+Keep current cargo capacities and equipment architecture. The existing maximum cargo capacity is eighteen, with the existing equipment slots. Do not expand inventories to solve logistics or grave storage. Add job-appropriate validation for bows, swords, rods, shears, and ammunition; keep supplies such as torches, arrows where appropriate, buckets, and leads in suitable existing slots or cargo. Every item must have a real inventory location.
+
+Preserve owner/network isolation and protected-area restrictions. A worker must not harvest from another player's protected worksite or withdraw from unauthorized storage. No chunk forcing, offline simulation, or broad global entity scans.
+
+3. FINISHED GUI DESIGN
+
+Use the existing vanilla-style Minecraft visual language: readable labels, familiar item slots, consistent buttons, concise tooltips, and sensible keyboard focus. Do not put internal IDs, debug grids, numeric map dumps, raw flags, or every profession's options on one screen. Keep diagnostics in developer tools or logs.
+
+3.1 Unconfigured totem
+
+Show the totem name, a short instruction to choose its profession, and a compact icon-and-label profession chooser. Assignment remains unavailable until the choice is saved. Selecting a profession opens the normal three-tab interface. An unbuilt but configured totem still permits assignment and construction.
+
+3.2 Configured totem: three tabs
+
+OVERVIEW
+- Header: editable totem name and profession icon/name.
+- Main status: building progress, current work, idle, missing supplies, full storage, danger, or another actionable reason.
+- Production workers as a simple count such as 3/6; show guards separately.
+- Linked storage summary and a compact missing-supplies list with item icons and quantities.
+- Contextual actions only: existing build/resume controls, work pause/resume, and acknowledgement of a blocked worksite where appropriate.
+- Keep the pedestal's global Call All Home command at the pedestal. Do not duplicate a screenful of global controls on every totem.
+
+WORKERS
+- A list of assigned production workers, showing name, health, operating charge, and a short current-task label.
+- A separate Guards section with assigned guards and their status. It does not affect the 6-worker counter.
+- Assign/unassign controls and access to the selected worker's GUI.
+- Prevent assignment beyond the limit, across owners, or to an incompatible body.
+
+SETTINGS
+- Show only settings applicable to this totem's profession.
+- Keep existing useful controls for established professions without resurrecting removed totem-upgrade systems.
+- Changing the totem's profession is allowed only after production workers are unassigned and active work/construction claims are cleared. Require an explicit confirmation for that change. Do not automatically demolish a building or silently convert its blocks.
+
+Profession-specific content:
+Lumber: existing useful tree/replanting settings and work range.
+Mining: fixed-pattern progress, current depth, completed/terminated passages, and blocked-work status. Remove the old Quarry mode entirely.
+Farming: the three crop selectors described below, planting supplies, and the current strip configuration.
+Transport: existing inventory routes and filters, with network supply requests integrated.
+Building: selected plan, construction progress, and missing materials.
+Hunting: equipment/ammunition status and the fixed 96-block hunting area. Protection rules are not optional checkboxes.
+Crafting: active order, ordered work queue, ingredient shortages, and station status. Queue priority follows the rules below.
+Fishing: six dock-slot occupancy indicators, rod availability, and a clear water/site-validity status.
+Ranching: four species rows with current adults, babies, target population, and management enable/disable; show milk capacity, bucket, lead, and shears shortages.
+Quarrying: 15x15 dimensions, current layer/depth, optional bottom-Y setting, torch/fill-block status, storage status, and cave-alert acknowledgement.
+Lumina: collector and bottle status, planting-supply shortages, raw/infused shard stock, and the Luminaritons' operating/service reserves.
+
+Server state is authoritative. Changing tabs must not send unintended actions. Preserve scrolling and selections through ordinary updates. Controls unavailable because of a real condition should show one short reason, not a long implementation tooltip.
+
+3.3 Automaton GUI
+
+Use two ordinary tabs, Status and Inventory. Status shows the name, read-only profession, assigned worksite, health, operating Lumina, and current activity. Inventory shows existing cargo and appropriate equipment slots. Retain useful existing naming/follow/assignment actions in a compact form. There is no ordinary job selector.
+
+A Guardington additionally gets Patrol controls: Network circuit or Assigned totem, with an owned-totem picker for the latter. Show their health and armor bar, with six filled armor icons representing twelve armor points. Their profession remains fixed.
+
+A Luminariton additionally shows the separate service-reserve meter, labeled clearly apart from operating charge. Do not conflate health, operating energy, and reserve energy.
+
+At zero operating charge, show Powered down and the energy shortfall. A powered-down worker is not dead and does not need to be recreated.
+
+3.4 Farming crop selectors
+
+Use three large, horizontally aligned ghost/sample slots labeled Left, Middle, and Right. Clicking with a supported crop or seed selects the crop; it does not consume the sample or become the planting supply. Provide an obvious clear action and reject unsupported samples with a short explanation.
+
+Accepted selections: wheat or wheat seeds -> wheat; carrot -> carrots; potato -> potatoes; beetroot or beetroot seeds -> beetroots. Actual planting consumes the correct seeds or vegetables from real stock.
+
+Each selector controls one 3x9 strip of the 9x9 field. Repeated selections are valid. A blank selector disables planting in that strip. On a changed selection, harvest the existing crop when mature, then replant with the new selection. Do not rip up immature crops solely because the selection changed.
+
+4. LUMINA, LUMINALL, AND UPKEEP
+
+4.1 Conversion and collectors
+
+Set the shared conversion to exactly TWO mB of Luminall per ONE point of Lumina:
+- 250 mB bottle = 125 Lumina.
+- 1,000 mB bucket = 500 Lumina.
+- 8,000 mB Tank = 4,000 Lumina.
+
+Apply this consistently across player drinking, automatons, the Machine, portable containers, and Lumina-to-fluid conversion such as the Lumina Drain. Preserve capacities unless explicitly changed here: Tank 8,000 mB, Collector 4,000 mB, and the Machine's existing 10,000-point operating capacity. Do not confuse fluid capacity with Lumina capacity.
+
+Keep exact accounting. Do not round one mB up to one Lumina. Retain unusable fluid remainders where the existing partial-transfer system supports them. If the Lumina Drain spends five points, its new corresponding fluid output is ten mB.
+
+An automaton drinks a WHOLE bottle and returns one empty glass bottle. Clamp the energy gain to the appropriate capacity and discard the excess. This waste is intentional. Do not apply this special full-bottle-waste rule to the Machine's existing partial-container and overflow-retention behavior.
+
+Reduce Collector production to ONE QUARTER of its original rate, including the original capped result. The original maximum was 20 mB per five seconds; the new maximum is 5 mB per five seconds. Apply the quarter-rate scaling once, not repeatedly. Use fractional accumulation so low-yield plants do not become permanently zero-output due to integer truncation. Preserve existing overlap sharing, source recognition, full-tank pausing, and real fluid transfers. Plant/crop sources follow the exhaustion rule in section 4.4. Collection from trees remains non-destructive: COLLECTORS CANNOT KILL TREES.
+
+Collector recipe, using the existing Infused Lumite Shard item and an EMPTY Tank:
+Stone | Infused Shard | Stone
+Empty | Tank          | Empty
+Stone | Infused Shard | Stone
+
+That is four Stone, two Infused Shards, and one empty Tank. Do not use charged cores in this recipe. A filled Tank must not be consumed by crafting. Preserve the Tank recipe of eight Glass around an Empty Core.
+
+4.2 Operating charge
+
+Use a 200-point operating capacity for standard automatons, based on the two 100-point cores in their torso. Guardingtons retain this operating capacity because their armored recipes retain the core requirements. A Luminariton has the same operating capacity plus the separate reserve below.
+
+Every automaton loses 20 operating Lumina per 24,000 ELAPSED SIMULATION TICKS: deduct one point per 1,200 active server ticks. Preserve the partial interval across saves. Sleeping, commands that change world time, and day boundaries must not cause additional deductions. Idle workers still consume energy; powered-down workers do not go negative. Do not charge unloaded entities or perform offline catch-up.
+
+At or below 1% operating charge, suspend work safely and return to the assigned shed/worksite recharge point. Guardingtons use their assigned protected site, or an accessible owned network site when on circuit patrol. Operatortons stop/park the Machine safely and use the existing access route before returning. Unassigned workers use an accessible owned pedestal/network supply point.
+
+Finish the recharge behavior as follows: consume one available full bottle, then resume once above the 1% threshold. There is no requirement to fill to 100% before working. Accept manual feeding at any non-full charge, always consuming the full bottle and wasting overflow. If no bottle is available, request supplies and wait rather than repeatedly wandering between empty stores.
+
+At zero charge, stop all work and movement. Eyes go black, head slumps forward, and arms hang down. Persist this state. Adding a bottle restores energy and allows normal resumption. Drinking Luminall never directly heals hearts.
+
+Do not silently refill an automaton's operating charge from mining, tree cutting, or flower breaking. Preserve any existing player-facing Lumina resource behavior without turning ordinary work into an unrequested substitute for bottled upkeep.
+
+4.3 Luminariton reserve and healing: final implementation defaults
+
+Give each Luminariton a separate 400-point SERVICE RESERVE, in addition to their 200-point operating charge. The reserve starts empty when newly entering the profession and must be funded from real Luminall. Preserve it without duplication if changing jobs; never refill it for free by reassignment. Keep any stored reserve dormant while not a Luminariton rather than copying it into operating charge.
+
+The service reserve pays for healing and shard infusion. This resolves the remaining energy-source detail without adding another resource system. Existing shard infusion still costs 25 Lumina per shard.
+
+Healing defaults:
+- Range: four blocks from the Luminariton, using actual distance rather than the totem's range.
+- Rate: one health point, or half a heart, per second for each eligible nearby damaged automaton.
+- Cost: two service-reserve Lumina per health point restored.
+- Heal living automatons in the same ownership/network context, including the Luminariton themselves when damaged.
+- Spend energy only for actual health restored, including proportional handling of a fractional final health point. Use exact fixed-point accounting if needed.
+- If reserve is scarce, prioritize the lowest health percentage and use stable fair ordering for ties. Never overspend or duplicate reserve through simultaneous recipients.
+- Reuse the Infusing Pedestal's Lumina-transfer visual language, with energy visibly drawn from the mage to the recipient.
+
+A worker at or below half health seeks an available owned Luminariton when safe. Nearby damaged workers can receive healing without explicitly starting a visit. Retreat from active danger takes precedence. Visitors use the ground-level clearing, including Guardingtons; they do not climb into the workshop. Healing does not refill operating charge. A dead or powered-down Luminariton emits no healing.
+
+Prioritize the Luminariton's own operating energy, then healing, then other service tasks. When the service reserve falls to 125 points or lower, refill toward 400 from actual full bottles in workshop stock as available, using normal bottle-use timing and the full-bottle overflow rule. Do not consume one bottle twice or apply one bottle to both meters. Filling bottles, maintaining collectors, and fetching supplies must remain possible so a low reserve cannot deadlock the service.
+
+4.4 Fully drained plants and crops
+
+Use the mod's EXISTING Lumina-source eligibility rules as the authority. Inspect the collection/harvest code and its tags/configuration, and reuse those rules rather than introducing a broader list of plants merely because they can be rendered or tinted. Being a plant, flower, or crop by itself does not make a block a Lumina source. Preserve existing maturity and other source-validity requirements.
+
+For an eligible non-tree plant or crop, track a finite source reserve against actual Lumina extracted. Reuse existing depletion accounting if present; otherwise add persistent accounting and centralized, configurable starting reserves, documenting the chosen balance. Do not confuse a harvest yield or per-cycle production rate with an already agreed lifetime reserve. Shared Collectors debit one source reserve only for the output actually produced, using the settled 1 Lumina to 2 mB conversion. A full or paused Collector causes no drain, and collection cannot extract beyond the remaining reserve. Preserve depletion through save/unload/reload and ordinary crop growth; treat both halves of a tall plant as one source.
+
+Once that reserve reaches zero, replace the source in place with one of TWO new plantable blocks: Dead Plant for a non-crop plant, or Dead Crop for a crop. Give them simple static dead-vegetation artwork and corresponding placeable block items. Healthy sources keep their ordinary appearance until the replacement occurs. Do not implement progressive color fading, tint stages, wilting, or drooping in this update.
+
+The new dead blocks produce ZERO Lumina, do not grow, and cannot be revived by bonemeal. Replacement must not award the original healthy plant's harvest drops. Clearing them yields only their own dead-plant/dead-crop item, never a healthy flower, viable seed, or normal crop yield. Respect suitable support blocks, including farmland for Dead Crop. When replacing a tall source, clear its other half safely without duplicate remains or drops. Do not classify these new dead blocks as harvestable living flowers or active Lumina sources.
+
+TREES ARE EXEMPT. Preserve their existing eligibility and collection behavior, including rooted-tree recognition and structural-log rejection. Collector extraction must never kill a tree, remove or replace its logs, leaves, or roots, or apply the Dead Plant/Dead Crop conversion to any part of it. This exemption does not add new tree sources or change existing yields.
+
+Protected Collector beds remain susceptible to plant/crop exhaustion. Their protection blocks opportunistic picking; it does not prevent Collector drain or their assigned Luminariton's deliberate clearing of dead vegetation and replanting from real supplies.
+
+5. SHARED FLOWER COLLECTION AND SUPPLY LOGISTICS
+
+Every automaton profession opportunistically harvests flowers it passes within TWO BLOCKS of while following its current route. Do not create a flower-search job, change their destination, or make them detour. The action should not interrupt fighting, escaping immediate danger, ladder safety, or powered-down behavior.
+
+Use a bounded, throttled nearby check, with a default of at most one flower harvest per ten ticks. Only break a flower when its normal drops can fit in inventory. Resolve the actual drops once and preserve normal tall-flower behavior without duplicating both halves. Use appropriate flower tags and compatible modded flowers. Do not classify crops, grass, saplings, or every decorative plant as flowers.
+
+Unload flowers into normal network storage. Runnertons supply eligible flowers and crop planting materials to Luminaritons, who maintain their registered Collector plots under sections 4.4 and 6.6. Replanting always consumes actual supplies; dead vegetation cannot be used as a living source or planting substitute.
+
+Managed Collector beds are PROTECTED from this opportunistic harvesting, including harvesting by their own Luminariton. Persist the protected plot geometry independently of the flower blocks so a temporary empty cell does not lose protection. Respect the existing protected-area system as well. Do not quietly exempt every other player-planted flower; the agreed exception is the protected Collector beds.
+
+Expand Runnerton request/delivery support to include the supplies these jobs need: tools, rods, bows/swords where supported, arrows, torches, safe fill blocks, breeding food, shears, buckets, leads, flowers, eligible plant/crop planting supplies, bottles, Luminall containers, fuel, raw shards, infused shards, and construction materials. Remove any old intentional exclusion that would prevent these deliveries. Preserve filters and owner restrictions, reserve items atomically, and avoid hauling cycles or stealing a worker's in-use equipment.
+
+Do not add special mining-only logistics rules or automatic capacity scaling. Storage pressure is intentional. Players balance the network by providing storage and enough Runnertons. Full storage pauses production cleanly until capacity is available.
+
+6. PROFESSION IMPLEMENTATION
+
+6.1 Hunterton
+
+Use a fixed 96-block horizontal radius centered on the assigned HUNTING TOTEM. Do not center the hunt on the pedestal or on the moving worker. Use normal loaded-world pathfinding, without loading distant chunks just to find prey.
+
+Eligible prey: adult passive animal entities, including appropriately classified/tagged modded animals. Always exclude babies, horses and the equine family, cats, dogs/wolves, and livestock with the persistent managed-livestock protection flag. Villagers, other non-animal NPCs, players, and automatons are not prey. A friendly or owned pet must never become a hunting target merely because it is a passive Animal subclass.
+
+Define the shared managed-livestock flag now and persist it with the entity. Ranchertons apply it to their livestock. Protection remains if an animal escapes the ranch. Recheck eligibility during pursuit and immediately before attacking. Drop a target that becomes protected or leaves the hunting area. The flag prevents hunting; it does not grant general invulnerability or prevent the managing Rancherton's authorized adult-culling operation. No fence-detection workaround is required.
+
+Support bow, real arrows, and sword; use normal item damage, durability, and applicable enchantments. Visibly switch held weapons. Use a bow with line of sight at range, and a sword when close or out of ammunition. They can continue with either usable weapon. If neither is usable, return for equipment and wait if stock is missing.
+
+Reserve targets across hunters. Avoid shots through players, friendly automatons, and excluded/protected animals. Collect normal death drops without duplicating them. Return to the hunting shed to unload when needed and restock arrows from its chests. Hunters are roamers and can retreat into any suitable owned automaton shed when threatened.
+
+6.2 Crafterton
+
+Craftertons automatically know supported recipes. Do not add recipe teaching or learning. Support ordinary crafting-table recipes and actual furnace and blast-furnace processing, including compatible modded recipes using those recipe types. Consume real ingredients and fuel, honor processing time and remainders, and use real station input/output inventories.
+
+Resolve supported ingredient dependencies with bounded cycle detection and inventory reservations. Choose workable recipes without consuming equipped tools or valuable custom items as generic ingredients when an ordinary alternative is available. Unsupported machine-specific recipes should produce a concise Unsupported recipe status and leave the request intact.
+
+Order priority is strictly:
+1. Tools and required equipment.
+2. Torches.
+3. Materials requested by Buildington construction.
+4. Other supported network work orders.
+5. Restocking the display armor stand, only after pending work orders.
+
+If a Runnerton exists in the same network, the Crafterton stays in the workshop. Couriers fetch ingredients and deliver outputs. Delayed deliveries mean waiting or doing another eligible order, not abandoning the workshop to collect materials. Without a Runnerton, the Crafterton can collect and distribute materials themselves.
+
+At the approved B6 armor stand, maintain exactly one full set of ordinary iron armor: helmet, chestplate, leggings, and boots. Fill the initial set, then replace only an empty piece slot after the player removes that piece. Do not replace occupied slots, produce duplicate full sets, or allow Runnertons to loot the display. This remains the lowest-priority work.
+
+Luminall bottling and shard infusion belong to Luminariton service in this update. Do not create a competing free-energy shortcut in the crafting job.
+
+6.3 Fisherton
+
+Reserve one of six fixed fishing positions per worker on the assigned dock. Fill positions from the far end inward, with one worker on either side in each of three pairs. The center walkway remains unobstructed. Each pair has two blocks of dock length.
+
+Some Fishertons stand and some sit. Choose a stable visual variant until the worker leaves the occupied dock slot, rather than changing it every tick or cast. Chairs simply appear as part of the fishing presentation; they are not inventory items, real placed blocks, construction ingredients, or extra loot. Remove the chair visual when the worker leaves, dies, unloads, or changes state.
+
+Use real fishing rods, appropriate timing, durability, and enchantments. Generate catches from Minecraft's fishing loot tables with a valid fishing context, including fish, junk, and treasure when their normal conditions permit. Respect compatible loot-table changes. Do not hardcode a list of fish or force treasure eligibility. Preserve actual biome/weather/open-water behavior through the supported vanilla/Forge mechanisms. Do not abuse the owner's player inventory or statistics to simulate the worker.
+
+Require a contiguous 10-block-long by 7-block-wide area of SOURCE WATER beneath and around the 3x8 dock. The three-wide dock is centered across the seven-wide water area, leaving two water columns on each side and two rows beyond the end. Flowing water does not satisfy the required cells. A 3x3 pool is invalid. Each assigned position also needs a usable casting location. This dimension check does not override vanilla loot eligibility.
+
+Collect catches, unload into the shore-hut storage, request replacement rods, and cooperate with Runnertons. Fishertons do not sleep at night; they retreat when threatened like other ordinary workers.
+
+6.4 Rancherton
+
+The PLAYER brings initial animals into the ranch. Ranchertons do not roam to round up wild animals. Their managed area is the actual fenced pen connected to the shed, not a circular world radius.
+
+Manage sheep, cows, chickens, and pigs. Register eligible animals inside the pen, persist the managed-livestock protection flag, and use shared animal/task claims so multiple ranch workers do not perform the same action twice. Escaped animals keep hunting protection, but the player is responsible for returning them. Count animals currently in the pen or in an active shed-handling task for population management.
+
+Jobs:
+- Shear adult sheep with real shears and normal durability/drop behavior. Respect wool regrowth and keep suitable grass in the pen.
+- Milk adult cows using actual buckets and deposit registered milk fluid into a compatible tank. Return/reuse the empty bucket. Default cooldown: one bucket per cow per 24,000 elapsed ticks, persisted independently of skipped nights.
+- Collect dropped eggs.
+- Breed sheep and cows with wheat, chickens with wheat seeds, and pigs with carrots. Request these through the network. Use normal breeding cooldowns, consume actual food, and reserve parents and the expected offspring count.
+- Cull surplus ADULTS by leading one into the shed, closing the gate appropriately, performing one instant humane dispatch action, and collecting normal drops.
+
+Culling needs no weapon or additional tool item. Never perform repeated visible attacks. Use the normal death/drop pipeline once, with an appropriate ranch action, and never kill babies. Preserve at least two adults of a managed species as breeding stock. Use a real reusable lead without duplication or loss through the handling/death sequence.
+
+Population defaults: target EIGHT animals per species, counting adults and babies. Allow targets from 2 through 64 and a separate management enable/disable toggle for each species. Disabled population management stops breeding and culling for that species without removing its protection or preventing appropriate collection tasks. Do not breed when the existing count plus reserved offspring would exceed the target. Cull surplus adults only while respecting the breeding pair and baby protections. Imported excess babies remain until adulthood; do not force the target by killing them.
+
+Skip production actions if products or container remainders cannot be stored. Show a concrete shortage/full-storage reason. Preserve gates and contain animals while moving between pen and shed.
+
+Generalize the Tank to accept any properly registered fluid, one fluid type at a time, with normal bucket/automation capabilities. Use an existing compatible milk fluid where available or register one correctly for this mod's use. Do not mix fluids or silently replace existing contents. Preserve normal Tank break/spill behavior and wand-packed fluid retention.
+
+6.5 Quarryton
+
+Quarrying is a separate profession with a fixed 15x15 horizontal excavation footprint. Remove quarry operation from Miningtons. Never expand the quarry beyond the registered footprint to follow ores or caves.
+
+Work downward in complete horizontal layers, using persistent row/cell claims so multiple Quarrytons cooperate. Skip unbreakable blocks without destroying them. Keep the ladder shaft and its backing wall outside the excavation, centered just beyond the edge as specified in the building plan. Extend access downward as work progresses.
+
+Default depth is bedrock/the lowest safely reachable excavation level in that dimension. Provide an optional higher bottom-Y setting. Do not hardcode the Overworld's minimum Y, break bedrock, or tunnel around a bedrock-blocked shaft. Never mark a layer complete just because supplies, paths, chunks, or storage are unavailable.
+
+Plug discovered water and lava with real ordinary safe full blocks from inventory: cobblestone, dirt, cobbled deepslate/deepslate, tuff, andesite, and comparable explicitly allowed materials. Do not spend ores, precious blocks, or unsupported falling blocks as filler. One placed block consumes one item. If filler is missing, request it and pause safely.
+
+Quarrytons must carry torches and progressively light access and work surfaces. Use a conservative default target of at least eight block light on working floor/access locations where placement permits, with obstruction-aware placement. If lighting supplies run out, stop extending into an unlit work area, request torches, and return safely. Existing adequate lighting should not cause pointless duplicate torch placement.
+
+A newly discovered cave pauses excavation, raises a visible worksite help alert, and sends workers back to the surface. The player can make the opening safe and acknowledge Resume. Persist acknowledged cave discoveries so the identical opening does not immediately retrigger the alert, while newly encountered openings still do. This does not authorize mining outside the quarry boundary.
+
+Guardingtons DO NOT descend into quarries. If attacked, Quarrytons retreat up the ladder. Lighting and a usable escape route are required parts of their work. Use the eight-double-chest surface store and normal Runnerton logistics.
+
+6.6 Luminariton
+
+Implement the service job with these responsibilities: tend registered Collectors, fill bottles and tanks from actual fluid, maintain operating/service charge, infuse supplied raw Lumite shards, plant and maintain eligible non-tree plants/crops around Collectors, replace fully exhausted dead vegetation, and heal network automatons using the reserve rules above. The approved default courtyard remains a flower garden.
+
+Use the raised workshop, ground-level totem, open lower tower, rear ladder/open hatch, and large courtyard specified in the structures section. The mage can climb to workshop equipment and come down to the collectors and healing clearing. Ordinary workers and couriers can use the ladder; Guardingtons remain at ground level.
+
+Bottling consumes actual empty glass bottles and 250 mB per full bottle. Infusing consumes actual raw shards and 25 service-reserve Lumina per shard. Filling tanks transfers fluid with exact accounting. Plants and crop planting items are taken from real storage and used only in suitable protected plot cells; do not plant onto paths, in the healing clearing, on a Collector, or outside the registered plots. Use only the mod's existing eligible Lumina-source plants/crops, with valid soil, farmland, irrigation, and clearance as applicable. Do not plant a crop into an unsuitable flower-bed cell or silently redesign the approved courtyard. Handle tall flower placement and clearance correctly if those are used.
+
+Luminaritons NEVER plant trees, saplings, mangrove propagules, or other tree-producing planting stock, and do not grow or bonemeal such stock into trees. Existing tree planting by other appropriate professions remains unchanged. Collectors may continue drawing from eligible trees already present without harming them.
+
+Clear Dead Plant/Dead Crop blocks in managed plots and replant from actual supplies. If replacement stock is missing, request it and leave the cell awaiting supplies; never turn a dead item into a free living plant. Keep bed protection while a cell is empty. Do not remove healthy plants to continually rearrange the garden. A partially supplied garden should begin operating with the plants and collectors already available, then fill missing positions as supplies arrive.
+
+6.7 Guardington
+
+Create a separate Guardington body with an actual collision size of 1.4 blocks wide and 2.5 blocks tall. Match the model's stance and proportions. Do not squeeze it through standard doors. Any structure that explicitly needs guard access must provide an appropriately sized opening; the Luminariton's open ground floor and courtyard serve this purpose.
+
+Maximum health is TWICE the current standard automaton maximum. Intrinsic armor is TWELVE armor points, displayed as six filled armor icons. Do not depend on the Crafterton's iron display armor to supply this protection or silently stack a free second armor system on top.
+
+Support a bow with real arrows and a sword, with normal durability, enchantments, damage rules, line-of-sight checks, and visible weapon switching. If arrows run out or the sword breaks during a fight, continue with remaining usable equipment or fists. Final fist default: two health points of damage with a one-second attack cooldown. Seek supplies after the immediate fight rather than becoming helpless in front of an attacker.
+
+Use the same friendly-fire precautions as the Hunterton: do not fire through players, friendly automatons, or protected livestock.
+
+Patrol modes:
+- Network circuit: walk among accessible owned totems in a persistent route.
+- Assigned totem: protect and patrol that totem's work area and accessible surface perimeter.
+
+Distribute multiple guards along their shared circuit using route progress/phase offsets. They should spread out rather than form a following clump. Do not teleport them to achieve spacing. Recompute routes when the network changes, with bounded pathfinding and loaded-chunk limits. Respect narrow access, crops, fenced animal areas, quarry shafts, and other hazards.
+
+The TEN-BLOCK perimeter applies ONLY to the pedestal's Call All Home state. On recall, guards also come back, but remain outside the worker congregation and patrol a perimeter up to ten blocks from the pedestal. Releasing recall restores their previous patrol mode and assignment. Do not use this ten-block limit for normal patrols.
+
+Guard protection assignments are separate from production-worker assignments and do not count toward the six-worker totem cap. No dedicated Guardington production building is required in this update.
+
+7. MININGTON AND FARMINGTON CHANGES
+
+7.1 Fixed Minington geometry
+
+Replace the old variable mining behavior with the agreed repeatable strip pattern. Each miner owns their current passage claim and returns to that same saved progress after unloading. The center corridor is THREE blocks wide so workers and couriers can pass. Side passages are ONE block wide and TWO blocks high. Do not chase veins outside the prescribed geometry.
+
+The first 5x5 landing is twenty blocks below the surface entrance. Use these local horizontal coordinates for the underground layout, with the forward direction +Z and the ladder immediately behind the landing:
+- Landing: X=-2..2, Z=0..4.
+- Ladder shaft: X=0, Z=-1, outside the landing.
+- Back storage: a double chest at X=-2..-1, Z=0, and another at X=1..2, Z=0; repeat both one block higher. Total FOUR double chests, or eight chest blocks, per landing.
+- Center corridor beyond the landing: X=-1..1, Z=5..29.
+- Ten paired branch rows: Z=1+3k for k=0..9. This gives twenty individual passages, with two unmined rows between adjacent branch rows.
+- First two pairs, alongside the five-wide landing: left X=-26..-3 and right X=3..26, each 24 blocks long.
+- Remaining eight pairs, alongside the three-wide corridor: left X=-26..-2 and right X=2..26, each 25 blocks long.
+- The outer branch ends line up at X=-26 and X=26.
+
+Branches and the main corridor are two blocks high. Give the storage landing three blocks of internal clearance so both tiers of chests can open; this is a local depot exception, not a widening or height change to the strip passages.
+
+When every branch on a level is completed or explicitly terminated by a qualifying side-passage hazard, extend the shaft FOUR blocks down and repeat the same horizontal pattern. There are NO alternating offsets. The two-high working passages therefore have two solid block layers between successive levels. Repeat the landing and storage arrangement at each level, consuming real building supplies.
+
+Water, lava, or a cave opening terminates a side passage at the hazard. Mark the reason persistently and stop that passage there. Do not carry the Quarryton's liquid-plugging behavior into this job. A hazard that blocks the central access corridor pauses the inaccessible portion for intervention rather than inventing a detour or claiming unfinished rows are complete.
+
+Storage full, missing tools, unavailable chunks, an occupied path, or a temporary obstruction are waiting states, not completed passages. Keep task reservations bounded and recover them when a miner dies, unloads, or is reassigned. Use real ladders and torches and preserve a usable route home.
+
+7.2 Farming geometry and supplies
+
+Use a 9x9 field split into three adjacent 3x9 strips, corresponding to the three GUI selectors. Let the strips run along the nine-block depth. Wheat, carrots, potatoes, and beetroots are the only supported crops in this pass.
+
+Use the center field cell E5 as the irrigation source for the default 9x9 template, with a full GLASS BLOCK directly above the water. This protects against falling into the irrigation hole. Preserve glass-over-water protection for any additional irrigation cells in a recognized existing field. Exclude water and its glass cover from planting and harvesting; the center strip therefore has one non-crop cell in this default layout.
+
+Till valid soil, plant from actual stock, harvest mature crops, and replant according to the strip configuration. If a Collector has exhausted a crop in the managed field, clear the Dead Crop and replant the configured crop from real stock; do not count the dead remains as a normal harvest or planting reserve. Reserve enough planting stock before making surplus available for collection. Request shortages through the network. Preserve existing appropriate bonemeal behavior. Do not add pumpkin, melon, sugarcane, or cactus layouts in this update.
+
+8. HOSTILE MOBS, RETREAT, AND DEATH
+
+8.1 Threat behavior
+
+Automatons do not sleep or stop work merely because it is night. They retreat when danger appears. Add automaton targets to these exact hostile entity types: zombies, skeletons, spiders, and cave spiders, under their appropriate normal aggression conditions. Do not broadly target all Monster subclasses or silently include every zombie/skeleton variant.
+
+Other mobs ignore automatons for automatic targeting, including creepers. Do not make creepers acquire automatons as living targets or make guards routinely provoke creepers. Environmental damage, crossfire, fire, lava, explosions, and other ordinary hazards can still hurt automatons.
+
+Guards defend against the specified threats. Ordinary workers prioritize escape to an accessible safe owned shed. Hunters may use any suitable owned shed instead of insisting on their own distant hut. Preserve paths home, close appropriate doors/gates after entry, and do not grant magical invulnerability inside a structure. Workers resume their saved work once the danger clears and conditions permit.
+
+Powered-down automatons remain physical, damageable entities. Zero energy does not grant immunity and does not itself create a grave.
+
+8.2 Death recovery
+
+On actual death, create a gravestone with one ordinary 27-slot chest immediately beneath it. Store all carried inventory, tools, equipment, and the recovered body parts. Use the user's established inventory limits so this fits one small chest. Do not add a larger custom grave inventory or silently discard overflow if an invariant is violated.
+
+Recover three, four, or five physical body parts, with a small chance of all six. Final distribution: 30% three, 35% four, 30% five, and 5% six. The TORSO ALWAYS survives. Select the remainder without exceeding the actual body: one head, one torso, two arms, and two legs. Guards drop the corresponding armored versions. Two recovered arms are two parts even if they stack into one inventory slot.
+
+Recovered parts do not preserve the old automaton's identity, name, ownership binding, job state, or experience. Rebuilding creates a new individual. A fully recovered body is still a rebuild, not resurrection.
+
+The grave chest may occupy a death-location block even in lava. Do not automatically relocate a lava death to a safe shore. NEVER replace bedrock. Prefer the death position and immediately beneath it, searching only as needed for a valid nearby non-bedrock position. Also avoid destroying an existing valuable block entity or container and losing its contents; preserve or safely defer recovery if placement cannot be committed atomically. Record a pending grave rather than voiding the inventory. The gravestone sits above the resulting chest.
+
+Handle all death causes and double-callback cases without duplicate graves or duplicate drops. Remove the dead worker from assignments, claims, dock slots, patrol spacing, and pending deliveries. Preserve recoverable item NBT and container contents. The death handler must not also scatter the same items as ordinary entity drops.
+
+9. BODY PART RECIPES
+
+Keep ordinary body construction and its two-core torso foundation. Add Armored Head, Armored Arm, Armored Torso, and Armored Leg using the existing corresponding recipes with EVERY LOG ingredient replaced by an IRON INGOT. Preserve the other recipe ingredients and shapes unless a concrete existing recipe implementation requires an equivalent representation.
+
+The Guardington assembly uses one armored head, one armored torso, two armored arms, and two armored legs. Enforce a coherent armored set. Do not allow mixed parts to accidentally create a normal worker with guard attributes or a guard that can change professions.
+
+Integrate this into the existing Automaton Pedestal's body-shaped assembly UI and output/preview workflow. Do not reintroduce removed crafting buttons or a second awakening system. Use the existing recipe discovery and mod integration conventions for the new items and Collector recipe.
+
+10. APPROVED BUILDING AND SITE SPECIFICATIONS
+
+Implement these as real Buildington plans, using the project's existing structure-template and import/generation workflow. Supply runtime templates, metadata, and exact generated bills of materials. Also export usable .schem versions of the new structures, using an established compatible format, with matching dimensions and contents. Do not substitute HTML drawings, screenshots, or empty placeholder structures for working templates.
+
+Coordinate conventions:
+- For a normal building, letters run left to right and numbered rows run from the back toward the front entrance.
+- Coordinates name occupied block cells, not grid intersections.
+- Unless otherwise specified, the walking floor is at height zero, floor blocks occupy the layer below it, and equipment starts at height zero.
+- Ordinary sheds need at least three blocks of internal clearance so the upper chests open and workers can move.
+- Structure rotation must rotate geometry, entrances, station interaction faces, chest pairing/facing, claims, and site metadata consistently.
+- These coordinates belong in structure metadata and documentation, not as a numeric debug map in the player GUI.
+
+Buildingtons place real supplied materials, empty containers, and required decorative entities/items. Do not prefill chests, tanks, Collectors, armor stands, or workstations with free supplies in the template. Actual machines and crafting furniture must be functional. Generate the material counts from the actual templates, including chest halves, gates, item frames, armor stands, and station blocks.
+
+Keep existing partial-material building, cooperation, collision-aware placement, and exit behavior. Do not require an already completed workshop to create the first Buildington. Do not overwrite a player's valuable block entities or demolish an existing building merely because its totem changes configuration.
+
+10.1 Crafterton workshop
+
+Footprint: 7x7; interior: 5x5.
+Style: cobblestone floor, timber corner posts, plank walls, peaked spruce roof, and an entrance lantern.
+
+Cell(s) | Contents
+B2 | Crafting table.
+B3 | Two furnaces, stacked vertically.
+B4 | Two blast furnaces, stacked vertically.
+F3-F4 | Two double chests, stacked vertically; four chest blocks total.
+D2 | Approved rear interior totem position.
+D7 | Front door.
+B6 | Armor stand in the front-left corner.
+
+Preserve this approved Crafterton anchor at D2 rather than mechanically moving it to another building's D1 layout. Keep the central three-wide approach clear except for the designated rear totem. The armor stand starts empty when built; the Crafterton supplies the iron set through real low-priority crafting.
+
+10.2 Hunterton shed
+
+Footprint: 7x7; interior: 5x5.
+Style: plain square shed, cobblestone floor, plank walls, flat wooden roof, and interior lighting.
+
+Cell(s) | Contents
+D1 | Totem integrated into the back wall, accessible from inside.
+D7 | Front door.
+B2-B3 | Two stacked double chests; lower for hunting drops, upper for arrows and spare equipment.
+
+Keep the remaining floor clear. The building is a restocking/unloading and shelter location, not a requirement that the hunter stay nearby instead of roaming the 96-block hunting area.
+
+10.3 Rancherton shed and pasture
+
+Preserve the approved 9-wide by 7-deep open-front shed joined by a fence gate to a 17x17 fenced pen, whose interior is 15x15. The front of the shed faces the pen. There is a separate side door to the outside. Keep the animal-handling floor clear and use a modest wooden shed roof, hay bales, storage, a milk tank, and the shears item frame.
+
+For an unambiguous rotated site plan, use a 23-column by 17-row grid A-W / 1-17:
+- Shed footprint: A5-G13. In this orientation it is seven columns deep and nine rows across its pen-facing front.
+- Pen outer boundary: G1-W17; pasture interior H2-V16.
+- Shared shed/pen edge: column G; gate G9.
+- Shed rear wall: A5-A13.
+- Shed side walls: B5-F5 and B13-F13, with door D13 in the latter.
+- Supply double chest: B6-C6.
+- Product double chest: B12-C12.
+- Hay bales: E6 and F6.
+- Milk Tank: E12.
+- Ranch Totem: B9, accessible near the rear of the shed.
+- Shears item frame: on the inside of the rear wall near A8, at reachable display height.
+
+The two chests here are two separate double chests, not four doubles. The milk tank starts empty. Keep the pen floor suitable for grazing and breeding. The fenced interior, including its registered shed-handling connection, defines the ranch work area. Validate enclosure changes without turning this into an unbounded world flood-fill. Do not add a separate slaughterhouse or automatically spawn livestock.
+
+10.4 Quarryton storage shed and shaft
+
+Shed footprint: 7x7; interior: 5x5.
+Style: plain square plank building, cobblestone floor, flat wooden roof, and entrance lantern.
+
+Cell(s) | Contents
+D1 | Back-wall Totem.
+D7 | Front door.
+B2-B3 | Stack of two double chests.
+B5-B6 | Stack of two double chests.
+F2-F3 | Stack of two double chests.
+F5-F6 | Stack of two double chests.
+
+Total: EIGHT double chests, made from sixteen chest blocks. Columns C-E form a three-block clear center aisle. Leave enough headroom above the upper chests.
+
+Site plan using columns A-O and rows 1-25:
+- Shed: E1-K7.
+- Totem: H1; door: H7.
+- Clear path blocks immediately ahead of door: H8 and H9, with room beside them.
+- Ladder shaft: H10, three blocks forward from the door cell.
+- Excavation: A11-O25, exactly 15x15.
+
+The shaft is outside the center of the quarry's near edge. Its ladder attaches toward the shed, against the preserved backing wall on the H9 side. Neither shaft nor backing belongs to the excavated 15x15. Keep this relationship at every depth. Do not put the ladder into a column that the excavation will remove.
+
+10.5 Luminariton tower and collector courtyard
+
+This is a raised wizard's workshop, not a normal ground-floor shed.
+
+Tower-local grid: A-G / 1-7.
+- Rounded stone rear half-wall supports the upper shed.
+- The front half below the workshop is OPEN TO AIR. No front wall, front door, or front pillars close it off.
+- Ground-level Totem: D1.
+- Rear ladder column: D2.
+- Upper floor hatch: D2, directly above the ladder. It is an OPEN hole, with NO TRAPDOOR.
+- The upper workshop walking floor is FOUR blocks above ground level.
+- Upper workshop footprint: 7x7, with a 5x5 interior.
+- No upper front door is needed; access is through the rear floor hatch.
+
+The lower curved wall cells, viewed from above, are:
+C1, D1, E1;
+B2, C2, E2, F2;
+A3, B3, F3, G3;
+A4, G4.
+
+At ground level, replace the D1 wall cell with the Totem. Keep the central access and front half free. Use the neighboring stone at C2 for ladder support where necessary rather than assuming the Totem is a full ladder-support block. Continue the ladder through the open hatch with valid attachment and a tested dismount onto the upper floor. Never obstruct the Totem interaction or close the hatch with an accidental template floor block.
+
+Height reference: ground walking level 0; upper floor blocks at height 3, with their walking surface at 4; upper walls from height 4 through 7; a five-tier pointed roof above, ending around height 13. This leaves three clear blocks under the floor in the open front, enough for the 2.5-high Guardington. Use stone below, timber/planks for the shed, a pointed dark-oak roof, narrow windows, and purple banners. The roof can overhang the seven-wide body by one block.
+
+Upper workshop equipment:
+B2 | Luminall Tank.
+B3 | Second Luminall Tank.
+B5 | Infusing Pedestal.
+F2-F3 | Two stacked double chests; supplies below and finished bottles/infused shards above.
+D2 | Open floor hatch and ladder access.
+D1 | Rear wall at this upper level; the Totem exists only below at ground level.
+
+Large courtyard:
+- 25 blocks wide by 25 blocks deep, in front of the tower.
+- Twelve separate 4x4 Collector beds around the perimeter.
+- Three-block-wide paths between the beds.
+- An 11x11 open central clearing for visitors and movement.
+- Dirt/grass planting soil in the beds and suitable ordinary paving on paths/clearing.
+- The Luminariton plants the flowers; the Buildington does not prepopulate them for free.
+- Twelve Collectors and 180 flower positions in the completed layout.
+
+Courtyard-local grid A-Y / 1-25, north at top:
+Bed footprint | Collector
+A1-D4 | B2
+H1-K4 | I2
+O1-R4 | P2
+V1-Y4 | W2
+A8-D11 | B9
+V8-Y11 | W9
+A15-D18 | B16
+V15-Y18 | W16
+A22-D25 | B23
+H22-K25 | I23
+O22-R25 | P23
+V22-Y25 | W23
+
+The open center is H8-R18. M13 is the normal healing/gathering position; healing still reaches only four blocks from the actual mage, not the entire clearing or courtyard.
+
+Each 4x4 bed contains one Collector and fifteen flower positions in the default plan. These are maintained source cells: an exhausted flower becomes Dead Plant, then the Luminariton clears it and replants from real stock. Preserve the registered bed while a cell is dead or empty. Do not add trees or sapling positions to the courtyard. The existing Collector scans horizontal offsets -1 through +2 on both world axes, so the Collector belongs at the second column/second row of a north-up bed. Do not center it incorrectly or rotate its footprint blindly. When rotating the site, transform each plot's bounds and place the Collector and flowers to match the actual world-aligned scan footprint. Preserve non-overlapping source coverage and protect the entire registered bed from opportunistic flower gathering.
+
+Overall site positioning: with the courtyard spanning site X=0..24, put the tower at X=9..15 and site Z=0..6, and the courtyard at Z=7..31. Thus the tower is centered behind the garden. These dimensions describe the ground footprint; account for roof overhang separately in placement clearance.
+
+10.6 Fisherton shore hut and dock
+
+Shore hut footprint: 7x7; interior: 5x5.
+Use a modest wooden fishing hut with a simple roof and appropriate lighting.
+D1 | Back-wall Fishing Totem.
+D7 | Door opening directly onto the center of the dock.
+B2-B3 | Two stacked double chests; catches below, spare rods/supplies above.
+
+The dock is THREE blocks wide and extends EIGHT blocks from the hut. The first two blocks of length are clear access. The last six blocks form three pairs of two-block-long fishing bays, one on either side, for a total of six workers. Keep the center column clear. Fishing positions are reserved, whether the worker is visually seated or standing.
+
+Site grid A-K / 1-17:
+- Hut: C1-I7; site Totem F1 and door F7.
+- Dock: E8-G15, three wide by eight long.
+- Center walkway: F8-F15.
+- Far pair: positions 1 and 2 at E15 and G15, with bays E14-E15 and G14-G15.
+- Middle pair: positions 3 and 4 at E13 and G13, with bays E12-E13 and G12-G13.
+- Near pair: positions 5 and 6 at E11 and G11, with bays E10-E11 and G10-G11.
+- Minimum source-water rectangle: C8-I17, seven wide by ten long.
+
+That water rectangle includes the water beneath the dock, two columns of open water on each side, and two rows beyond the far end. Align the dock walking surface with the hut doorway and place dock planks above the source-water surface. Any optional support posts must not replace required source cells in the validation rectangle. Validate water and casting positions before declaring the site usable; report a short invalid-water reason instead of pretending a tiny pool qualifies.
+
+Do not include chairs in the Buildington bill of materials. The chairs are the Fisherton's visual effect only.
+
+10.7 Existing structures and farm/mine additions
+
+Retain the established Lumberton, Buildington, Runnerton, Farmington, and mine surface buildings unless a specific requirement above needs an adaptation. Update naming, profession metadata, and assignment behavior without gratuitously redesigning those structures.
+
+Add the farming field/irrigation metadata and fixed underground mining landing/passage plans described in section 7. Keep Glass above irrigation sources and supply-dependent underground construction functional. Preserve the Machine and its established Operatorton workflow.
+
+11. FINAL DEFAULTS FOR PREVIOUSLY UNSPECIFIED DETAILS
+
+The following choices finish the design. Implement them as ordinary centralized/server-configurable balance values where appropriate, not as a large new player-facing settings menu:
+
+Setting | Default
+Operating energy | 200 for every body, including Guardington; Luminariton reserve is additional.
+Operating drain | 1 Lumina / 1,200 active server ticks; no unloaded/offline catch-up.
+Automatic low-energy refill | One full bottle, then resume above the 1% threshold.
+Luminariton service reserve | 400, initially empty; funds healing and 25-point shard infusion.
+Reserve refill trigger | At or below 125; refill toward 400 from real bottles as available.
+Healing | 1 health point per second per eligible recipient, costing 2 Lumina per health point.
+Seeking treatment | At or below 50% health when a safe service route exists.
+Ranch population target | 8 per species, adults and babies combined; selectable 2-64.
+Minimum breeding stock | 2 adults per managed species.
+Cow milking cooldown | 24,000 elapsed ticks per adult cow.
+Quarry depth | Bedrock/lowest reachable level by default; optional higher bottom Y.
+Quarry cave handling | Pause, return to surface, alert, explicit Resume after intervention.
+Quarry lighting target | At least 8 block light on accessible working floor/access positions where feasible.
+Guard fist attack | 2 health points, 20-tick cooldown.
+Body-part recovery weights | 3 parts 30%, 4 parts 35%, 5 parts 30%, 6 parts 5%; torso guaranteed.
+Flower gathering throttle | At most one qualifying flower per 10 ticks, within two blocks, without detouring.
+Source exhaustion | Existing eligible non-tree plants/crops become Dead Plant/Dead Crop at zero remaining reserve; no gradual visual stages.
+Tree protection | Collectors retain eligible tree output without killing or damaging trees.
+Luminariton planting | Eligible non-tree plants/crops only; use real supplies to replace dead vegetation. Never plant or grow trees.
+Mining depot clearance | 3 blocks locally for stacked chests; work passages remain 2 high.
+
+Do not change the explicitly settled dimensions, six-worker limit, energy conversion, collector quarter-rate, hunting exclusions, or protected garden behavior to compensate for a tuning issue. Document any genuine implementation constraint rather than silently changing the design.
+
+12. IMPLEMENTATION QUALITY AND VERIFICATION
+
+Use server-authoritative state and existing network/AI abstractions. Keep task state serializable. Use bounded work queues and incremental scans, not a full 96-block search or entity sweep every tick. Never force-load chunks. Shared destinations and resources need claims that expire or release correctly on death, unload, reassignment, and worksite removal.
+
+Respect transactional item/fluid transfers. A failed path, cancelled action, GUI packet replay, chunk unload, recipe failure, or full output inventory must not duplicate or destroy supplies. Container remainders, armor-stand equipment, decorated item frames, dropped loot, and death inventory need explicit ownership of each transfer.
+
+When a UI or renderer observes a powered-down worker, a reserved fishing slot, a changed profession, or a guard recall mode, it must reflect authoritative state promptly. Do not leave chairs, tools, nametags, or old profession accessories floating behind after entity removal or job changes.
+
+Implement in a sensible dependency order, but complete all sections. Suggested order: common data and assignment rules; energy/fluid accounting; threats and death; worksite templates; jobs/logistics; GUIs; models/assets; regression validation. Avoid a monolithic job switch with duplicated inventory and pathfinding code when the existing architecture supports shared services.
+
+Run the repository's required checks and meaningful new tests. Reuse its existing Forge GameTests, asset validators, and build workflow rather than creating tests that merely repeat constants. At minimum, cover these actual behaviors:
+
+ASSIGNMENT AND GUI
+- All assignment entry points reject a professionless totem.
+- Configured but unbuilt sites accept workers and preserve Buildington bootstrap.
+- The seventh production worker is rejected; guards do not consume production places.
+- Ordinary bodies cannot become guards, and armored bodies cannot change profession.
+- Direct Machine assignment produces an Operatorton without a manual job selector.
+- Reassignment and menu updates retain inventory, energy, ownership, and identity.
+- Profession-specific controls and the three farm selectors behave correctly on the server.
+
+ENERGY AND FLUIDS
+- 24,000 elapsed ticks cost 20 operating points regardless of sleeping/world-time changes.
+- Partial drain intervals survive save/reload; zero charge produces the correct behavior and presentation.
+- Bottle conversion is 125 points from 250 mB, overflow is wasted for automatons, and one empty bottle is returned.
+- Player, Machine, Drain, Tank, and Collector paths agree on the 1:2 conversion without rounding exploits.
+- Machine partial transfers still retain excess contents.
+- Collector output is exactly quarter-rate with low-yield fractional accumulation and correct overlap sharing.
+- Only existing eligible non-tree Lumina sources deplete; final extraction cannot overspend a reserve, and full/paused Collectors do not drain sources. Tall plants share one reserve; crop growth and save/reload do not refill it.
+- Fully exhausted plant/crop sources become the appropriate new plantable dead block exactly once, without healthy drops; dead blocks never produce Lumina, grow, or revive with bonemeal.
+- Collectors cannot kill or alter trees through exhaustion; existing tree-source validity/yields and structural-log rejection remain intact.
+- The two-shard recipe works and rejects a filled Tank ingredient.
+- Milk and another registered fluid work through Tank storage/transfer while mixing is rejected.
+
+JOBS AND LOGISTICS
+- Hunter exclusions include babies, horses/equines, cats, dogs/wolves, and protected livestock; a newly protected target is abandoned before damage.
+- Hunting radius remains centered on the totem, with no cross-network prey ownership mistakes or friendly shots.
+- Crafter production uses real recipes, time, fuel, ingredients, remainders, priorities, and supported dependencies.
+- A Crafterton remains in the workshop when a same-network Runnerton exists.
+- Removing one armor-stand piece replaces only that piece, after other work, and couriers do not take the display armor.
+- Six fishing slots reserve uniquely, center access remains clear, chairs clean up, source-water validation rejects 3x3 and flowing-water substitutes, and loot conditions remain genuine.
+- Ranch population reservations include babies and pending offspring; two adults survive culling; no baby can enter the dispatch path.
+- Milking cooldown, bucket return, shears durability, leads, gates, and product capacity work across unload/reload.
+- Luminariton planting uses real stock and protects beds. They replace dead plants/crops only within managed plots, request missing supplies, and never plant or grow trees. Farmingtons clear exhausted crops and use actual stock to replant their configured strips.
+- Multiple healing recipients cannot overdraw reserve; bottle use cannot charge both pools.
+- Flower gathering stays within two blocks of the current route, never detours, respects protected beds, and skips harvest when drops cannot fit.
+- Runnertons actually deliver the new required supplies and do not create collection/delivery loops.
+
+MINING, QUARRYING, AND PATROLS
+- Validate the complete 20-passage mining coordinates, first two 24-block pairs, remaining 25-block pairs, three-wide center, and four-block level separation with no offset.
+- Side hazards terminate passages, central access hazards block work, and missing supplies/storage never fake completion.
+- Quarry work remains 15x15; ladder/backing remain outside; water/lava plugging consumes blocks; torch shortages and cave alerts pause correctly.
+- Quarry retreat uses the ladder and never summons a guard underground.
+- Multiple guards spread along their patrol route; assigned-site patrol and network patrol differ correctly.
+- Call All Home uses the ten-block pedestal perimeter only while recalled; release restores the earlier mode.
+- Weapon depletion during a fight transitions to an available weapon or fists.
+
+THREATS, DEATH, AND PRESENTATION
+- Only the four specified hostile entity types gain automatic automaton targeting. Creepers do not.
+- Workers do not sleep or stop merely for night; threat-driven retreat/resumption preserves work.
+- Death produces one grave and one inventory transfer under ordinary, fall, fire, and lava deaths.
+- Bedrock is never replaced, valuable existing containers are not destroyed, and a placement failure preserves a pending recovery.
+- Salvage always contains a torso, uses the correct body type, and never produces more than the six original parts.
+- Verify all thirteen profession appearances, expressive eyes, held items, sitting/standing fishing visuals, and depleted-energy posture.
+- Verify Dead Plant and Dead Crop have static artwork, working placement items and support rules, and no living-plant yield or Lumina output. Living sources retain their ordinary appearance until exhaustion.
+- Verify actual standard-worker door/ladder movement and Guardington 1.4x2.5 collision, not just the apparent rendered size.
+
+STRUCTURES AND PERSISTENCE
+- Validate every new runtime template and .schem export against its coordinate/specification table and generated material bill.
+- Validate empty inventories/tanks in templates and supply-dependent construction of workstations, armor stand, and shears frame.
+- Test pathing, chest-opening clearance, all relevant door hinges, and building rotations.
+- Specifically test the Luminariton's ground Totem D1, rear ladder/open hatch D2, upper dismount, open front, and Collector-bed placement under rotation.
+- Verify the required Fisherton water rectangle remains source water after construction.
+- Save/reload and unload/reload must preserve ownership, claims, low-energy state, operating/service/source reserves, ranch protection/cooldowns, mining progress, guard assignments, and dock occupancy without duplication.
+- Re-run the existing regression suite, not only the new focused tests.
+
+13. COMPLETION DELIVERABLES
+
+Deliver the implemented source and assets, including the new Dead Plant and Dead Crop blocks/items, working runtime structure templates, matching .schem exports, exact bills of materials, updated project documentation, and the built mod JAR using the repository's normal distribution convention.
+
+Update documentation around the final behavior rather than leaving old mining modes, obsolete profession names, old conversion values, old Collector recipes/rates, or old assignment instructions alongside the new design. Document the actual existing Lumina-source eligibility used by the implementation, the plant/crop reserve settings and dead-block replacement, tree immunity to Collector damage, and the Luminariton's non-tree planting restriction. Do not retain rejected alternatives as if they are still supported options.
+
+Finish with a concise report of what changed, the artifact paths, checks actually run and their results, and any remaining manual in-game checks or genuine blockers. Do not claim client/rendering, multiplayer, third-party integration, or long-duration behavior was tested unless it actually was. Do not call this complete while major listed professions, GUIs, models, structures, or persistence paths are placeholders.

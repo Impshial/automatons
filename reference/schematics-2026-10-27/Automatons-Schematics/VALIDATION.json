@@ -1,0 +1,132 @@
+{
+  "status": "passed",
+  "reader": "nbtlib 2.0.4 (independent of exporter)",
+  "vanilla_block_report": true,
+  "data_version": 3465,
+  "plans": [
+    {
+      "plan": "crafterton_workshop",
+      "dimensions": [
+        7,
+        8,
+        7
+      ],
+      "explicit_cells": 264,
+      "double_chests": 2,
+      "entities": 1,
+      "status": "passed"
+    },
+    {
+      "plan": "farmington_field",
+      "dimensions": [
+        9,
+        4,
+        9
+      ],
+      "explicit_cells": 244,
+      "double_chests": 0,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "fisherton_hut_dock",
+      "dimensions": [
+        11,
+        9,
+        17
+      ],
+      "explicit_cells": 360,
+      "double_chests": 2,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "hunterton_shed",
+      "dimensions": [
+        7,
+        5,
+        7
+      ],
+      "explicit_cells": 245,
+      "double_chests": 2,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "luminariton_tower_courtyard",
+      "dimensions": [
+        25,
+        14,
+        33
+      ],
+      "explicit_cells": 3024,
+      "double_chests": 2,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "minington_landing",
+      "dimensions": [
+        5,
+        5,
+        7
+      ],
+      "explicit_cells": 108,
+      "double_chests": 4,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "minington_shaft_step",
+      "dimensions": [
+        1,
+        4,
+        2
+      ],
+      "explicit_cells": 8,
+      "double_chests": 0,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "minington_strip_level",
+      "dimensions": [
+        53,
+        5,
+        32
+      ],
+      "explicit_cells": 1250,
+      "double_chests": 4,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "quarryton_surface",
+      "dimensions": [
+        15,
+        8,
+        25
+      ],
+      "explicit_cells": 275,
+      "double_chests": 8,
+      "entities": 0,
+      "status": "passed"
+    },
+    {
+      "plan": "rancherton_ranch",
+      "dimensions": [
+        23,
+        9,
+        17
+      ],
+      "explicit_cells": 1358,
+      "double_chests": 2,
+      "entities": 1,
+      "status": "passed"
+    }
+  ],
+  "limitations": [
+    "No Forge mod repository or client was supplied. Custom registry defaults and owner/job initialization need integration verification.",
+    "No in-game AI navigation, lighting simulation, WorldEdit paste, or full client rendering was run."
+  ]
+}

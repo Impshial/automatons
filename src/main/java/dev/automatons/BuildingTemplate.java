@@ -17,19 +17,28 @@ import net.minecraft.world.level.block.state.properties.*;
 public final class BuildingTemplate {
   public record Cell(BlockPos local, BlockState state) {}
 
-  public record Frame(BlockPos local, Item item) {}
+  public record Frame(BlockPos local, Item item, Direction facing) {}
 
   public final List<Cell> cells;
   public final BlockPos anchor;
   public final BlockPos size;
   public final List<Frame> frames;
   public final Map<Item, Integer> materials;
+  public final JsonObject metadata;
+  public final List<BlockPos> stands;
+  public final boolean explicitAir;
+  private final Map<Direction, Map<BlockPos, BlockPos>> collectorRotations = new EnumMap<>(Direction.class);
 
-  private BuildingTemplate(List<Cell> cells, BlockPos anchor, BlockPos size, List<Frame> frames) {
+  private BuildingTemplate(List<Cell> cells, BlockPos anchor, BlockPos size, List<Frame> frames, JsonObject metadata) {
     this.cells = List.copyOf(cells);
     this.anchor = anchor;
     this.size = size;
     this.frames = List.copyOf(frames);
+    this.metadata = metadata;
+    explicitAir = metadata.get("version").getAsInt() >= 4;
+    stands = new ArrayList<>();
+    if (metadata.has("armor_stands"))
+      metadata.getAsJsonArray("armor_stands").forEach(p -> stands.add(point(p)));
     Map<Item, Integer> counted = new LinkedHashMap<>();
     for (Cell c : cells) {
       ItemStack cost = cost(c.state);
@@ -39,6 +48,7 @@ public final class BuildingTemplate {
       counted.merge(Items.ITEM_FRAME, 1, Integer::sum);
       counted.merge(frame.item, 1, Integer::sum);
     }
+    if (!stands.isEmpty()) counted.merge(Items.ARMOR_STAND, stands.size(), Integer::sum);
     this.materials = Collections.unmodifiableMap(counted);
   }
 
@@ -75,13 +85,13 @@ public final class BuildingTemplate {
               new Frame(
                   new BlockPos(
                       tile.get(0).getAsInt(), tile.get(1).getAsInt(), tile.get(2).getAsInt()),
-                  item));
+                  item, f.has("facing") ? Direction.from3DDataValue(f.get("facing").getAsInt()) : Direction.NORTH));
         }
       return new BuildingTemplate(
           cells,
           new BlockPos(a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt()),
           new BlockPos(size.get(0).getAsInt(), size.get(1).getAsInt(), size.get(2).getAsInt()),
-          frames);
+          frames, data);
     } catch (Exception e) {
       throw new IllegalStateException("Invalid building blueprint " + name, e);
     }
@@ -97,17 +107,67 @@ public final class BuildingTemplate {
   }
 
   public BlockPos world(BlockPos origin, Direction front, BlockPos local) {
-    BlockPos offset = local.subtract(anchor).rotate(rotation(front));
+    BlockPos offset = collectorRotations.computeIfAbsent(front, this::collectorOffsets)
+        .getOrDefault(local, local.subtract(anchor).rotate(rotationFor(front)));
     return origin.offset(offset);
   }
 
+  public static BlockPos point(JsonElement e) {
+    JsonArray a = e.getAsJsonArray();
+    return new BlockPos(a.get(0).getAsInt(), a.get(1).getAsInt(), a.get(2).getAsInt());
+  }
+
+  public Rotation rotationFor(Direction front) {
+    return rotation(metadata.has("default_front") ? front.getOpposite() : front);
+  }
+
+  public BlockPos logicalLocal(BlockPos logical) {
+    return logical.subtract(metadata.has("logical_min") ? point(metadata.get("logical_min")) : BlockPos.ZERO);
+  }
+
+  public BlockPos logicalWorld(BlockPos origin, Direction front, BlockPos logical) {
+    return origin.offset(logicalLocal(logical).subtract(anchor).rotate(rotationFor(front)));
+  }
+
+  public JsonObject worksite() { return metadata.has("worksite") ? metadata.getAsJsonObject("worksite") : new JsonObject(); }
+
+  public BlockPos feature(BlockPos origin, Direction front, String name, BlockPos fallback) {
+    JsonObject features = metadata.has("features") ? metadata.getAsJsonObject("features") : new JsonObject();
+    return features.has(name) ? logicalWorld(origin, front, point(features.get(name))) : fallback;
+  }
+
+  private Map<BlockPos, BlockPos> collectorOffsets(Direction front) {
+    Map<BlockPos, BlockPos> swaps = new HashMap<>();
+    if (!worksite().has("collector_beds")) return swaps;
+    for (JsonElement value : worksite().getAsJsonArray("collector_beds")) {
+      JsonObject bed = value.getAsJsonObject();
+      JsonArray bounds = bed.getAsJsonArray("bounds_xz");
+      BlockPos original = logicalLocal(point(bed.get("collector")));
+      int y = point(bed.get("collector")).getY();
+      BlockPos a = logicalWorld(BlockPos.ZERO, front, new BlockPos(bounds.get(0).getAsJsonArray().get(0).getAsInt(), y, bounds.get(0).getAsJsonArray().get(1).getAsInt()));
+      BlockPos b = logicalWorld(BlockPos.ZERO, front, new BlockPos(bounds.get(1).getAsJsonArray().get(0).getAsInt(), y, bounds.get(1).getAsJsonArray().get(1).getAsInt()));
+      BlockPos desired = new BlockPos(Math.min(a.getX(), b.getX()) + 1, a.getY(), Math.min(a.getZ(), b.getZ()) + 1);
+      Rotation inverse = switch (rotationFor(front)) {
+        case CLOCKWISE_90 -> Rotation.COUNTERCLOCKWISE_90;
+        case COUNTERCLOCKWISE_90 -> Rotation.CLOCKWISE_90;
+        default -> rotationFor(front);
+      };
+      BlockPos displaced = desired.rotate(inverse).offset(anchor);
+      swaps.put(original, desired);
+      swaps.put(displaced, original.subtract(anchor).rotate(rotationFor(front)));
+    }
+    return swaps;
+  }
+
   public static ItemStack cost(BlockState state) {
+    if (state.is(Blocks.GRASS_BLOCK) || state.is(Blocks.FARMLAND)) return new ItemStack(Items.DIRT);
+    if (state.is(Blocks.WATER)) return new ItemStack(Items.WATER_BUCKET);
     if (state.isAir()
         || state.is(Automatons.TOTEM.get())
         || state.getBlock() instanceof DoorBlock
             && state.getValue(DoorBlock.HALF) == DoubleBlockHalf.UPPER) return ItemStack.EMPTY;
     return new ItemStack(
-        state.getBlock().asItem(),
+        state.getBlock() instanceof WallTorchBlock ? Items.TORCH : state.getBlock().asItem(),
         state.getBlock() instanceof SlabBlock && state.getValue(SlabBlock.TYPE) == SlabType.DOUBLE
             ? 2
             : 1);

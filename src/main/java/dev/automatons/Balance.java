@@ -3,6 +3,7 @@ package dev.automatons;
 import net.minecraftforge.common.ForgeConfigSpec;
 
 public final class Balance {
+  public static final ForgeConfigSpec.IntValue PLANT_RESERVE, CROP_RESERVE;
   public static final ForgeConfigSpec SPEC;
   public static final ForgeConfigSpec.ConfigValue<java.util.List<? extends String>>
       RETROGEN_EXCLUSIONS;
@@ -59,7 +60,7 @@ public final class Balance {
     BUILDER_RANGE = b.defineInRange("builderRadius", 8, 4, 32);
     WAREHOUSE_RANGE = b.defineInRange("warehouseRadius", 8, 8, 32);
     HEIGHT = b.defineInRange("storageHeight", 4, 1, 16);
-    CARGO = b.defineInRange("cargoSlots", 9, 1, 27);
+    CARGO = b.defineInRange("cargoSlots", 9, 1, 9);
     WALK =
         b.comment(
                 "Navigation attribute; provisional target is about 2 blocks/second, not a measured"
@@ -105,6 +106,8 @@ public final class Balance {
     addYield(b, "grass", 0, 1);
     b.pop();
     b.push("luminall");
+    PLANT_RESERVE = b.comment("Lifetime Lumina of an eligible non-tree plant; debited only by actual collection.").defineInRange("plantLifetimeLumina", 200, 1, 1000000);
+    CROP_RESERVE = b.comment("Lifetime Lumina of an eligible crop; ordinary growth does not replenish it.").defineInRange("cropLifetimeLumina", 100, 1, 1000000);
     COLLECTOR_HEIGHT =
         b.comment("Vertical reach above AND below the collector; horizontal offsets are -1..2.")
             .defineInRange("verticalReach", 4, 1, 16);
@@ -113,12 +116,12 @@ public final class Balance {
     COLLECTOR_INTERVAL = b.defineInRange("collectionIntervalTicks", 100, 20, 1200);
     COLLECTOR_MAX =
         b.comment("Maximum mB per collector per collection interval.")
-            .defineInRange("maximumMbPerCollection", 20, 1, 1000);
+            .defineInRange("maximumMbPerCollection", 5, 1, 1000);
     BOTTLE_VOLUME =
         b.comment(
                 "Volume for newly filled bottles. Existing bottles retain their volume and reward.")
-            .defineInRange("bottleVolumeMb", 250, 1, 1000);
-    BOTTLE_LUMINA = b.defineInRange("luminaPerBottle", 5, 1, 1000);
+            .defineInRange("bottleVolumeMb", 250, 250, 250);
+    BOTTLE_LUMINA = b.defineInRange("luminaPerBottle", 125, 125, 125);
     b.push("producerMbPerCollection");
     for (String category : YIELDS.keySet())
       COLLECTOR_YIELDS.put(

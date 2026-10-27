@@ -23,6 +23,8 @@ public final class WorkerIdentity {
     if (w.totem != null) n.putLong("Totem", w.totem.asLong());
     n.putString("TotemDimension", w.totemDimension);
     n.putInt("Job", w.job());
+    n.putBoolean("Armored", w.isGuard());
+    n.put("Energy", w.energy.save());
     n.putFloat("Health", w.getHealth());
     if (w.hasCustomName()) WorkerNames.writeName(n, w.getCustomName().getString());
     n.putBoolean("ShowNames", w.showNames());
@@ -40,6 +42,7 @@ public final class WorkerIdentity {
     w.totem = n.contains("Totem") ? BlockPos.of(n.getLong("Totem")) : null;
     w.totemDimension = n.getString("TotemDimension");
     w.setJob(n.getInt("Job"));
+    w.energy.load(n.getCompound("Energy"));
     w.setHealth(Math.max(.1f, Math.min(w.getMaxHealth(), n.getFloat("Health"))));
     if (n.contains("Name")) w.setCustomName(Component.Serializer.fromJson(n.getString("Name")));
     w.showNames(!n.contains("ShowNames") || n.getBoolean("ShowNames"));
@@ -77,12 +80,13 @@ public final class WorkerIdentity {
   }
 
   public static ItemStack assemble(Player p, Station home) {
-    Lumberton w = Automatons.LUMBERTON.get().create(p.level());
+    boolean armored = home.components().getItem(2).is(Automatons.ARMORED_BODY.get());
+    Lumberton w = (armored ? Automatons.GUARDINGTON : Automatons.LUMBERTON).get().create(p.level());
     w.owner = p.getUUID();
     w.homeId = home.identity;
     w.home = home.getBlockPos();
     w.homeDimension = p.level().dimension().location().toString();
-    w.setJob(0);
+    w.setJob(armored ? WorkerJob.GUARDINGTON : WorkerJob.UNASSIGNED);
     w.authorized = false;
     home.registerHome();
     update(w, "Packed");

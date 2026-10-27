@@ -44,6 +44,7 @@ public final class LuminaCollection {
   }
 
   public static String category(ServerLevel level, BlockPos pos, BlockState state) {
+    if (DeadVegetation.isDead(state)) return "";
     if (state.hasProperty(DoublePlantBlock.HALF)
         && state.getValue(DoublePlantBlock.HALF) == DoubleBlockHalf.UPPER) return "";
     if (LuminaHarvest.tagged(state, "logs"))
@@ -107,10 +108,16 @@ public final class LuminaCollection {
     // position is inspected once even when several collectors overlap it.
     for (var entry : producers.entrySet()) {
       BlockPos pos = entry.getKey();
-      String category = category(level, pos, level.getBlockState(pos));
+      BlockState before = level.getBlockState(pos);
+      String category = category(level, pos, before);
       var configured = Balance.COLLECTOR_YIELDS.get(category);
-      if (configured == null) continue;
-      int available = configured.get();
+      if (configured == null) {
+        if (before.isAir() || DeadVegetation.isDead(before)) SourceReserves.get(level).forget(pos);
+        continue;
+      }
+      if (entry.getValue().stream().noneMatch(m -> budgets.getOrDefault(m, 0) > 0 && m.space() > 0)) continue;
+      int available = SourceReserves.get(level).available(pos, before, category, configured.get());
+      int produced = 0;
       List<Reservoir> candidates = entry.getValue();
       int start = Math.floorMod(cycle + pos.asLong(), candidates.size());
       while (available > 0) {
@@ -124,12 +131,14 @@ public final class LuminaCollection {
           if (moved == 0) continue;
           budgets.put(machine, budget - moved);
           available -= moved;
+          produced += moved;
           accepted = true;
           machine.lastProducer = pos;
           machine.lastCollection = level.getGameTime();
         }
         if (!accepted) break;
       }
+      SourceReserves.get(level).debit(level, pos, before, category, produced);
     }
     for (Reservoir machine : machines) machine.synchronize();
   }

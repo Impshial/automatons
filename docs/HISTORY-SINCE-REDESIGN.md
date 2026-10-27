@@ -159,7 +159,7 @@ Scope: from your “ok, big redesign” message and `Automatons-Lumberton-Codex-
 
 - New mine platforms are twenty blocks below the entrance, with twenty physical ladder segments. Existing excavated shafts keep their saved depth and receive the new storage in place.
 - Require four ordinary chest items before new construction. Install two real double chests against the platform side walls, with usable lids and central access. Full miners unload there; tools and supplies still come from the surface Totem chests.
-- Skip a full underground chest pair for the other pair. Pause at the depot when neither can accept output. The storage is ordinary vanilla inventory, ready for a future Runnington rather than implementing that job prematurely.
+- Skip a full underground chest pair for the other pair. Pause at the depot when neither can accept output. The storage is ordinary vanilla inventory, ready for a future Runnerton rather than implementing that job prematurely.
 - Move to safe footing at least two blocks horizontally from falling material, preserve normal reach/line of sight, and mine repeatedly at the same location until the falling column settles. This prevents advancing behind a newly refilled gravel face.
 - On a fluid boundary, preserve the containing blocks, return to the platform, and choose an unused forward/side direction. Save the rejected direction and retain the original entrance, storage and excavated routes.
 - Replace five-tick mining quantization with one-tick work updates and normal grounded-player tool break durations, including Efficiency. Unenchanted stone is 12/8/6 ticks with stone/iron/diamond picks; shared Speed/Efficiency upgrades improve those times. Lumberton timing and movement are unchanged.
@@ -186,4 +186,4 @@ Server tests and opt-in Lab client scenarios provide the recorded evidence. No b
 
 ## 0.4.0
 
-Runnington adds shared warehouses and physical transport for the existing forestry/mining network. Both user-supplied schematics are runtime blueprints. New faces remove all mouths, widen head/torso by one pixel each and distinguish each current job with equipment. Earlier timber, Find, names and 0.3.1 mining behavior remain part of the regression suite.
+Runnerton adds shared warehouses and physical transport for the existing forestry/mining network. Both user-supplied schematics are runtime blueprints. New faces remove all mouths, widen head/torso by one pixel each and distinguish each current job with equipment. Earlier timber, Find, names and 0.3.1 mining behavior remain part of the regression suite.

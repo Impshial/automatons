@@ -44,9 +44,7 @@ public final class LuminallBottle extends Item {
   }
 
   public static int reward(ItemStack stack) {
-    return stack.hasTag() && stack.getTag().contains("Lumina")
-        ? Math.max(1, Math.min(1000, stack.getTag().getInt("Lumina")))
-        : Balance.BOTTLE_LUMINA.get();
+    return volume(stack) / 2;
   }
 
   public static void setAmount(ItemStack stack, int amount) {
@@ -91,7 +89,7 @@ public final class LuminallBottle extends Item {
   }
 
   private static double energy(ItemStack stack) {
-    return amount(stack) * (double) reward(stack) * 3 / volume(stack);
+    return amount(stack) * 1.5;
   }
 
   private static boolean canDrink(ServerPlayer player, ItemStack stack) {

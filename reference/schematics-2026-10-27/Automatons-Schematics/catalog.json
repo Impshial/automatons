@@ -1,0 +1,152 @@
+[
+  {
+    "name": "crafterton_workshop",
+    "title": "Crafterton workshop",
+    "dimensions": [
+      7,
+      8,
+      7
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      3,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "hunterton_shed",
+    "title": "Hunterton shed",
+    "dimensions": [
+      7,
+      5,
+      7
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      3,
+      1,
+      0
+    ]
+  },
+  {
+    "name": "rancherton_ranch",
+    "title": "Rancherton shed and pasture",
+    "dimensions": [
+      23,
+      9,
+      17
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      1,
+      1,
+      8
+    ]
+  },
+  {
+    "name": "quarryton_surface",
+    "title": "Quarryton surface store and shaft",
+    "dimensions": [
+      15,
+      8,
+      25
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      7,
+      4,
+      0
+    ]
+  },
+  {
+    "name": "luminariton_tower_courtyard",
+    "title": "Luminariton tower and Collector courtyard",
+    "dimensions": [
+      25,
+      14,
+      33
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      12,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "fisherton_hut_dock",
+    "title": "Fisherton shore hut and dock",
+    "dimensions": [
+      11,
+      9,
+      17
+    ],
+    "kind": "worksite",
+    "origin_local": [
+      5,
+      2,
+      0
+    ]
+  },
+  {
+    "name": "farmington_field",
+    "title": "Farmington 9x9 field",
+    "dimensions": [
+      9,
+      4,
+      9
+    ],
+    "kind": "field_component",
+    "origin_local": [
+      4,
+      2,
+      8
+    ]
+  },
+  {
+    "name": "minington_strip_level",
+    "title": "Minington repeatable strip level",
+    "dimensions": [
+      53,
+      5,
+      32
+    ],
+    "kind": "excavation_plan",
+    "origin_local": [
+      26,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "minington_landing",
+    "title": "Minington 5x5 depot and ladder access",
+    "dimensions": [
+      5,
+      5,
+      7
+    ],
+    "kind": "underground_component",
+    "origin_local": [
+      2,
+      1,
+      1
+    ]
+  },
+  {
+    "name": "minington_shaft_step",
+    "title": "Minington four-block ladder extension",
+    "dimensions": [
+      1,
+      4,
+      2
+    ],
+    "kind": "underground_component",
+    "origin_local": [
+      0,
+      0,
+      1
+    ]
+  }
+]

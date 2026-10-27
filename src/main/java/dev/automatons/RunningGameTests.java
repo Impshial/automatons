@@ -15,7 +15,7 @@ import net.minecraftforge.gametest.*;
 @PrefixGameTestTemplate(false)
 public final class RunningGameTests {
   @GameTest(template = "mine_test", timeoutTicks = 1800)
-  public static void runnington_physically_collects_machine_cargo(GameTestHelper h) {
+  public static void runnerton_physically_collects_machine_cargo(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     var warehouse = built(h, r);
@@ -66,7 +66,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 300)
-  public static void runnington_leaves_worker_supplies_in_all_chests(GameTestHelper h) {
+  public static void runnerton_leaves_worker_supplies_in_all_chests(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     BuildingProject warehouse = built(h, r);
@@ -132,7 +132,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
-  public static void runnington_backpack_is_one_persistent_dynamic_inventory(GameTestHelper h) {
+  public static void runnerton_backpack_is_one_persistent_dynamic_inventory(GameTestHelper h) {
     Lumberton w = Automatons.LUMBERTON.get().create(h.getLevel());
     w.setNoAi(true);
     var handler =
@@ -175,7 +175,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 40)
-  public static void runnington_imported_blueprints_have_real_lids_and_anchors(GameTestHelper h) {
+  public static void runnerton_imported_blueprints_have_real_lids_and_anchors(GameTestHelper h) {
     ServerLevel l = h.getLevel();
     BuildingTemplate t = BuildingTemplate.load(l, "warehouse");
     h.assertTrue(
@@ -260,7 +260,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 240)
-  public static void runnington_does_not_claim_or_build_surface_project(GameTestHelper h) {
+  public static void runnerton_does_not_claim_or_build_surface_project(GameTestHelper h) {
     Rig r = rig(h);
     h.assertTrue(r.anchor.configure(WorksitePurpose.WAREHOUSE), "Cannot configure warehouse");
     r.runner.cargo.setStackInSlot(0, new ItemStack(Items.OAK_PLANKS, 32));
@@ -326,13 +326,13 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 6500)
-  public static void runnington_collects_depot_via_ladder_and_recall_keeps_parcel(
+  public static void runnerton_collects_depot_via_ladder_and_recall_keeps_parcel(
       GameTestHelper h) {
     depotCollection(h, false);
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 6500)
-  public static void runnington_collects_mine_chests_on_warehouse_totem(GameTestHelper h) {
+  public static void runnerton_collects_mine_chests_on_warehouse_totem(GameTestHelper h) {
     depotCollection(h, true);
   }
 
@@ -507,7 +507,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 2000)
-  public static void runnington_leaves_north_warehouse_from_off_center_door(GameTestHelper h) {
+  public static void runnerton_leaves_north_warehouse_from_off_center_door(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     BuildingProject warehouse = built(h, r, Direction.NORTH);
@@ -593,7 +593,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 4500)
-  public static void runnington_existing_carried_tool_is_delivered_once_by_physical_runner(
+  public static void runnerton_existing_carried_tool_is_delivered_once_by_physical_runner(
       GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
@@ -671,7 +671,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 4500)
-  public static void runnington_manual_resupply_returns_in_transit_tool(GameTestHelper h) {
+  public static void runnerton_manual_resupply_returns_in_transit_tool(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     BuildingProject warehouse = built(h, r);
@@ -761,7 +761,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 40)
-  public static void runnington_source_and_capacity_reservations_survive_save(GameTestHelper h) {
+  public static void runnerton_source_and_capacity_reservations_survive_save(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     BuildingProject warehouse = built(h, r);
@@ -855,7 +855,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 40)
-  public static void runnington_rejects_blocked_sites_and_foreign_networks(GameTestHelper h) {
+  public static void runnerton_rejects_blocked_sites_and_foreign_networks(GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
     r.runner.setNoAi(true);
@@ -898,7 +898,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 80)
-  public static void runnington_packing_drops_all_eighteen_slots_once_and_redeploys(
+  public static void runnerton_packing_drops_all_eighteen_slots_once_and_redeploys(
       GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();
@@ -981,7 +981,7 @@ public final class RunningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 4500)
-  public static void runnington_full_changed_destination_and_reload_retain_real_cargo(
+  public static void runnerton_full_changed_destination_and_reload_retain_real_cargo(
       GameTestHelper h) {
     Rig r = rig(h);
     var l = h.getLevel();

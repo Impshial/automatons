@@ -24,6 +24,16 @@ import net.minecraftforge.items.ItemStackHandler;
 import net.minecraftforge.network.NetworkHooks;
 
 public class Lumberton extends PathfinderMob implements MenuProvider {
+  public final WorkerEnergy energy = new WorkerEnergy(this);
+  public final Threats threats = new Threats(this);
+  public final WorkerCombat combat = new WorkerCombat(this);
+  private static final EntityDataAccessor<Integer> OPERATING = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+  private static final EntityDataAccessor<Integer> SERVICE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+  public int operating() { return entityData.get(OPERATING); }
+  public void operating(int value) { entityData.set(OPERATING, Math.max(0, Math.min(WorkerEnergy.CAPACITY, value))); }
+  public int serviceReserve() { return entityData.get(SERVICE); }
+  public void serviceReserve(int value) { entityData.set(SERVICE, Math.max(0, Math.min(WorkerEnergy.SERVICE_CAPACITY, value))); }
+  public boolean isGuard() { return getType() == Automatons.GUARDINGTON.get(); }
   public final Mining mining = new Mining(this);
   public final Building building = new Building(this);
   public final Farming farming = new Farming(this);
@@ -132,6 +142,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     setPersistenceRequired();
     moveControl = new WorkerMoveControl(this);
     setCanPickUpLoot(false);
+    if (isGuard()) entityData.set(JOB, WorkerJob.GUARDINGTON);
   }
 
   @Override
@@ -202,6 +213,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         .add(Attributes.MAX_HEALTH, 30)
         .add(Attributes.MOVEMENT_SPEED, .2)
         .add(Attributes.FOLLOW_RANGE, 64)
+        .add(Attributes.ATTACK_DAMAGE, 2)
+        .add(Attributes.ATTACK_KNOCKBACK, 0)
         .add(Attributes.KNOCKBACK_RESISTANCE, .5);
   }
 
@@ -235,11 +248,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     entityData.define(FACE, 0);
     entityData.define(ACTIVE, 0);
     entityData.define(STATUS, "Unassigned");
+    entityData.define(OPERATING, WorkerEnergy.CAPACITY);
+    entityData.define(SERVICE, 0);
   }
 
   @Override
   protected float getStandingEyeHeight(Pose pose, EntityDimensions dim) {
-    return 1.4f;
+    return isGuard() ? 2.2f : 1.4f;
   }
 
   public boolean owns(Player p) {
@@ -252,12 +267,21 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   public boolean setJob(int job) {
     int next = WorkerJob.valid(job);
-    if (!Inventories.resize(cargo, Inventories.cargoSlots(next))) {
+    if (isGuard() != (next == WorkerJob.GUARDINGTON)) return false;
+    ItemStackHandler packed = new ItemStackHandler(Inventories.cargoSlots(next));
+    for (int i = 0; i < cargo.getSlots(); i++)
+      if (!Inventories.insert(packed, cargo.getStackInSlot(i), false).isEmpty()) return false;
+    for (int i = 0; i < tools.getSlots(); i++)
+      if (!Inventories.tool(next, tools.getStackInSlot(i))
+          && !Inventories.insert(packed, tools.getStackInSlot(i), false).isEmpty()) {
       state(
           net.minecraft.network.chat.Component.translatable("automatons.runner.unload")
               .getString());
       return false;
     }
+    cargo.deserializeNBT(packed.serializeNBT());
+    for (int i = 0; i < tools.getSlots(); i++)
+      if (!Inventories.tool(next, tools.getStackInSlot(i))) tools.setStackInSlot(i, ItemStack.EMPTY);
     entityData.set(JOB, next);
     replantAt = null;
     suspendWork();
@@ -308,7 +332,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public ItemStack getItemBySlot(EquipmentSlot slot) {
     if (slot != EquipmentSlot.MAINHAND) return super.getItemBySlot(slot);
     ItemStack action = entityData.get(ACTION_ITEM);
-    return job() == WorkerJob.FARMINGTON && !action.isEmpty() ? action : activeTool();
+    return !action.isEmpty() ? action : activeTool();
   }
 
   @Override
@@ -450,10 +474,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public String assign(Station target) {
+    String rejection = Assignments.rejection(this, target);
+    if (!rejection.isEmpty()) return rejection;
     if (!target.isTotem() || owner == null || !owner.equals(target.owner))
       return "Choose your own totem";
     if (target.logisticsHome != null && !target.logisticsHome.equals(homeId))
       return "Totem belongs to another home";
+    if (!setJob(target.purpose.job())) return "Make room for incompatible equipment before reassignment";
     unassign();
     totem = target.getBlockPos();
     totemId = target.identity;
@@ -538,6 +565,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   public void travel(Vec3 input) {
+    if (operating() == 0) { super.travel(new Vec3(0, input.y, 0)); return; }
     if (mining != null && mining.travelControlled()) return;
     super.travel(input);
   }
@@ -545,6 +573,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void tick() {
     super.tick();
+    if (!level().isClientSide && isAlive() && !packing) {
+      if (tickCount % 20 == 0) Assignments.validate(this);
+      if (energy.tick()) { if (tickCount % 20 == 0) WorkerIdentity.update(this, "Deployed"); return; }
+    }
     if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0)
       pickupNearbyItems();
     if (!level().isClientSide && tickCount % 20 == 0) WorkerNames.sync(this);
@@ -1303,6 +1335,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     wantsJob = false;
     showActionItem(Items.AIR);
     if (escapeFallingTimber()) return;
+    if (threats.tick()) return;
     selectTool();
     if (owner != null && forestryAccess.cleaning() && forestryAccess.cleanup()) return;
     if (owner == null) {
@@ -1397,7 +1430,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       return;
     }
     if (job() == WorkerJob.MININGTON && forestryHelp.tick()) return;
-    if (job() != WorkerJob.RUNNINGTON && !s.worksiteReady()) {
+    if (job() != WorkerJob.RUNNERTON && !s.worksiteReady()) {
       alerts = 0;
       running.idle(
           s.purpose == WorksitePurpose.UNCONFIGURED
@@ -1898,6 +1931,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   @Override
   public InteractionResult mobInteract(Player p, InteractionHand hand) {
+    if (energy.feed(p, hand)) return InteractionResult.sidedSuccess(level().isClientSide);
     if (p.getItemInHand(hand).getItem() instanceof WandItem) return InteractionResult.PASS;
     if (!level().isClientSide)
       NetworkHooks.openScreen(
@@ -1929,16 +1963,9 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   protected void dropCustomDeathLoot(DamageSource source, int looting, boolean recentlyHit) {
     clearChop();
-    super.dropCustomDeathLoot(source, looting, recentlyHit);
-    for (int i = 0; i < 3; i++) {
-      spawnAtLocation(tools.getStackInSlot(i));
-      tools.setStackInSlot(i, ItemStack.EMPTY);
-    }
-    for (int i = 0; i < cargo.getSlots(); i++) {
-      spawnAtLocation(cargo.getStackInSlot(i));
-      cargo.setStackInSlot(i, ItemStack.EMPTY);
-    }
+    if (level() instanceof ServerLevel l) Graves.get(l).capture(this);
     unassign();
+    suspendWork();
     WorkerIdentity.update(this, "Destroyed");
     if (home != null
         && level().hasChunkAt(home)
@@ -1952,6 +1979,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void addAdditionalSaveData(CompoundTag n) {
     super.addAdditionalSaveData(n);
+    n.put("Energy", energy.save());
     if (owner != null) n.putUUID("Owner", owner);
     if (homeId != null) n.putUUID("HomeId", homeId);
     if (totemId != null) n.putUUID("TotemId", totemId);
@@ -1982,6 +2010,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   @Override
   public void readAdditionalSaveData(CompoundTag n) {
     super.readAdditionalSaveData(n);
+    energy.load(n.getCompound("Energy"));
     harvestSince = n.contains("HarvestSince") ? n.getLong("HarvestSince") : -1;
     owner = n.hasUUID("Owner") ? n.getUUID("Owner") : null;
     homeId = n.hasUUID("HomeId") ? n.getUUID("HomeId") : null;

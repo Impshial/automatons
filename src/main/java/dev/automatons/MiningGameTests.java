@@ -1152,7 +1152,7 @@ public final class MiningGameTests {
   }
 
   @GameTest(template = "mine_test", timeoutTicks = 6500)
-  public static void runnington_existing_carried_torches_finish_delivery_without_new_pickups(
+  public static void runnerton_existing_carried_torches_finish_delivery_without_new_pickups(
       GameTestHelper h) {
     Rig r = rig(h, true);
     var l = h.getLevel();

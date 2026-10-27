@@ -35,7 +35,7 @@ After unloading, the miner returns to its saved work position. Avoid repeatedly 
 ## Full storage or courier waits
 
 Empty valid chests and leave lids usable. Double chests need both halves accessible. The two underground double chests are registered mine pickup points.
-Workers keep their real items when unloading fails. Runningtons will not fetch tools, torches or saplings; stock those at the destination yourself.
+Workers keep their real items when unloading fails. Runnertons will not fetch tools, torches or saplings; stock those at the destination yourself.
 Farm planting stock is reserved rather than treated as spare output.
 
 ## Infusion paused

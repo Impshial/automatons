@@ -128,6 +128,13 @@ public final class Automatons {
                   .clientTrackingRange(12)
                   .updateInterval(5)
                   .build("fallen_timber"));
+  public static final RegistryObject<EntityType<Lumberton>> GUARDINGTON =
+      ENTITIES.register("guardington", () -> EntityType.Builder.of(Lumberton::new, MobCategory.CREATURE)
+          .sized(1.4f, 2.5f).clientTrackingRange(10).build("guardington"));
+  public static final RegistryObject<Item> ARMORED_HEAD = ITEMS.register("armored_head", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> ARMORED_BODY = ITEMS.register("armored_torso", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> ARMORED_ARM = ITEMS.register("armored_arm", () -> new Item(new Item.Properties()));
+  public static final RegistryObject<Item> ARMORED_LEG = ITEMS.register("armored_leg", () -> new Item(new Item.Properties()));
   public static final RegistryObject<BlockEntityType<Station>> STATION =
       BES.register(
           "station",
@@ -187,6 +194,7 @@ public final class Automatons {
   public Automatons() {
     IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
     Luminall.register(bus);
+    Graves.register();
     MachineParts.register();
     FEATURES.register(bus);
     BLOCKS.register(bus);
@@ -200,6 +208,7 @@ public final class Automatons {
     bus.addListener(this::attributes);
     ModLoadingContext.get().registerConfig(ModConfig.Type.SERVER, Balance.SPEC);
     MinecraftForge.EVENT_BUS.register(WorldEvents.class);
+    MinecraftForge.EVENT_BUS.register(Threats.class);
     MinecraftForge.EVENT_BUS.register(WorkerNames.class);
     MinecraftForge.EVENT_BUS.register(LuminaHarvest.class);
     MinecraftForge.EVENT_BUS.register(PlayerFelling.class);
@@ -208,5 +217,8 @@ public final class Automatons {
 
   private void attributes(EntityAttributeCreationEvent e) {
     e.put(LUMBERTON.get(), Lumberton.attributes().build());
+    e.put(GUARDINGTON.get(), Lumberton.attributes()
+        .add(net.minecraft.world.entity.ai.attributes.Attributes.MAX_HEALTH, 60)
+        .add(net.minecraft.world.entity.ai.attributes.Attributes.ARMOR, 12).build());
   }
 }

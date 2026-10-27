@@ -64,7 +64,7 @@ The head pivots at its base. The arm rig anchors the actual tool stack; the axe 
 
 
 
-The face occupies a 9 × 8 front UV rectangle starting at (8, 8). The supplied `reference/automaton-character-reference.webp` guides the larger wooden frame, inset warm face, violet eyes; the newer Runnington specification explicitly removes mouths. Expression atlases are `idle`, `smile`, `brow`, `focused`, `frown`, `anger`, and `blink`. Calm at home reuses neutral. Full matching atlases avoid overlay z-fighting. Server state selects the expression; smiles last 50 ticks and hurt reactions 35 ticks. Persistent alerts take priority over smiles. The eyes use bright atlas colors, without an extra emissive rendering pass.
+The face occupies a 9 × 8 front UV rectangle starting at (8, 8). The supplied `reference/automaton-character-reference.webp` guides the larger wooden frame, inset warm face, violet eyes; the newer Runnerton specification explicitly removes mouths. Expression atlases are `idle`, `smile`, `brow`, `focused`, `frown`, `anger`, and `blink`. Calm at home reuses neutral. Full matching atlases avoid overlay z-fighting. Server state selects the expression; smiles last 50 ticks and hurt reactions 35 ticks. Persistent alerts take priority over smiles. The eyes use bright atlas colors, without an extra emissive rendering pass.
 
 
 

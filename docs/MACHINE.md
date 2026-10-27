@@ -43,7 +43,7 @@ Install one attachment through Controls while deliberately parked or paused. Att
 - **Blade:** a broad three-wide, two-high soft-material cutter. It clears vegetation and shovel/axe materials, recognizes whole natural trees, and refuses pickaxe blocks. Eligible natural harvests credit the existing Lumina rewards once, directly to the engine. Placed vegetation follows the existing eligibility rules.
 - **Bore:** nine diamond-tipped drills in a 3×3 bank. It cuts pickaxe materials at Diamond Pickaxe capability, leaves the floor, and earns no Lumina from mining. It does not clear dirt or other soft blocks.
 
-Storage has **108 real slots**, displayed as two scrollable pages of six rows. Stack merging and item stack limits determine capacity. A cut is refused if all its output cannot fit. Runningtons on the same network can collect real cargo through their existing delivery requests; their normal exclusions for tools, torches, and saplings still apply.
+Storage has **108 real slots**, displayed as two scrollable pages of six rows. Stack merging and item stack limits determine capacity. A cut is refused if all its output cannot fit. Runnertons on the same network can collect real cargo through their existing delivery requests; their normal exclusions for tools, torches, and saplings still apply.
 
 ## Programs
 
@@ -79,7 +79,7 @@ Install the Blade, choose Chunk mode, and select the current chunk. A yellow out
 
 Choose **Operatorton** in an existing Automaton's profession list and Apply Job. No special worker recipe or tools are needed. Its identity, owner and cargo remain intact. Assign an eligible worker from Machine Controls, or select it with the Wand and use the Wand on the Machine. Worker and Machine must belong to the same owner and home network. Each can have only one assignment.
 
-The worker walks to the Machine and physically boards. Assignment/boarding alone does not start work. Once seated, Start Work runs the chosen Program or Chunk job. If cargo fills, the pilot reverses/retraces the recorded route to the start, unloads, then returns to the exact saved work position and heading. Work progress is preserved. Unattended Machines instead request a Runnington and retry when space is available.
+The worker walks to the Machine and physically boards. Assignment/boarding alone does not start work. Once seated, Start Work runs the chosen Program or Chunk job. If cargo fills, the pilot reverses/retraces the recorded route to the start, unloads, then returns to the exact saved work position and heading. Work progress is preserved. Unattended Machines instead request a Runnerton and retry when space is available.
 
 Release pauses the job, dismounts the worker, and clears both assignments. Driver loss, job changes, recall, or invalid ownership pause operation; no unattended takeover happens. Shift-right-click any part of the Machine with the Wand, in any mode, to pack it as one carryable Machine. Dismount first; an assigned Operatorton is released. Cargo, attachments, Program and fuel are preserved. Right-click clear solid ground to reform it with the engine off. A new location clears the old physical route but keeps the Program. To dismantle into components instead, sneak-hit the parked Machine with its seat empty; unused fuel is retained in the returned Tank.
 

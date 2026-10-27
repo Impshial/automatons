@@ -39,4 +39,4 @@ Pause retains remaining distance and the instruction cursor. Resume continues; S
 
 Select Chunk with the Blade installed, select the current chunk, and inspect its yellow outline. Start Work clears surface passes within that 16×16 boundary. It never harvests neighboring chunks, excavates a quarry, or selects another chunk automatically. Clear room around the edges may be needed for turns. A tree crossing the boundary remains blocked until resolved.
 
-For automatic unloading and returning to work, assign an [Operatorton](../professions/operatorton.md). Unattended Machines request Runnington collection when full.
+For automatic unloading and returning to work, assign an [Operatorton](../professions/operatorton.md). Unattended Machines request Runnerton collection when full.

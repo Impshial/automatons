@@ -32,7 +32,7 @@
   "jei.automatons.infusion.help": "One shard per corner. Stay within %s blocks. Four corners share the transfer rate.",
   "item.automatons.mining_1": "Retired Mining Range I",
   "item.automatons.mining_2": "Retired Mining Range II",
-  "automatons.job.runnington": "Runnington",
+  "automatons.job.runnerton": "Runnerton",
   "automatons.runner.unload": "Unload backpack before changing job",
   "automatons.runner.cargo": "Cargo: %s/%s slots",
   "automatons.menu.logistics": "Logistics",
@@ -47,7 +47,7 @@
   "automatons.network.tool": "%s: needs a usable tool",
   "automatons.network.need": "%s: needs %s \u00d7%s",
   "automatons.network.stock": "Warehouse stock: %s items",
-  "automatons.network.setup": "Assign a Runnington to this home network.",
+  "automatons.network.setup": "Assign a Runnerton to this home network.",
   "automatons.runner.parcel": "Carrying %s \u00d7%s",
   "automatons.runner.recipient": "Recipient: %s",
   "automatons.runner.tools": "Construction tools",
@@ -169,5 +169,13 @@
   "key.categories.automatons": "Automatons",
   "block.automatons.lumina_drain": "Lumina Drain",
   "block.automatons.fluid_spill": "Evaporating fluid",
-  "item.automatons.packed_machine": "The Machine (Packed)"
+  "item.automatons.packed_machine": "The Machine (Packed)",
+  "block.automatons.dead_plant": "Dead Plant",
+  "block.automatons.dead_crop": "Dead Crop",
+  "entity.automatons.guardington": "Guardington",
+  "item.automatons.armored_head": "Armored Head",
+  "item.automatons.armored_torso": "Armored Torso",
+  "item.automatons.armored_arm": "Armored Arm",
+  "item.automatons.armored_leg": "Armored Leg",
+  "block.automatons.gravestone": "Gravestone"
 }

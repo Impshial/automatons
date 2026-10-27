@@ -1,0 +1,92 @@
+CONSTRUCTION DETAILS RESOLVED FOR THE SCHEMATICS
+
+These notes specify small choices necessary to turn the approved layouts into
+actual blocks. They do not change the gameplay specification.
+
+All six new worksites contain their actual custom totem block at the agreed
+anchor, with no copied owner, network, job, charge, inventory, or saved identity.
+The custom block mapping follows resource names present in the supplied Codex
+history. Codex must confirm it against the actual repository before release.
+
+CRAFTERTON
+7x7 cobblestone floor, oak plank walls and log corners, peaked spruce stair/slab
+roof, two side windows, spruce door and entrance lantern. The totem is D2, not
+D1. Stations are B2/B3/B4, storage F3-F4 on two levels, empty armor stand B6.
+The stand is a real entity with no armor; the Crafterton fills it later.
+
+HUNTERTON
+7x7 floor, plain oak walls, flat spruce roof, door D7, totem D1. Two stacked
+double chests at B2-B3 face into the room. Side windows and a hanging entrance
+lantern provide a simple finished shed without extra furniture.
+
+RANCHERTON
+The landscape-oriented 7x9 shed is A5:G13, attached to G1:W17 fenced pasture.
+Its east face is open above the fence line. Gate G9 faces east. Side door D13
+faces south. Two single-level double chests, two hay bales, an empty milk tank,
+totem B9, and an item frame with supplied shears match the coordinates. The
+roof is a spruce gable over the nine-block width. The pen's grass is terrain
+to adopt or prepare, not automatically supplied livestock or instant grazing.
+
+QUARRYTON
+7x7 shed E1:K7 with flat roof, eight double chests, three-wide central aisle.
+Door H7, path H8/H9, shaft mouth H10. Four starter ladder rungs are below ground
+with backing on the H9 side. There is no unsupported rung in the open mouth.
+The 15x15 quarry at A11:O25 is entirely PRESERVE at build time. It is metadata
+for the Quarryton's incremental excavation, not a pre-excavated hole. Workers
+extend the shaft and lighting as they descend.
+
+LUMINARITON
+Tower body is seven by seven. The rear curved stone supports leave the lower
+front open with three blocks of clearance, enough for a 2.5-block Guardington.
+The totem is ground-level D1. The workshop walking surface is at +4; D2 remains
+an open ladder hatch. C2 provides real backing through the hatch, with an upper
+exit at E2. This uses one otherwise vacant upper C2 cell for ladder support.
+The workshop has two tanks, an Infusing Pedestal, two stacked double chests,
+windows, purple wall banners, and a five-tier dark-oak roof. Its one-block roof
+overhang is why the export includes an extra northern row.
+
+The 25x25 courtyard has twelve 4x4 beds, three-wide paths and the 11x11 central
+clearing. Beds contain grass/soil and Collectors, no free flowers. There are
+exactly 180 runtime planting cells. No trees or saplings are included.
+
+Rotation needs special attention: the existing Collector scan is world-aligned
+at offsets -1..+2. Rotate the bed bounds, then place its Collector at minimum
+world X+1 and minimum world Z+1. Recompute the other fifteen planting cells.
+Blindly rotating the off-center Collector position will shift its scan footprint.
+
+FISHERTON
+7x7 hut C1:I7 with a modest spruce gable, door F7, totem F1 and two stacked
+double chests B2-B3 in hut-local coordinates. Dock E8:G15 is exactly 3x8.
+All six bay reservations and the center walkway are in the manifest. No chairs
+are physical blocks or entities in these files; they remain a worker visual.
+
+The 10x7 source rectangle C8:I17 is a validation mask beneath/around the dock,
+not placed water. Dock floor blocks occupy logical Y=-1 and required sources
+occupy Y=-2, leaving intact water under the deck. Their surface is one block
+below the walking surface. This is a minimum site check and does not waive
+vanilla fishing loot/open-water requirements. The diagram shows the water only
+to make the site relationship understandable.
+
+FARMINGTON
+9x9 unplanted field with one central source at E5, dirt beneath that source,
+and a full glass block above it. Three strips contain 27, 26 and 27 crop cells.
+Use real water and planting stock; prepare/adopt soil and till with a hoe.
+
+MININGTON
+The strip-level file preserves surrounding stone instead of substituting a
+generic rock type. It contains explicit passage air, torches, the cobblestone
+depot floor, four double chests, and a supported ladder. There are twenty side
+passages: the first four are 24 long, the remaining sixteen are 25 long.
+The central corridor is three wide; passages are one wide and two high. The
+five-by-five depot alone has three-high clearance for upper chest lids.
+
+Wall torches are included as a supplied lighting layout along mined passages.
+Their backing is normally preserved rock. Runtime code must check the actual
+support and hazards before placement. The file is a geometry plan, so do not
+paste all passages before workers mine them. The separate landing is a subset
+of the full plan; the four-block shaft file is a reusable extension component.
+None of these adds or replaces the already-existing mine surface building.
+
+Exact aging budgets for Lumina sources remain gameplay balance values in the
+full prompt, not schematic data. The supplied structures implement the agreed
+planting space and preserve all tree-related rules.

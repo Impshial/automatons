@@ -17,8 +17,8 @@ Shared buildings and actual items remain at their sites.
 <ItemImage id="automatons:automaton" scale="3" />
 
 Use the [Wand](wand.md) to assign the worker to a matching Totem. A profession alone is not an assignment.
-Workers have **three retained tool slots** and normally **nine cargo slots**. Runningtons have eighteen cargo slots from their backpack.
-Defaults can be changed by world settings. Unload excess courier cargo before changing away from Runnington.
+Workers have **three retained tool slots** and normally **nine cargo slots**. Runnertons have eighteen cargo slots from their backpack.
+Defaults can be changed by world settings. Unload excess courier cargo before changing away from Runnerton.
 
 Workers receive unique names. Their name-label toggle changes display, not identity. Find is available from the Totem's worker page.
 Start/stop controls and home recall can pause an otherwise ready worker.

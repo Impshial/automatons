@@ -435,15 +435,7 @@ public final class Machine extends Entity implements MenuProvider {
         BlockItem.setBlockEntityData(stack, Luminall.TANK_BE.get(), data);
       }
     }
-    int volume =
-        stack.is(Luminall.BOTTLE.get())
-            ? LuminallBottle.volume(stack)
-            : Balance.BOTTLE_VOLUME.get();
-    int thirds =
-        3
-            * (stack.is(Luminall.BOTTLE.get())
-                ? LuminallBottle.reward(stack)
-                : Balance.BOTTLE_LUMINA.get());
+    int volume = 2, thirds = 3;
     var handler = stack.getCapability(ForgeCapabilities.FLUID_HANDLER_ITEM).orElse(null);
     if (handler == null) return stack;
     FluidStack trial =

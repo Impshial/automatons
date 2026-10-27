@@ -10,7 +10,7 @@ categories:
 
 # Warehouse
 
-Configure the matching purpose in **Totem → Worksite Settings** before assigning your Runnington. A Buildington constructs the surface building from the current blueprint.
+Configure the matching purpose in **Totem → Worksite Settings** before assigning your Runnerton. A Buildington constructs the surface building from the current blueprint.
 
 <GameScene zoom="1.3" interactive={true}>
   <ImportStructure src="../assets/structures/warehouse.nbt" />
@@ -18,7 +18,7 @@ Configure the matching purpose in **Totem → Worksite Settings** before assigni
 </GameScene>
 
 The illustration preserves the blueprint's block states and Totem anchor. Item-frame signs are omitted from this scene; their real item costs remain in Build List.
-The finished warehouse provides eight double chests. Keep lids and the entrance usable. Runningtons use this as their home stock location.
+The finished warehouse provides eight double chests. Keep lids and the entrance usable. Runnertons use this as their home stock location.
 
 <a name="supplies" />
 ## Supplies and recovery
@@ -27,4 +27,4 @@ Open **Build List** for exact total, remaining, available and missing resources,
 The yellow perimeter shows the reserved space. Bring missing supplies or clear a reported hard obstruction, then let the worker retry.
 Use **Pause/Resume** for construction control. **Repair** schedules missing building cells without silently overwriting different blocks.
 
-[Read the Runnington guide](../professions/runnington.md).
+[Read the Runnerton guide](../professions/runnerton.md).

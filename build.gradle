@@ -107,7 +107,7 @@ minecraft {
         // The gametest system is also enabled by default for other run configs under the /test command.
         gameTestServer {
             workingDirectory project.file("build/gametest-redesign")
-            property 'forge.enabledGameTestNamespaces', project.hasProperty('miningTests') && project.hasProperty('machineTests') ? 'automatons_machine,automatons_mining' : project.hasProperty('miningTests') ? 'automatons_mining' : project.hasProperty('machineTests') ? 'automatons_machine' : project.hasProperty('forestryTests') ? 'automatons_focus' : project.hasProperty('worksiteTests') ? 'automatons_worksites' : 'automatons,automatons_worksites,automatons_machine,automatons_mining'
+            property 'forge.enabledGameTestNamespaces', project.hasProperty('expansionTests') ? 'automatons_expansion' : project.hasProperty('miningTests') && project.hasProperty('machineTests') ? 'automatons_machine,automatons_mining' : project.hasProperty('miningTests') ? 'automatons_mining' : project.hasProperty('machineTests') ? 'automatons_machine' : project.hasProperty('forestryTests') ? 'automatons_focus' : project.hasProperty('worksiteTests') ? 'automatons_worksites' : 'automatons,automatons_worksites,automatons_machine,automatons_mining,automatons_expansion'
         }
 
         data {

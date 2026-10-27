@@ -27,6 +27,7 @@ public final class LuminaHarvest {
   }
 
   public static String category(ServerLevel l, BlockPos p, BlockState s) {
+    if (DeadVegetation.isDead(s)) return "";
     WorldData d = WorldData.get(l);
     if (d.placedLogs.contains(p.asLong()) || d.placedPlants.contains(p.asLong())) return "";
     if (tagged(s, "logs")) {
@@ -103,6 +104,7 @@ public final class LuminaHarvest {
   }
 
   public static void markPlaced(ServerLevel l, BlockPos p, BlockState state) {
+    SourceReserves.get(l).forget(p);
     WorldEvents.changedNear(l, p);
     WorldData d = WorldData.get(l);
     d.naturalLogs.remove(p.asLong());
@@ -138,6 +140,7 @@ public final class LuminaHarvest {
     for (Pending p : pending.values()) {
       if (!p.level.hasChunkAt(p.pos) || p.level.getBlockState(p.pos).equals(p.before)) continue;
       // Only a completed removal pays. The event's pre-break state decided eligibility.
+      SourceReserves.get(p.level).forget(p.pos);
       award(p.level, Vec3.atCenterOf(p.pos), p.category);
       WorldData d = WorldData.get(p.level);
       d.placedLogs.remove(p.pos.asLong());

@@ -548,7 +548,7 @@ public final class WorksiteGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 1600)
-  public static void runnington_stocks_construction_chest_without_collecting_it(GameTestHelper h) {
+  public static void runnerton_stocks_construction_chest_without_collecting_it(GameTestHelper h) {
     Rig r = rig(h, WorksitePurpose.BUILDER, false);
     var level = h.getLevel();
     BuildingProject project = r.site.project();
@@ -580,7 +580,7 @@ public final class WorksiteGameTests {
     // A courier can help bootstrap construction before its own warehouse is built.
     warehouse.project().ready = false;
     Lumberton runner =
-        worker(h, new Rig(r.home, warehouse), WorkerJob.RUNNINGTON, new BlockPos(19, 1, 20));
+        worker(h, new Rig(r.home, warehouse), WorkerJob.RUNNERTON, new BlockPos(19, 1, 20));
     h.succeedWhen(
         () -> {
           h.assertTrue(

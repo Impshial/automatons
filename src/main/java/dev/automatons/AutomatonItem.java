@@ -75,7 +75,7 @@ public final class AutomatonItem extends Item {
         || !l.hasChunkAt(pos)
         || !l.getBlockState(pos.below()).isFaceSturdy(l, pos.below(), Direction.UP))
       return InteractionResult.FAIL;
-    Lumberton worker = Automatons.LUMBERTON.get().create(l);
+    Lumberton worker = (data.getBoolean("Armored") ? Automatons.GUARDINGTON : Automatons.LUMBERTON).get().create(l);
     WorkerIdentity.apply(worker, data);
     worker.moveTo(pos.getX() + .5, pos.getY(), pos.getZ() + .5, p.getYRot(), 0);
     if (!l.getWorldBorder().isWithinBounds(worker.getBoundingBox())
@@ -93,7 +93,7 @@ public final class AutomatonItem extends Item {
     p.displayClientMessage(
         Component.literal(
             worker.getDisplayName().getString()
-                + " placed. Choose a job, add tools, then assign a totem or Start Work."),
+                + " placed. Add equipment and assign a configured totem or Machine."),
         true);
     return InteractionResult.CONSUME;
   }

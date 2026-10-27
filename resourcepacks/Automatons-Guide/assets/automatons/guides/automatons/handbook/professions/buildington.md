@@ -13,7 +13,7 @@ categories:
 Equip a **Hammer**, choose Buildington and assign the worker to a **Builder** Totem. Your first builder constructs its own shed before taking other projects.
 Use a reachable staging chest inside the shared range and outside the shed doorway. This bootstrap does not need a warehouse or courier.
 
-Open **Build List** to see total, remaining, available and missing items. Include one extra chest item. The builder places a temporary supply chest outside the footprint, stages available supplies there, and begins building with a partial load. It uses what is available before fetching more; the full material list is not required to start. Runningtons can deliver materials directly there; tools, torches and saplings are fetched locally by the builder.
+Open **Build List** to see total, remaining, available and missing items. Include one extra chest item. The builder places a temporary supply chest outside the footprint, stages available supplies there, and begins building with a partial load. It uses what is available before fetching more; the full material list is not required to start. Runnertons can deliver materials directly there; tools, torches and saplings are fetched locally by the builder.
 Missing materials cause a recoverable wait after inventory and local storage checks.
 
 After its shed is ready, the Buildington accepts another worksite's construction project in the same Network. Its claim survives supply trips. When no project is available, it returns inside its completed shed and waits there without pacing. A new construction request sends it back out to work. Recall still brings it to the main Pedestal.

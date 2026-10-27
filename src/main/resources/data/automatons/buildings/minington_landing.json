@@ -1,0 +1,964 @@
+{
+  "version": 4,
+  "size": [
+    5,
+    5,
+    7
+  ],
+  "anchor": [
+    2,
+    1,
+    1
+  ],
+  "logical_min": [
+    -2,
+    -1,
+    -2
+  ],
+  "default_front": "south",
+  "kind": "underground_component",
+  "blocks": [
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:chest[facing=south,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    }
+  ],
+  "frames": [],
+  "armor_stands": [],
+  "materials": {
+    "minecraft:chest": 8,
+    "minecraft:cobblestone": 29,
+    "minecraft:ladder": 4
+  },
+  "material_bill": {
+    "construction_items": {
+      "minecraft:chest": 8,
+      "minecraft:cobblestone": 29,
+      "minecraft:ladder": 4
+    },
+    "terrain_fill_if_not_reused": {},
+    "fluid_operations": {},
+    "already_placed_anchor_items": {}
+  },
+  "features": {},
+  "worksite": {
+    "storage_groups": [
+      {
+        "name": "left depot",
+        "blocks": [
+          [
+            -1,
+            0,
+            0
+          ],
+          [
+            -2,
+            0,
+            0
+          ],
+          [
+            -1,
+            1,
+            0
+          ],
+          [
+            -2,
+            1,
+            0
+          ]
+        ],
+        "double_chests": 2,
+        "empty": true
+      },
+      {
+        "name": "right depot",
+        "blocks": [
+          [
+            2,
+            0,
+            0
+          ],
+          [
+            1,
+            0,
+            0
+          ],
+          [
+            2,
+            1,
+            0
+          ],
+          [
+            1,
+            1,
+            0
+          ]
+        ],
+        "double_chests": 2,
+        "empty": true
+      }
+    ],
+    "first_landing_depth": 20,
+    "repeat_y_offset": -4
+  }
+}

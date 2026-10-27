@@ -42,7 +42,7 @@ def main():
         ('minehead', 'Automatons-Rustic-Minehead.schem', [7, 7, 7], [3, 1, 3],
          {'cobblestone': 59, 'oak_log': 33, 'cobblestone_stairs': 28,
           'cobblestone_slab': 10, 'oak_planks': 8, 'lantern': 4}),
-        ('warehouse', 'Automatons-Runnington-Warehouse.schem', [7, 6, 8], [3, 1, 7],
+        ('warehouse', 'Automatons-Runnerton-Warehouse.schem', [7, 6, 8], [3, 1, 7],
          {'oak_planks': 81, 'oak_log': 38, 'oak_slab': 56,
           'cobblestone': 26, 'glass': 12, 'chest': 16, 'torch': 4, 'oak_door': 1})]
     for name, filename, size, anchor, counts in configs:
@@ -65,7 +65,7 @@ def main():
         if sources[0].resolve() != saved.resolve():
             shutil.copy2(sources[0], saved)
         print(name, json.dumps({k: v for k, v in data.items() if k != 'blocks'}))
-    for pattern, destination in [('*Runnington-Codex-Prompt-1.txt', 'runnington-specification.txt'),
+    for pattern, destination in [('*Runnerton-Codex-Prompt-1.txt', 'runnerton-specification.txt'),
                                   ('*Rustic-Minehead-Preview.jpg', 'minehead-preview.jpg')]:
         if not (ROOT / 'reference' / destination).exists():
             source, = (ROOT / '.codex-remote-attachments').rglob(pattern)

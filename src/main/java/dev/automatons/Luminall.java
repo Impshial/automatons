@@ -91,6 +91,7 @@ public final class Luminall {
   }
 
   public static void register(IEventBus bus) {
+    DeadVegetation.register();
     CollectorRecipe.register();
     TYPES.register(bus);
     FLUIDS.register(bus);

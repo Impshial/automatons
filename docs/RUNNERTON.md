@@ -1,12 +1,12 @@
-# Runnington guide — 0.5.0
+# Runnerton guide — 0.5.0
 
-Runnington is a job on the existing Automaton. Its modeled backpack automatically doubles the configured base cargo capacity: **18 cargo slots** at the default nine, plus the same **three retained tool slots**. No backpack item is required. Delivery tools belong in cargo; they do not equip themselves.
+Runnerton is a job on the existing Automaton. Its modeled backpack automatically doubles the configured base cargo capacity: **18 cargo slots** at the default nine, plus the same **three retained tool slots**. No backpack item is required. Delivery tools belong in cargo; they do not equip themselves.
 
 ## Set up a warehouse
 
 1. Configure a Totem as **Warehouse** in **Worksite Settings → Worksite**, choosing its facing before creating the project. The existing Totem remains the center of the rear wall.
 2. A Buildington from a ready Builder site accepts the warehouse construction project. Give it a Hammer and provide real materials in the registered supply chests. Partial kits are allowed. The **Build List** shows exact total, remaining, available and missing quantities.
-3. Assign Runningtons to the finished warehouse for physical supply and collection work. They never withdraw tools, Hammers, torches or saplings from any chest; those must be supplied locally to the worker that uses them.
+3. Assign Runnertons to the finished warehouse for physical supply and collection work. They never withdraw tools, Hammers, torches or saplings from any chest; those must be supplied locally to the worker that uses them.
 
 The 7×6×9 schematic requires **81 oak planks, 38 oak logs, 56 oak slabs, 26 cobblestone, 12 glass, 17 chest items, 4 torches, one oak door and one item frame**: 236 items total. Sixteen chest items create eight double chests; the seventeenth is displayed in the frame. The existing Totem is excluded. Both door halves consume one item. The porch, frame and full building footprint follow the newest supplied schematic.
 
@@ -34,7 +34,7 @@ The worker menu shows the task, cargo and recipient. **Totem → Logistics** sho
 
 - Unloaded destinations defer work. Missing assignments release claims under the existing lifecycle rules. A missing home never causes automatic adoption by a different home.
 
-- Every profession selection requires **Apply Job**. Changing an existing job requires confirmation that the current workload will be interrupted/reset. Shared buildings and actual inventory remain intact. To change away from Runnington, cargo first consolidates into normal capacity with metadata intact. If it cannot fit, the job remains Runnington and the menu says **Unload backpack before changing job**.
+- Every profession selection requires **Apply Job**. Changing an existing job requires confirmation that the current workload will be interrupted/reset. Shared buildings and actual inventory remain intact. To change away from Runnerton, cargo first consolidates into normal capacity with metadata intact. If it cannot fit, the job remains Runnerton and the menu says **Unload backpack before changing job**.
 
 - Packing drops all actual cargo and tools once, following existing rules. The packed Automaton preserves job, identity, name, home and assignment; redeployment creates an empty eighteen-slot backpack. Ordinary death/removal handling does not manufacture a replacement parcel.
 
@@ -42,7 +42,7 @@ The worker menu shows the task, cargo and recipient. **Totem → Logistics** sho
 
 The current baseline was already **26 model pixels / 1.625 blocks** tall. That height is retained. Head width changes **8→9**, with height/depth **8×8** unchanged; torso width changes **8→9**, with height/depth **9×6** unchanged. Both are centered. Open eyes change **1→3 source pixels** wide with a one-pixel gap. Every face is mouthless, including happy/worried states and packed/display assets. The 128×128 entity atlas still maps one texel per model unit; block and item sprites remain 16×16.
 
-Collision stays **0.7×1.625 blocks**. Base arms span fifteen model pixels before animation. The backpack is seven pixels wide and extends three pixels behind the torso, with a one-pixel parcel detail. Unassigned workers have no gear; Lumbertons have green work clothing/axe detail, Miningtons a helmet/lamp/apron, and Runningtons straps/backpack. Gear follows the synchronized job and torso/head animation.
+Collision stays **0.7×1.625 blocks**. Base arms span fifteen model pixels before animation. The backpack is seven pixels wide and extends three pixels behind the torso, with a one-pixel parcel detail. Unassigned workers have no gear; Lumbertons have green work clothing/axe detail, Miningtons a helmet/lamp/apron, and Runnertons straps/backpack. Gear follows the synchronized job and torso/head animation.
 
 Physical passage checks and visual review are recorded in [VERIFICATION.md](VERIFICATION.md). Held tools and animated limbs can extend beyond the collision box while turning or working; the model is not globally shrunk. The lamp is decorative and does not replace real torches.
 

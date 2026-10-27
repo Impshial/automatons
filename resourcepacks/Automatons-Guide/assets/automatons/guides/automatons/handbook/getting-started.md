@@ -18,5 +18,5 @@ navigation:
 8. Put materials in a reachable chest inside the Totem's range, outside the shed and doorway. Open **Build List** to see what is missing. The Buildington completes its own shed first.
 9. Configure more Totems. Your established builder constructs their buildings. Assign the matching workers when each site is ready.
 
-A warehouse and a Runnington are useful later; your first builder can fetch local supplies itself.
+A warehouse and a Runnerton are useful later; your first builder can fetch local supplies itself.
 If nothing happens, check the worker's status, work permission, tools, supplies and route in [Troubleshooting](troubleshooting.md).

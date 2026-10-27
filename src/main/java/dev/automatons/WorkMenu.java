@@ -193,40 +193,6 @@ public class WorkMenu extends AbstractContainerMenu {
         worker.authorized = true;
         WorkerIdentity.update(worker, "Deployed");
       }
-      if (action == 7
-          || action == 8
-          || action == 13
-          || action == 16
-          || action == 17
-          || action == 18
-          || action == 90) {
-        int previousSlots = worker.cargo.getSlots();
-        if (!worker.setJob(
-            action == 90
-                ? 6
-                : action == 18
-                    ? 5
-                    : action == 17
-                        ? 4
-                        : action == 16 ? 3 : action == 13 ? 2 : action == 8 ? 1 : 0)) {
-          p.displayClientMessage(Component.translatable("automatons.runner.unload"), true);
-          return false;
-        }
-        WorkerIdentity.update(worker, "Deployed");
-        if (previousSlots != worker.cargo.getSlots()
-            && p instanceof ServerPlayer server
-            && !(p instanceof net.minecraftforge.common.util.FakePlayer)) {
-          net.minecraftforge.network.NetworkHooks.openScreen(
-              server,
-              worker,
-              b -> {
-                b.writeBoolean(true);
-                b.writeInt(worker.getId());
-                b.writeVarInt(worker.cargo.getSlots());
-              });
-          return true;
-        }
-      }
       if (action == 3) {
         ItemStack wand = WandItem.held(p);
         if (wand.isEmpty()) {
@@ -241,6 +207,7 @@ public class WorkMenu extends AbstractContainerMenu {
       }
     }
     if (isTotem) {
+      if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
       if (action >= 61 && action <= 65) station.configure(WorksitePurpose.of(action - 60));
       if (action == 66 && station.project() == null) {
         station.orientation = station.orientation.getClockWise();
@@ -250,9 +217,11 @@ public class WorkMenu extends AbstractContainerMenu {
         station.farm.boneMeal = !station.farm.boneMeal;
         station.farm.changed((ServerLevel) p.level(), station);
       }
-      if (action == 71 && station.farm != null) {
-        station.farm.preference = (station.farm.preference + 1) % 5;
-        station.farm.changed((ServerLevel) p.level(), station);
+      if (station.purpose == WorksitePurpose.FARM && station.farm != null) {
+        if (action >= 180 && action <= 182 && station.farm.select(action - 180, getCarried()))
+          station.farm.changed((ServerLevel)p.level(), station);
+        if (action >= 185 && action <= 187 && station.farm.select(action - 185, ItemStack.EMPTY))
+          station.farm.changed((ServerLevel)p.level(), station);
       }
       if (action >= 40 && action <= 43) {
         var warehouse = WorldData.get((ServerLevel) p.level()).buildings.get(station.identity);
@@ -434,14 +403,10 @@ public class WorkMenu extends AbstractContainerMenu {
         FarmPlan f = station.farm;
         add(farming, f.reason);
         add(farming, "Shared crop cells: " + f.cells.size());
-        add(
-            farming,
-            "Crop: "
-                + (f.preference == 0
-                    ? "Available supplies"
-                    : new ItemStack(FarmPlan.PLANTS.get(f.preference - 1))
-                        .getHoverName()
-                        .getString()));
+        n.putIntArray("Crops", f.crops);
+        for (int strip = 0; strip < 3; strip++)
+          add(farming, List.of("Left: ", "Middle: ", "Right: ").get(strip)
+              + (f.crops[strip] == 0 ? "No planting" : new ItemStack(FarmPlan.PLANTS.get(f.crops[strip] - 1)).getHoverName().getString()));
         add(farming, "Use bone meal: " + (f.boneMeal ? "ON (optional)" : "OFF"));
         f.reserves((ServerLevel) player.level())
             .forEach(
@@ -716,7 +681,7 @@ public class WorkMenu extends AbstractContainerMenu {
         translated(logistics, "automatons.network.stock", stock);
         for (var parcel : network.parcels.values()) {
           CompoundTag record = ledger.workers.get(parcel.runner);
-          String name = record == null ? "Runnington" : WorkerNames.recordName(record);
+          String name = record == null ? "Runnerton" : WorkerNames.recordName(record);
           translated(
               logistics,
               "automatons.network.delivery",

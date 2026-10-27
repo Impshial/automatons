@@ -17,7 +17,7 @@ A new field needs a real **water bucket**; irrigation leaves an empty bucket. Se
 They collect field drops, harvest mature crops, replant, then prepare and plant other cells. Tilling wears the hoe. Normal crop growth applies, and workers do not trample farmland.
 
 Choose crop preference and optional bone meal in **Worksite Settings → Farm**. Bone meal is used only when enabled and available; running out is not an error.
-The site retains enough planting stock across farmer cargo and chests. Runningtons collect only surplus produce.
+The site retains enough planting stock across farmer cargo and chests. Runnertons collect only surplus produce.
 
 Keep the route, supplies and storage available. Full storage preserves cargo; protected or unloaded field cells are left alone.
 

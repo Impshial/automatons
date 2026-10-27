@@ -7,6 +7,7 @@ import net.minecraft.world.level.block.state.BlockState;
 /** Natural surface cover may change while a roof is built (grass, snow, tall plants). */
 public final class Construction {
   public static boolean matches(BlockState actual, BlockState target) {
+    if (target.is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK) && FarmPlan.soil(actual)) return true;
     if (actual.getBlock() != target.getBlock()) return false;
     for (var property : target.getProperties()) {
       String name = property.getName();

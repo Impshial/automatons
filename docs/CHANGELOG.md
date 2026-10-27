@@ -21,7 +21,7 @@
 - Add iron-framed native Minecraft models, animated tracks, a physical Blade or nine-drill Bore, a recessed seat, engine transitions and driver-only controls/HUD.
 - Share one server controller across manual driving, bounded single-chunk surface clearing and editable Program cards. Preserve exact progress, waits and recorded return routes through pauses and saves.
 - Add survival Luminall refueling, container returns, full-footprint 48-block range, full-width one-block steps, protected harvest transactions, real cargo capacity and conserved dismantling drops/fuel.
-- Add the Operatorton profession with exclusive network assignments, physical boarding and automatic unload/return trips. Unattended cargo requests use Runnington deliveries.
+- Add the Operatorton profession with exclusive network assignments, physical boarding and automatic unload/return trips. Unattended cargo requests use Runnerton deliveries.
 - Add Controls, numbered/scrolling Program editor and 108-slot Storage tabs, plus external handbook pages and all component recipes.
 - Brighten 50 dark purple interior pixels in each 16×16 Lumite ore texture. Existing stone/deepslate backgrounds, chipped rims, transparency, shard sprites and block geometry remain unchanged.
 
@@ -47,7 +47,7 @@
 
 ## 0.8.0 - Luminall, Collector and Tank
 
-- Raise Hammer durability to 2,000; apply door-gap alignment to Builders and other professions as well as Runningtons.
+- Raise Hammer durability to 2,000; apply door-gap alignment to Builders and other professions as well as Runnertons.
 - Add Main Pedestal Build Lists for active network projects, with status, location and scrollable material availability/shortages.
 
 - Add registered Luminall source/flowing fluid and bucket, passive Lumina Collectors, craftable fluid Tanks, visible partially fillable bottles and full-bottle drinking through the existing Lumina bank.
@@ -68,7 +68,7 @@
 ## 0.7.4 - Construction staging, movement and infuser surfaces
 
 - Halve construction speed to one action every two ticks. Use the exact supplied small coal and charcoal piece sprites.
-- Stage the complete building kit in a paid temporary chest outside the footprint. Runningtons can deliver materials there. Builders refill locally, then reclaim the chest and return leftovers to their home storage after construction. Missing stock explicitly reports "Waiting for materials".
+- Stage the complete building kit in a paid temporary chest outside the footprint. Runnertons can deliver materials there. Builders refill locally, then reclaim the chest and return leftovers to their home storage after construction. Missing stock explicitly reports "Waiting for materials".
 - Buildingtons walk clockwise between supported positions outside the structure after small batches of work. Clear pending movement when stopping and reserve their construction look direction from idle looking.
 - Leave extra workstations and containers in blueprint air cells intact. Automatically break obstructing structural blocks while preserving container contents. Protected and unbreakable blocks remain blocked with explicit status.
 - Send workers awaiting construction to the main Pedestal. Breaking a Totem releases its construction reservation, cancels deliveries safely and preserves its supply chest contents.
@@ -161,7 +161,7 @@
 
 
 
-- Runningtons never withdraw tools, torches or saplings from chests. Old parcels already in cargo can finish safely. Builders leave reserved supplies in staging chests and request that they be moved before chest removal; construction torches must be carried.
+- Runnertons never withdraw tools, torches or saplings from chests. Old parcels already in cargo can finish safely. Builders leave reserved supplies in staging chests and request that they be moved before chest removal; construction torches must be carried.
 
 
 
@@ -219,11 +219,11 @@
 
 
 
-## 0.4.0 — Runningtons and shared logistics
+## 0.4.0 — Runnertons and shared logistics
 
 
 
-Added the Runnington job, one persistent doubled cargo inventory, physical courier requests/reservations, underground collection, shared schematic warehouse construction and recoverable full-storage handling. Imported the supplied closed-roof minehead for new mines; preserved existing entrances and depths. Added mouthless widened faces, visible job gear, dynamic packed-item rendering and Logistics menus. See RUNNINGTON.md for the exact materials and controls.
+Added the Runnerton job, one persistent doubled cargo inventory, physical courier requests/reservations, underground collection, shared schematic warehouse construction and recoverable full-storage handling. Imported the supplied closed-roof minehead for new mines; preserved existing entrances and depths. Added mouthless widened faces, visible job gear, dynamic packed-item rendering and Logistics menus. See RUNNERTON.md for the exact materials and controls.
 
 
 

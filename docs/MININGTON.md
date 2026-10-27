@@ -15,9 +15,9 @@ Put these in reachable Totem chests, or directly in worker cargo:
 
 Open **Build List** on the worker for scrollable construction costs, remaining quantities, available stock and missing items. All recognized chests supply and store items.
 
-A surface output chest is optional. A miner carrying its starting supplies digs the first ground block itself and keeps excavation drops in cargo until it builds its depot. Once the underground depot is built, miners empty full cargo into those **two underground double chests**, even though they are outside the Totem surface range. They try the second pair if the first is full. If both are full, obstructed or unavailable, they wait at the platform. These are ordinary player-accessible chests. Runningtons on the same home network can carry their eligible output to the warehouse through the real ladder route.
+A surface output chest is optional. A miner carrying its starting supplies digs the first ground block itself and keeps excavation drops in cargo until it builds its depot. Once the underground depot is built, miners empty full cargo into those **two underground double chests**, even though they are outside the Totem surface range. They try the second pair if the first is full. If both are full, obstructed or unavailable, they wait at the platform. These are ordinary player-accessible chests. Runnertons on the same home network can carry their eligible output to the warehouse through the real ladder route.
 
-Surface chests remain usable for tools, torches and construction supplies. Miners can accept permitted material handoffs and restock from their registered underground depot. Runningtons leave tools and torches in chests, so supply those locally. On necessary supply trips, miners first unload harvested cargo underground, retaining bounded working supplies. They do not craft materials or use unrelated distant chests.
+Surface chests remain usable for tools, torches and construction supplies. Miners can accept permitted material handoffs and restock from their registered underground depot. Runnertons leave tools and torches in chests, so supply those locally. On necessary supply trips, miners first unload harvested cargo underground, retaining bounded working supplies. They do not craft materials or use unrelated distant chests.
 
 ## One mine per Totem
 

@@ -18,6 +18,11 @@ public final class WorldEvents {
   }
 
   private static long tick;
+  @SubscribeEvent
+  public static void graves(TickEvent.LevelTickEvent e) {
+    if (e.phase == TickEvent.Phase.END && e.level instanceof ServerLevel l && l.getGameTime() % 20 == 0)
+      Graves.get(l).retry(l);
+  }
   private static int spent;
   private static int paths, conversions, plans;
   private static final java.util.Set<Station> loadedStations =

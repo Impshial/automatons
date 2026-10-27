@@ -46,7 +46,7 @@ Right-click any part of the Machine with a full or partial Luminall Bottle, buck
 
 The complete footprint must stay inside 48 blocks horizontally from its linked home Pedestal. Use Controls to choose another eligible home. It crosses full-width one-block steps and descents, checks turning space, and stops at fluids, gaps, protected work or unloaded terrain.
 
-Pause to change attachments. Storage shows all 108 slots on two scrollable pages. Runningtons on the same network can collect cargo. Shift-right-click with a Wand in any mode to pack it as one carryable Machine. Dismount first. Right-click clear solid ground to reform it, with cargo, attachments, Program and fuel intact. It starts parked; moving it clears the old physical job route, so start a new job. Sneak-hit a parked, empty-seat Machine to dismantle it into components instead.
+Pause to change attachments. Storage shows all 108 slots on two scrollable pages. Runnertons on the same network can collect cargo. Shift-right-click with a Wand in any mode to pack it as one carryable Machine. Dismount first. Right-click clear solid ground to reform it, with cargo, attachments, Program and fuel intact. It starts parked; moving it clears the old physical job route, so start a new job. Sneak-hit a parked, empty-seat Machine to dismantle it into components instead.
 
 <SubPages icons={true} />
 

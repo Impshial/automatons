@@ -23,11 +23,11 @@ Before travelling, the Lumberton checks where the tree will fall. It can clear r
 
 Lumbertons cannot break blocks that need a pickaxe. They request a **Minington on the same Network** to clear those obstacles. The miner needs a suitable pickaxe and room for the drops; it keeps its mine progress while helping. Requests appear in **Logistics**, including when no miner is available. Lumbertons use dirt or planks for temporary climbing supports.
 
-Harvest output is delivered to local chests between trees after roughly two stacks or one minute carrying a smaller load, giving Runningtons cargo to collect. Tools, replanting saplings and climbing supplies retain their normal reserves.
+Harvest output is delivered to local chests between trees after roughly two stacks or one minute carrying a smaller load, giving Runnertons cargo to collect. Tools, replanting saplings and climbing supplies retain their normal reserves.
 
 A background check reconciles stale falling-tree animations every five seconds. Actual logs use Minecraft block rendering and collision.
 
-Carry saplings to replant after cutting. A worker that runs out can fetch more from local storage. Runningtons do not withdraw saplings, so keep that local supply stocked.
+Carry saplings to replant after cutting. A worker that runs out can fetch more from local storage. Runnertons do not withdraw saplings, so keep that local supply stocked.
 Lumbertons can use carried support blocks to reach high wood and recover those supports afterward. Unreachable or unloaded work waits safely.
 
 

@@ -1,0 +1,2054 @@
+{
+  "version": 4,
+  "size": [
+    7,
+    5,
+    7
+  ],
+  "anchor": [
+    3,
+    1,
+    0
+  ],
+  "logical_min": [
+    0,
+    -1,
+    0
+  ],
+  "default_front": "south",
+  "kind": "worksite",
+  "blocks": [
+    {
+      "x": 0,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:glass",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 0,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:chest[facing=east,type=left,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:chest[facing=east,type=right,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 1,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 1,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 2,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 2,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 0,
+      "state": "automatons:totem",
+      "role": "anchor",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:spruce_door[facing=south,half=lower,hinge=left,open=false,powered=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:spruce_door[facing=south,half=upper,hinge=left,open=false,powered=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:lantern[hanging=true,waterlogged=false]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 3,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 4,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 4,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:air",
+      "role": "clear",
+      "operation": "clear"
+    },
+    {
+      "x": 5,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 5,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 0,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 1,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 2,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 3,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 4,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 5,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 0,
+      "z": 6,
+      "state": "minecraft:cobblestone",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 3,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 1,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 3,
+      "state": "minecraft:glass",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 2,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 0,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 1,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 2,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 3,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 4,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 5,
+      "state": "minecraft:oak_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 3,
+      "z": 6,
+      "state": "minecraft:oak_log[axis=y]",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 0,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 1,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 2,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 3,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 4,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 5,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    },
+    {
+      "x": 6,
+      "y": 4,
+      "z": 6,
+      "state": "minecraft:spruce_planks",
+      "role": "structure",
+      "operation": "place"
+    }
+  ],
+  "frames": [],
+  "armor_stands": [],
+  "materials": {
+    "minecraft:chest": 4,
+    "minecraft:cobblestone": 49,
+    "minecraft:glass": 2,
+    "minecraft:lantern": 1,
+    "minecraft:oak_log": 12,
+    "minecraft:oak_planks": 55,
+    "minecraft:spruce_door": 1,
+    "minecraft:spruce_planks": 49
+  },
+  "material_bill": {
+    "construction_items": {
+      "minecraft:chest": 4,
+      "minecraft:cobblestone": 49,
+      "minecraft:glass": 2,
+      "minecraft:lantern": 1,
+      "minecraft:oak_log": 12,
+      "minecraft:oak_planks": 55,
+      "minecraft:spruce_door": 1,
+      "minecraft:spruce_planks": 49
+    },
+    "terrain_fill_if_not_reused": {},
+    "fluid_operations": {},
+    "already_placed_anchor_items": {
+      "automatons:totem": 1
+    }
+  },
+  "features": {
+    "door": [
+      3,
+      0,
+      6
+    ],
+    "totem": [
+      3,
+      0,
+      0
+    ]
+  },
+  "worksite": {
+    "storage_groups": [
+      {
+        "name": "hunting storage",
+        "blocks": [
+          [
+            1,
+            0,
+            1
+          ],
+          [
+            1,
+            0,
+            2
+          ],
+          [
+            1,
+            1,
+            1
+          ],
+          [
+            1,
+            1,
+            2
+          ]
+        ],
+        "double_chests": 2,
+        "empty": true
+      }
+    ]
+  }
+}

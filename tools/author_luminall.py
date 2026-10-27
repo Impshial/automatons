@@ -60,7 +60,7 @@ write('assets/automatons/models/item/luminall_bottle.json', {
     'parent':'minecraft:item/generated','textures':{'layer0':'minecraft:item/potion_overlay','layer1':'minecraft:item/potion'}})
 for name, pattern, key in [
     ('tank',['GGG','GEG','GGG'],{'G':{'item':'minecraft:glass'},'E':{'item':'automatons:empty_magica_core'}}),
-    ('lumina_collector',['SCS','CTC','SCS'],{'S':{'item':'minecraft:stone'},'C':{'item':'automatons:magica_core'},'T':{'item':'automatons:tank'}})
+    ('lumina_collector',['SCS',' T ','SCS'],{'S':{'item':'minecraft:stone'},'C':{'item':'automatons:infused_lumite_shard'},'T':{'item':'automatons:tank'}})
 ]:
     write(f'data/automatons/recipes/{name}.json', {'type':'automatons:collector' if name=='lumina_collector' else 'minecraft:crafting_shaped',
         'pattern':pattern,'key':key,'result':{'item':f'automatons:{name}','count':1}})

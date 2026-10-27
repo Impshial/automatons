@@ -1,0 +1,17 @@
+AUTOMATONS: SCHEMATIC HANDOFF
+Minecraft Java 1.20.1 / Forge 47.4.10
+
+Read Automatons-Full-Implementation-Prompt.txt for the complete requested expansion. The ten layouts in this archive are already authored. Import and integrate these files instead of designing the buildings again. Follow the repository's AGENTS.md and established construction workflow.
+
+1. Read README.txt, DESIGN-NOTES.txt, and the per-plan JSON manifests before importing.
+2. Use the supplied .schem or matching native .nbt files as the geometry source. Both exports contain the same explicit blocks. The manifests supply totem anchors, storage groups, workstation positions, dock claims, protected plots, water requirements, and excavation boundaries.
+3. Verify the four custom IDs in registry-map.json against the repository. They are derived from the supplied Codex transcript, not arbitrary marker blocks. If an ID differs, change the map and regenerate with tools/build_schematics.py --registry-map registry-map.json. Preserve the geometry.
+4. Adapt these manifests to the existing Automatons runtime JSON/schema. Do not blindly copy the handoff manifests into a runtime resource folder as if they were already that schema. Native structure .nbt files are also supplied, but the current mod's work queues, identity, costs, and metadata still need registration.
+5. PRESERVE cells are not air. Schematics encode them as minecraft:structure_void; the native structure files omit them. Explicit air means clear only that cell subject to ownership/protection/hazard checks. Never replace omitted mine walls/floors, quarry ground, or fishing water with air or generic stone.
+6. Use MATERIALS.csv and each manifest's material_bill. Totems are already-placed anchors. All chests, tanks, Collectors, furnaces and the armor stand begin empty. The ranch's framed shears are a supplied decoration included in its bill, not free stock.
+7. Treat fishing water as an existing-site requirement. The files do not generate the 10x7 fishing pool. Constructing a 9x9 field requires a real water placement at its center. Never create free water through the build importer.
+8. The full Minington strip schematic is an excavation plan, not an instant building paste. Feed its geometry into the incremental passage claims and hazard rules. The first landing is 20 blocks down; repeat levels four blocks lower. Use the separate landing and shaft components for infrastructure.
+9. Preserve job rules from the full prompt, including fully drained plant/crop replacement, trees being immune to Collector damage, and Luminaritons never planting trees. The default courtyard contains no free flowers, saplings, or trees.
+10. Validate rotations, block support, Forge block entities, ownership/assignment, material consumption, chest access, lighting, AI door/ladder movement, and fishing loot/open-water behavior in the real mod. See VALIDATION.json for checks already completed and limits. Do not report those in-game checks as already done.
+
+The source generator is included so small integration changes can be made without rebuilding the geometry by hand. The full prompt remains the gameplay authority; DESIGN-NOTES.txt records the small construction details concretized while producing these files.

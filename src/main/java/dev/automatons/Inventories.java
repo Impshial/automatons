@@ -34,6 +34,11 @@ public final class Inventories {
   }
 
   public static boolean tool(int job, ItemStack s) {
+    if (job == WorkerJob.HUNTERTON || job == WorkerJob.GUARDINGTON)
+      return usable(s) && (s.getItem() instanceof BowItem || s.getItem() instanceof SwordItem);
+    if (job == WorkerJob.FISHERTON) return usable(s) && s.getItem() instanceof FishingRodItem;
+    if (job == WorkerJob.RANCHERTON) return usable(s) && s.canPerformAction(net.minecraftforge.common.ToolActions.SHEARS_HARVEST);
+    if (job == WorkerJob.QUARRYTON) return pick(s) || shovel(s);
     if (job == WorkerJob.BUILDINGTON) return usable(s) && s.is(Automatons.HAMMER.get());
     if (job == WorkerJob.FARMINGTON)
       return usable(s)
@@ -45,7 +50,7 @@ public final class Inventories {
   }
 
   public static int cargoSlots(int job) {
-    return Balance.CARGO.get() * (job == WorkerJob.RUNNINGTON ? 2 : 1);
+    return Math.min(9, Balance.CARGO.get()) * (job == WorkerJob.RUNNERTON ? 2 : 1);
   }
 
   /** Commit a shrink only after a complete metadata-preserving packing simulation. */

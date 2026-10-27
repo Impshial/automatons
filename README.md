@@ -5,7 +5,7 @@ Version **0.9.0** adds [The Machine and Operatorton](docs/MACHINE.md): a rideabl
 
 The main Pedestal now offers Build Lists for active network projects. Builders can begin with partial supplies, cross their shed door reliably, and use Hammers with 2,000 durability.
 
-Wooden Automatons with Lumberton, Minington, Runnington, Buildington, Farmington and Operatorton professions. Version 0.8.3 turns all landed timber into real sideways log blocks, regularly clears stale animation state, clears permitted fall obstructions, checks jobs before travel and periodically delivers Lumberton output. Lumbertons request same-Network Miningtons for pickaxe obstacles instead of breaking stone themselves. The Collector now follows the supplied open stone-basin design, without copper. Version 0.8.2 gives every Automaton nearby item pickup and sends idle Builders inside their sheds. Version 0.8.1 uses stone trim on the Collector and glass framing on the Tank. Version 0.8.0 adds the passive Lumina Collector, Luminall fluid, craftable Tank and drinkable bottles; corrects Deepslate ore heights, raises Infuser shards, prevents their automatic offhand transfer and lets Builders start with partial materials. See [Luminall](docs/LUMINALL.md) for recipes and balance. Version 0.7.5 moves the handbook into a separately editable resource pack. Version 0.7.4 adds temporary construction supply chests with courier deliveries and cleanup, perimeter walking at half the previous placement speed, automatic obstruction removal, clearer material waits, corrected infuser surfaces/collision, and supplied small fuel-piece sprites. Workers awaiting construction return home; breaking a Totem releases its construction zone. Version 0.7.3 uses the supplied raw and infused shard PNGs exactly as provided. Version 0.7.2 slightly brightens the exposed Lumite and gives raw shards very pale purple interiors while retaining their edges. Version 0.7.1 gives Lumite a painted chipped rim and shaded interior using native 16x16 textures with the supplied vanilla stone/deepslate backgrounds. Its original cube geometry is retained. Version 0.7.0 added an in-game handbook, small fuel pieces, larger new-chunk Lumite clusters, optional JER information, three-level trunk felling and construction from outside the building footprint. The original five professions retain their base settings. Each Totem has one range for both work and nearby chests. Body collision dimensions remain 1.625 blocks tall and 0.7 blocks wide; profession accessories do not enlarge them.
+Wooden Automatons with Lumberton, Minington, Runnerton, Buildington, Farmington and Operatorton professions. Version 0.8.3 turns all landed timber into real sideways log blocks, regularly clears stale animation state, clears permitted fall obstructions, checks jobs before travel and periodically delivers Lumberton output. Lumbertons request same-Network Miningtons for pickaxe obstacles instead of breaking stone themselves. The Collector now follows the supplied open stone-basin design, without copper. Version 0.8.2 gives every Automaton nearby item pickup and sends idle Builders inside their sheds. Version 0.8.1 uses stone trim on the Collector and glass framing on the Tank. Version 0.8.0 adds the passive Lumina Collector, Luminall fluid, craftable Tank and drinkable bottles; corrects Deepslate ore heights, raises Infuser shards, prevents their automatic offhand transfer and lets Builders start with partial materials. See [Luminall](docs/LUMINALL.md) for recipes and balance. Version 0.7.5 moves the handbook into a separately editable resource pack. Version 0.7.4 adds temporary construction supply chests with courier deliveries and cleanup, perimeter walking at half the previous placement speed, automatic obstruction removal, clearer material waits, corrected infuser surfaces/collision, and supplied small fuel-piece sprites. Workers awaiting construction return home; breaking a Totem releases its construction zone. Version 0.7.3 uses the supplied raw and infused shard PNGs exactly as provided. Version 0.7.2 slightly brightens the exposed Lumite and gives raw shards very pale purple interiors while retaining their edges. Version 0.7.1 gives Lumite a painted chipped rim and shaded interior using native 16x16 textures with the supplied vanilla stone/deepslate backgrounds. Its original cube geometry is retained. Version 0.7.0 added an in-game handbook, small fuel pieces, larger new-chunk Lumite clusters, optional JER information, three-level trunk felling and construction from outside the building footprint. The original five professions retain their base settings. Each Totem has one range for both work and nearby chests. Body collision dimensions remain 1.625 blocks tall and 0.7 blocks wide; profession accessories do not enlarge them.
 
 
 
@@ -88,11 +88,11 @@ Each small orb is exactly one-third of the corresponding large value; fractional
 
 
 
-## Runningtons and shared logistics
+## Runnertons and shared logistics
 
 
 
-Choose **Runnington** on a generic worker, then assign it with the wand to a warehouse Totem near its home pedestal. Supply building materials in cargo or nearby enabled supply chests; the builder can begin with a partial kit. A Buildington constructs the warehouse; runners sharing its anchor serve work Totems on the same home network. See the [Runnington guide](docs/RUNNINGTON.md) for the exact kit, setup, controls and recovery.
+Choose **Runnerton** on a generic worker, then assign it with the wand to a warehouse Totem near its home pedestal. Supply building materials in cargo or nearby enabled supply chests; the builder can begin with a partial kit. A Buildington constructs the warehouse; runners sharing its anchor serve work Totems on the same home network. See the [Runnerton guide](docs/RUNNINGTON.md) for the exact kit, setup, controls and recovery.
 
 
 
@@ -124,7 +124,7 @@ After processing a felled tree, a Lumberton replants a sapling at its stump when
 
 
 
-Every Automaton collects visible dropped items within one block of its body, including while idle, paused, unassigned or waiting for construction. Pickup runs every five ticks without changing its route or current project. Useful tools fill empty profession tool slots first; spare tools and other items use cargo. Full inventories leave the remainder on the ground. Pickup delays and item ownership are respected. Runningtons still leave tools, torches and saplings in chests.
+Every Automaton collects visible dropped items within one block of its body, including while idle, paused, unassigned or waiting for construction. Pickup runs every five ticks without changing its route or current project. Useful tools fill empty profession tool slots first; spare tools and other items use cargo. Full inventories leave the remainder on the ground. Pickup delays and item ownership are respected. Runnertons still leave tools, torches and saplings in chests.
 
 Lumbertons also seek visible, reachable dropped log items resting on the ground inside their Totem’s logging range. They collect them into cargo and deliver them through the same storage system. Pickup delays, item ownership, height limits and cargo space are respected.
 
@@ -228,7 +228,7 @@ Forestry searches 32 blocks above and below the Totem by default. For otherwise 
 
 
 
-Runningtons leave tools, Hammers, torches and saplings in all chests. Supply those items locally for the worker that uses them. Buildingtons can evacuate registered staging chests within their build footprint. Underground mine double chests remain Runnington pickup points.
+Runnertons leave tools, Hammers, torches and saplings in all chests. Supply those items locally for the worker that uses them. Buildingtons can evacuate registered staging chests within their build footprint. Underground mine double chests remain Runnerton pickup points.
 
 
 

@@ -10,7 +10,7 @@ Installed `automatons-0.9.1.jar` and the editable handbook in Rackworks Tester; 
 
 # Verification - 0.9.0, 25 October 2026
 
-All **219 required server GameTests passed** in the full-suite run. The final focused run passed **19 Machine tests**, adding unloaded-endpoint assignment cleanup after that full run. The full suite includes physical Runnington pickup/delivery and all prior construction, forestry, mining, farming, logistics and Luminall regression coverage.
+All **219 required server GameTests passed** in the full-suite run. The final focused run passed **19 Machine tests**, adding unloaded-endpoint assignment cleanup after that full run. The full suite includes physical Runnerton pickup/delivery and all prior construction, forestry, mining, farming, logistics and Luminall regression coverage.
 
 Machine checks cover four assembly orientations and invalid-pattern atomicity; parser bounds; nine-block Bore cuts/floor preservation; attachment compatibility; exact pause/save/resume progress; full cargo and reversing; full-footprint range and turning sweeps; operator exclusivity, physical boarding and release; explicit DROPOFF and piloted unload/return; unexpected Program removal; real logistics inventory; bottle/container conversion and Tank energy persistence; selected-chunk edges; full-width steps/gaps; entity turning clearance; exact-once dismantling; whole natural trees; no Bore Lumina; and finishing the final paid step before fuel exhaustion.
 
@@ -46,7 +46,7 @@ An offline preview rendered from the actual model and vanilla textures was shown
 
 All 186 required isolated server GameTests passed, followed by normal server shutdown and BUILD SUCCESSFUL. Eight new tests cover shared ground pickup and idle Builder shed behavior. The original 178 tests continue to cover construction, forestry, mining, farming, logistics, doors, inventory conservation and Luminall.
 
-Pickup checks run all five professions plus unassigned workers with normal ticking, both authorized and paused. They cover arbitrary nearby item types, useful-tool routing, spare tools without replacing equipped tools, named/damaged item metadata, partial stacks, full cargo, two competing workers, pickup resumption after freeing space, pickup delays, offline-owner protection, blocked line of sight and distant items left alone. Cleanup does not create a travel job. Existing Runnington tests now allow its subsequent loose-cargo trip to store a recovered hatch after completing the reserved ore delivery; recall and parcel-conservation assertions remain.
+Pickup checks run all five professions plus unassigned workers with normal ticking, both authorized and paused. They cover arbitrary nearby item types, useful-tool routing, spare tools without replacing equipped tools, named/damaged item metadata, partial stacks, full cargo, two competing workers, pickup resumption after freeing space, pickup delays, offline-owner protection, blocked line of sight and distant items left alone. Cleanup does not create a travel job. Existing Runnerton tests now allow its subsequent loose-cargo trip to store a recovered hatch after completing the reserved ore delivery; recall and parcel-conservation assertions remain.
 
 Four rotated Builder sheds verify physical entry through the door, a stable indoor waiting position and leaving for a newly created construction request. The four existing door-exit tests still cover both hinges, now with an explicit Recall so they continue to test returning to the main Pedestal. The first run passed 182/186: two courier checks assumed no extra loose cargo, and two idle-shed cases exposed a mismatch between navigation's stopping tolerance and the waiting-position tolerance. The latter is corrected to accept navigation's actual arrival distance. The repeated full run passed all 186.
 
@@ -221,7 +221,7 @@ The supplied ore PNGs match their source files byte-for-byte. All 40 preexisting
 
 
 
-Runningtons retain the user's explicit restriction against taking tools, torches or saplings from chests. The handbook describes that live behavior, despite the later brief's conflicting fetching-tools example. Builders stay outside when placing, as requested in the latest message. The collector remains a recorded design checkpoint with no invented rates, capacities, recipe or implementation.
+Runnertons retain the user's explicit restriction against taking tools, torches or saplings from chests. The handbook describes that live behavior, despite the later brief's conflicting fetching-tools example. Builders stay outside when placing, as requested in the latest message. The collector remains a recorded design checkpoint with no invented rates, capacities, recipe or implementation.
 
 
 
@@ -703,7 +703,7 @@ The initial diagnostic run failed the obsolete 15/10/10 timing expectation. Subs
 
 
 
-Coverage boundaries: these are isolated server fixtures, with actual movement, block changes, normal loot and inventory handlers. They do not certify arbitrary third-party protection/storage implementations or every possible terrain arrangement. A fluid in an unfinished shaft/platform, no reachable safe stance for falling material, all forward/side directions blocked, or unreachable damaged access can require player intervention. Existing mine depth is preserved deliberately. Runnington transport is not implemented in this release.
+Coverage boundaries: these are isolated server fixtures, with actual movement, block changes, normal loot and inventory handlers. They do not certify arbitrary third-party protection/storage implementations or every possible terrain arrangement. A fluid in an unfinished shaft/platform, no reachable safe stance for falling material, all forward/side directions blocked, or unreachable damaged access can require player intervention. Existing mine depth is preserved deliberately. Runnerton transport is not implemented in this release.
 
 
 
@@ -731,7 +731,7 @@ Installed **automatons-0.3.1.jar**, **508,476 bytes**, with matching build/clien
 
 
 
-`runnington-tests-16.log`: **all 113 required GameTests passed**, followed by a successful release build on Java 17 / Forge 47.4.10. This includes the prior 101 regressions and twelve Runnington cases: dynamic eighteen-slot inventory/capability and metadata-preserving shrink; imported real double chests/anchors; two shared builders with serialized construction and worker unload/reload; limited tool supply through a one-block L corridor and wooden door; canceled manual resupply returning its real tool; actual twenty-block depot descent/collection/recall/return; source and destination reservations; north-facing warehouse exit from the reproduced off-center stop; blocked/protected sites and owner/home isolation; all eighteen packed cargo drops and identity-preserving redeployment; full/changed warehouse storage with worker/network reload and partial recovery; and physical torch delivery followed by actual mining and shortage clearance.
+`runnerton-tests-16.log`: **all 113 required GameTests passed**, followed by a successful release build on Java 17 / Forge 47.4.10. This includes the prior 101 regressions and twelve Runnerton cases: dynamic eighteen-slot inventory/capability and metadata-preserving shrink; imported real double chests/anchors; two shared builders with serialized construction and worker unload/reload; limited tool supply through a one-block L corridor and wooden door; canceled manual resupply returning its real tool; actual twenty-block depot descent/collection/recall/return; source and destination reservations; north-facing warehouse exit from the reproduced off-center stop; blocked/protected sites and owner/home isolation; all eighteen packed cargo drops and identity-preserving redeployment; full/changed warehouse storage with worker/network reload and partial recovery; and physical torch delivery followed by actual mining and shortage clearance.
 
 
 
@@ -739,7 +739,7 @@ The full-storage test starts with 128 real ore items, fills all eight warehouse 
 
 
 
-Prior successful runs were `runnington-tests-8.log`, `runnington-tests-9.log`, `runnington-tests-10.log`, `runnington-tests-11.log`, `runnington-tests-14.log` and `runnington-tests-15.log`. A warehouse-door waypoint was added before longer surface delivery routes; the full suite passed again after this fix. Earlier diagnostic runs are preserved: failures exposed a Java test declaration error, mutable ItemStack transfer-count accounting, unsafe placement footing, resumed builders blocking construction, and premature handoff fallback despite forward travel. Those failures are not counted as passing checks.
+Prior successful runs were `runnerton-tests-8.log`, `runnerton-tests-9.log`, `runnerton-tests-10.log`, `runnerton-tests-11.log`, `runnerton-tests-14.log` and `runnerton-tests-15.log`. A warehouse-door waypoint was added before longer surface delivery routes; the full suite passed again after this fix. Earlier diagnostic runs are preserved: failures exposed a Java test declaration error, mutable ItemStack transfer-count accounting, unsafe placement footing, resumed builders blocking construction, and premature handoff fallback despite forward travel. Those failures are not counted as passing checks.
 
 
 
@@ -747,7 +747,7 @@ Prior successful runs were `runnington-tests-8.log`, `runnington-tests-9.log`, `
 
 
 
-Current-to-result dimensions: head **8×8×8 → 9×8×8**; torso **8×9×6 → 9×9×6**; open eye width **1→3 source pixels**; height **26 pixels / 1.625 blocks unchanged**; collision **0.7×1.625 blocks unchanged**; eye height **1.4 unchanged**. The source atlas grows 64×64→128×128 to fit gear, retaining one texel per model unit. There is no global entity shrink. Default cargo is eighteen plus three equipment slots for Runnington, nine plus three for other jobs.
+Current-to-result dimensions: head **8×8×8 → 9×8×8**; torso **8×9×6 → 9×9×6**; open eye width **1→3 source pixels**; height **26 pixels / 1.625 blocks unchanged**; collision **0.7×1.625 blocks unchanged**; eye height **1.4 unchanged**. The source atlas grows 64×64→128×128 to fit gear, retaining one texel per model unit. There is no global entity shrink. Default cargo is eighteen plus three equipment slots for Runnerton, nine plus three for other jobs.
 
 
 
@@ -783,7 +783,7 @@ Route diagnostics then showed a valid 41-node partial path ending one block shor
 
 
 
-`runnington-client-9.log` and `instance-smoke.log`: the isolated packaged client using the Rackworks Tester mod set completed its visual and physical scenarios, saved normally and exited **0**. The final client directory is `build/packaged-smoke/20261023-085609`. The required marker records **door=true, corner=true, physicalHandoff=true**, with width **0.7** and height **1.625**. The runner collected a real axe from the warehouse, exited its north-facing doorway, traversed the narrow L passage and another wooden door, then put that axe into the recipient's tool inventory within interaction range. Stock reports remained nine unique containers rather than seventeen duplicated Totem reports.
+`runnerton-client-9.log` and `instance-smoke.log`: the isolated packaged client using the Rackworks Tester mod set completed its visual and physical scenarios, saved normally and exited **0**. The final client directory is `build/packaged-smoke/20261023-085609`. The required marker records **door=true, corner=true, physicalHandoff=true**, with width **0.7** and height **1.625**. The runner collected a real axe from the warehouse, exited its north-facing doorway, traversed the narrow L passage and another wooden door, then put that axe into the recipient's tool inventory within interaction range. Stock reports remained nine unique containers rather than seventeen duplicated Totem reports.
 
 
 
@@ -869,7 +869,7 @@ The milestone extends the existing world journal and worker Ledger rather than a
 
 
 
-A real Buildington builds its first shed from physical stock and Hammers without a Runnington. A separate partial-kit run verifies progress without abandoning the project or entering a permanent door fault. Save/load tests retain the project identity and exclusive builder claim, and legitimate release advances ownership. Existing underground construction, mining continuation, independent tunnels, courier depot pickup and recall checks remain part of the complete suite.
+A real Buildington builds its first shed from physical stock and Hammers without a Runnerton. A separate partial-kit run verifies progress without abandoning the project or entering a permanent door fault. Save/load tests retain the project identity and exclusive builder claim, and legitimate release advances ownership. Existing underground construction, mining continuation, independent tunnels, courier depot pickup and recall checks remain part of the complete suite.
 
 
 

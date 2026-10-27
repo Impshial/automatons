@@ -70,6 +70,10 @@ public class Station extends BlockEntity implements MenuProvider {
     setupIssue = "";
     purpose = value;
     WorldData.get(l).buildings.put(identity, plan);
+    if (value == WorksitePurpose.FARM && farm == null) {
+      farm = new FarmPlan();
+      WorldData.get(l).farms.put(identity, farm);
+    }
     WorldData.get(l).setDirty();
     invalidateTrees();
     refreshStorage();

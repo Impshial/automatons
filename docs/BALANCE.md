@@ -121,7 +121,7 @@ Species JSON bounds normal trees by height/spread/log count. Associated foliage 
 
 ## Logistics and compatibility
 
-Runningtons retain 18 default cargo slots, a 0.215 walking attribute and their backpack. Reports reconcile every forty ticks, sampling 512 slots per home network; batches cap at 256 items. Overlapping ranges share physical containers. Tools, Hammers, torches and saplings remain in chests for local workers.
+Runnertons retain 18 default cargo slots, a 0.215 walking attribute and their backpack. Reports reconcile every forty ticks, sampling 512 slots per home network; batches cap at 256 items. Overlapping ranges share physical containers. Tools, Hammers, torches and saplings remain in chests for local workers.
 
 Lumbertons retain up to sixteen saplings per type and a stack of dirt or planks for climbing. Paused miners hold position. Quarry starts at the platform edge; tunnel miners claim separate branches. Construction now allows one successful action every two ticks, half the previous placement rate; forestry and mining speeds remain unchanged. Each building also uses one temporary chest item, recovered during cleanup.
 

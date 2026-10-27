@@ -227,7 +227,7 @@ public final class MachineJob {
     if (!active || phase > 0) return;
     if (m.hasPilot()) beginDetour(false);
     else {
-      m.status = "Cargo full — requesting Runnington";
+      m.status = "Cargo full — requesting Runnerton";
       MachineHauling.request(m);
       retries = MachineRules.RETRY_TICKS;
     }

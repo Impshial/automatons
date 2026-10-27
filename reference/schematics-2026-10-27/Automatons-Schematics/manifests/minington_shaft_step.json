@@ -1,0 +1,173 @@
+{
+  "schema": "automatons.schematic-handoff.v1",
+  "name": "minington_shaft_step",
+  "title": "Minington four-block ladder extension",
+  "kind": "underground_component",
+  "minecraft": "1.20.1",
+  "data_version": 3465,
+  "dimensions": [
+    1,
+    4,
+    2
+  ],
+  "logical_min": [
+    0,
+    0,
+    -1
+  ],
+  "logical_max": [
+    0,
+    3,
+    0
+  ],
+  "origin_local": [
+    0,
+    0,
+    1
+  ],
+  "anchor_logical": [
+    0,
+    0,
+    0
+  ],
+  "coordinate_rule": "x east, z south; logical y=0 is ground walking height. File-local = logical - logical_min. Default front is south; ranch gate faces east.",
+  "void_policy": "structure_void means PRESERVE; air means CLEAR. Native NBT omits preserve cells. Never turn omitted cells into air.",
+  "features": {},
+  "required_mod_blocks": [],
+  "blocks": [
+    {
+      "pos": [
+        0,
+        0,
+        0
+      ],
+      "logical_pos": [
+        0,
+        0,
+        -1
+      ],
+      "state": "minecraft:cobblestone",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        0,
+        1
+      ],
+      "logical_pos": [
+        0,
+        0,
+        0
+      ],
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        1,
+        0
+      ],
+      "logical_pos": [
+        0,
+        1,
+        -1
+      ],
+      "state": "minecraft:cobblestone",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        1,
+        1
+      ],
+      "logical_pos": [
+        0,
+        1,
+        0
+      ],
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        2,
+        0
+      ],
+      "logical_pos": [
+        0,
+        2,
+        -1
+      ],
+      "state": "minecraft:cobblestone",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        2,
+        1
+      ],
+      "logical_pos": [
+        0,
+        2,
+        0
+      ],
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        3,
+        0
+      ],
+      "logical_pos": [
+        0,
+        3,
+        -1
+      ],
+      "state": "minecraft:cobblestone",
+      "operation": "place",
+      "role": "structure"
+    },
+    {
+      "pos": [
+        0,
+        3,
+        1
+      ],
+      "logical_pos": [
+        0,
+        3,
+        0
+      ],
+      "state": "minecraft:ladder[facing=south,waterlogged=false]",
+      "operation": "place",
+      "role": "structure"
+    }
+  ],
+  "entities": [],
+  "material_bill": {
+    "construction_items": {
+      "minecraft:cobblestone": 4,
+      "minecraft:ladder": 4
+    },
+    "terrain_fill_if_not_reused": {},
+    "fluid_operations": {},
+    "already_placed_anchor_items": {}
+  },
+  "worksite": {
+    "repeat_y_offset": -4
+  },
+  "provenance": "Approved full prompt plus concretized roof, wall, lighting, and support details; see DESIGN-NOTES.txt."
+}

@@ -12,6 +12,8 @@ import net.minecraft.world.level.block.state.BlockState;
 public final class FarmPlan {
   public final Set<Long> cells = new LinkedHashSet<>();
   public final Map<Long, Item> replant = new HashMap<>();
+  public final Map<Long, Integer> strips = new HashMap<>();
+  public final int[] crops = new int[3];
   private final Map<Long, UUID> claims = new HashMap<>();
   public BlockPos water;
   public boolean generated, discovered, boneMeal = true;
@@ -23,6 +25,20 @@ public final class FarmPlan {
   public Item defaultPlant;
   public static final List<Item> PLANTS =
       List.of(Items.WHEAT_SEEDS, Items.CARROT, Items.POTATO, Items.BEETROOT_SEEDS);
+
+  public static int sample(ItemStack stack) {
+    if (stack.is(Items.WHEAT) || stack.is(Items.WHEAT_SEEDS)) return 1;
+    if (stack.is(Items.CARROT)) return 2;
+    if (stack.is(Items.POTATO)) return 3;
+    if (stack.is(Items.BEETROOT) || stack.is(Items.BEETROOT_SEEDS)) return 4;
+    return 0;
+  }
+
+  public boolean select(int strip, ItemStack sample) {
+    if (strip < 0 || strip >= 3 || !sample.isEmpty() && sample(sample) == 0) return false;
+    crops[strip] = sample(sample);
+    return true;
+  }
 
   public static Item planting(BlockState state) {
     if (state.is(Blocks.WHEAT)) return Items.WHEAT_SEEDS;
@@ -82,33 +98,6 @@ public final class FarmPlan {
       unknown = false;
       cells.removeIf(p -> !inRange(station, BlockPos.of(p)));
     }
-    int total = side * side * 7;
-    for (int budget = 0; budget < 192 && scan < total && WorldEvents.budget(1); budget++) {
-      int i = scan++;
-      BlockPos p =
-          station
-              .getBlockPos()
-              .offset(i % side - radius, i / (side * side) - 4, i / side % side - radius);
-      if (!l.hasChunkAt(p)) {
-        unknown = true;
-        continue;
-      }
-      if (l.getBlockState(p).is(Blocks.FARMLAND) && available(l, station, p)) cells.add(p.asLong());
-    }
-    if (scan < total) return;
-    if (!cells.isEmpty()) {
-      discovered = true;
-      reason = "Tending existing farmland";
-      changed(l, station);
-      return;
-    }
-    if (unknown) {
-      scan = 0;
-      unknown = false;
-      retry = l.getGameTime() + 200;
-      reason = "Farmland survey has unloaded areas";
-      return;
-    }
     List<BlockPos> centers = new ArrayList<>();
     for (int x = -radius + 4; x <= radius - 4; x++)
       for (int z = -radius + 4; z <= radius - 4; z++)
@@ -129,6 +118,8 @@ public final class FarmPlan {
                       && l.getBlockState(p).is(Blocks.WATER)
                       && l.getFluidState(p).isSource())
               || !l.getBlockState(p.above()).isAir() && !l.getBlockState(p.above()).canBeReplaced()
+                  && !(p.equals(center) && l.getBlockState(p.above()).is(Blocks.GLASS))
+                  && !(l.getBlockState(p.above()).getBlock() instanceof CropBlock)
               || !l.getFluidState(p.above()).isEmpty()
               || !l.getBlockState(p.above(2)).isAir()) valid = false;
         }
@@ -139,9 +130,7 @@ public final class FarmPlan {
       }
       water = center;
       generated = discovered = true;
-      for (int x = -4; x <= 4; x++)
-        for (int z = -4; z <= 4; z++)
-          if (x != 0 || z != 0) cells.add(center.offset(x, 0, z).asLong());
+      defineField(l, center, station.orientation);
       reason = "Preparing shared 9 x 9 field";
       changed(l, station);
       return;
@@ -153,19 +142,34 @@ public final class FarmPlan {
     }
   }
 
+  /** The authored field defines the cells and strip ordering, including the missing E5 crop. */
+  public void defineField(ServerLevel level, BlockPos center, Direction front) {
+    BuildingTemplate layout = BuildingTemplate.load(level, "farmington_field");
+    BlockPos irrigation = BuildingTemplate.point(layout.metadata.getAsJsonObject("features").get("covered_irrigation"));
+    cells.clear(); strips.clear();
+    var rows = layout.worksite().getAsJsonArray("crop_strips");
+    for (int i = 0; i < rows.size(); i++) {
+      var row = rows.get(i).getAsJsonObject();
+      for (var point : row.getAsJsonArray("planting_cells")) {
+        BlockPos soil = center.offset(BuildingTemplate.point(point).below().subtract(irrigation).rotate(layout.rotationFor(front)));
+        if (!soil.equals(center)) {
+          cells.add(soil.asLong());
+          strips.put(soil.asLong(), i);
+        }
+      }
+    }
+    water = center;
+  }
+
   public Item wanted(ServerLevel l, long soil) {
-    if (replant.containsKey(soil)) return replant.get(soil);
-    Item current = planting(l.getBlockState(BlockPos.of(soil).above()));
-    if (current != Items.AIR) return current;
-    return preference > 0
-        ? PLANTS.get(Math.min(3, preference - 1))
-        : defaultPlant == null ? Items.AIR : defaultPlant;
+    int value = crops[strips.getOrDefault(soil, 1)];
+    return value == 0 ? Items.AIR : PLANTS.get(value - 1);
   }
 
   public Map<Item, Integer> reserves(ServerLevel l) {
     Map<Item, Integer> stock = new LinkedHashMap<>();
     for (long cell : cells) {
-      Item item = l.hasChunkAt(BlockPos.of(cell)) ? wanted(l, cell) : defaultPlant;
+      Item item = wanted(l, cell);
       if (item != null && item != Items.AIR) stock.merge(item, 1, Integer::sum);
     }
     return stock;
@@ -199,6 +203,12 @@ public final class FarmPlan {
     n.putBoolean("Discovered", discovered);
     n.putBoolean("BoneMeal", boneMeal);
     n.putInt("Preference", preference);
+    n.putIntArray("Crops", crops);
+    ListTag stripCells = new ListTag();
+    strips.forEach((pos, strip) -> {
+      CompoundTag c = new CompoundTag(); c.putLong("Pos", pos); c.putInt("Strip", strip); stripCells.add(c);
+    });
+    n.put("Strips", stripCells);
     n.putString("Reason", reason);
     if (defaultPlant != null)
       n.putString(
@@ -225,6 +235,12 @@ public final class FarmPlan {
     f.discovered = n.getBoolean("Discovered");
     f.boneMeal = n.getBoolean("BoneMeal");
     f.preference = Math.max(0, Math.min(4, n.getInt("Preference")));
+    int[] selected = n.getIntArray("Crops");
+    for (int i = 0; i < Math.min(3, selected.length); i++) f.crops[i] = Math.max(0, Math.min(4, selected[i]));
+    for (Tag value : n.getList("Strips", 10)) {
+      CompoundTag c = (CompoundTag)value;
+      if (c.getInt("Strip") >= 0 && c.getInt("Strip") < 3) f.strips.put(c.getLong("Pos"), c.getInt("Strip"));
+    }
     f.reason = n.getString("Reason");
     if (n.contains("DefaultPlant"))
       f.defaultPlant =

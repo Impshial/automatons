@@ -37,6 +37,8 @@ public final class Farming {
     if (s.farm.water != null
         && l.hasChunkAt(s.farm.water)
         && !l.getFluidState(s.farm.water).isSource()) result.put(Items.WATER_BUCKET, 1);
+    if (s.farm.water != null && l.hasChunkAt(s.farm.water)
+        && !l.getBlockState(s.farm.water.above()).is(Blocks.GLASS)) result.put(Items.GLASS, 1);
     if (s.farm.boneMeal) result.put(Items.BONE_MEAL, 16);
     return result;
   }
@@ -122,6 +124,10 @@ public final class Farming {
       irrigate(l, s, f);
       return;
     }
+    if (f.water != null && l.hasChunkAt(f.water) && !l.getBlockState(f.water.above()).is(Blocks.GLASS)) {
+      cover(l, s, f);
+      return;
+    }
     if (target == null) {
       var options =
           f.cells.stream()
@@ -178,6 +184,11 @@ public final class Farming {
       return;
     }
     BlockState actual = l.getBlockState(p), ground = l.getBlockState(soil);
+    if (DeadVegetation.isDead(actual)) {
+      if (DeadVegetation.clear(w, p)) f.changed(l, s);
+      else release();
+      return;
+    }
     if (actual.getBlock() instanceof CropBlock crop
         && crop.isMaxAge(actual)
         && FarmPlan.planting(actual) != Items.AIR) {
@@ -193,7 +204,10 @@ public final class Farming {
         release();
         return;
       }
-      f.replant.put(soil.asLong(), FarmPlan.planting(actual));
+      SourceReserves.get(l).forget(p);
+      Item next = f.wanted(l, soil.asLong());
+      if (next != Items.AIR) f.replant.put(soil.asLong(), next);
+      else f.replant.remove(soil.asLong());
       for (ItemStack drop : drops) {
         ItemStack rest = Inventories.insert(w.cargo, drop, false);
         if (!rest.isEmpty()) Block.popResource(l, p, rest);
@@ -208,6 +222,7 @@ public final class Farming {
       return;
     }
     if (actual.isAir() && !ground.is(Blocks.FARMLAND) && FarmPlan.soil(ground)) {
+      if (wanted == Items.AIR) { release(); return; }
       var actor = MiningRules.actor(w);
       ItemStack before = actor.getMainHandItem();
       actor.setItemInHand(InteractionHand.MAIN_HAND, w.activeTool().copy());
@@ -256,6 +271,7 @@ public final class Farming {
       }
       if (MiningRules.place(w, p, FarmPlan.crop(item))) {
         BuildingProject.consume(w, item, 1);
+        SourceReserves.get(l).forget(p);
         f.replant.remove(soil.asLong());
         f.changed(l, s);
         release();
@@ -283,12 +299,13 @@ public final class Farming {
 
   private int priority(ServerLevel l, FarmPlan f, BlockPos p) {
     BlockState crop = l.getBlockState(p.above());
-    if (f.replant.containsKey(p.asLong()) && crop.isAir()) return 0;
+    if (DeadVegetation.isDead(crop)) return 0;
+    if (f.replant.containsKey(p.asLong()) && crop.isAir() && f.wanted(l, p.asLong()) != Items.AIR) return 0;
     if (crop.getBlock() instanceof CropBlock c
         && c.isMaxAge(crop)
         && FarmPlan.planting(crop) != Items.AIR) return 1;
     if ((crop.isAir() || crop.canBeReplaced() && FarmPlan.planting(crop) == Items.AIR)
-        && FarmPlan.soil(l.getBlockState(p))) return 2;
+        && FarmPlan.soil(l.getBlockState(p)) && f.wanted(l, p.asLong()) != Items.AIR) return 2;
     if (f.boneMeal
         && w.mining.carried(Items.BONE_MEAL) > 0
         && crop.getBlock() instanceof CropBlock c
@@ -347,6 +364,28 @@ public final class Farming {
         1,
         1);
     f.changed(l, s);
+    release();
+  }
+
+  private void cover(ServerLevel l, Station s, FarmPlan f) {
+    BlockPos p = f.water.above();
+    if (!f.claim(f.water, w.getUUID())) { w.state("Colleague preparing irrigation"); return; }
+    if (w.mining.carried(Items.GLASS) == 0) {
+      if (!WorkSupplies.take(w, s, Items.GLASS, 1)) {
+        state(f, "Needs one glass block for irrigation cover", 16); release();
+      }
+      return;
+    }
+    w.showActionItem(Items.GLASS);
+    if (!w.travelTo(p, "Covering irrigation", "Covering irrigation")) return;
+    BlockState before = l.getBlockState(p);
+    if (!before.isAir() || WorldData.get(l).protectedAt(p)) {
+      state(f, "Clear the irrigation cover position", 0); release(); return;
+    }
+    if (MiningRules.place(w, p, Blocks.GLASS.defaultBlockState())) {
+      BuildingProject.consume(w, Items.GLASS, 1);
+      f.changed(l, s);
+    }
     release();
   }
 }

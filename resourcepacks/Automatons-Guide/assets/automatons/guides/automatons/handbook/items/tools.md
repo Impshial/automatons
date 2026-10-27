@@ -13,7 +13,7 @@ item_ids:
 
 Put working tools in the worker's three tool slots. Lumbertons use axes, Miningtons pickaxes and shovels, Farmingtons hoes, and Buildingtons Hammers.
 Tools keep their actual durability and supported enchantments. Give replacements directly or stock a reachable local worksite chest.
-Runningtons never withdraw tools or Hammers from chests. Any Automaton can recover tools lying nearby: appropriate tools fill free tool slots, while spare or unrelated tools stay in cargo.
+Runnertons never withdraw tools or Hammers from chests. Any Automaton can recover tools lying nearby: appropriate tools fill free tool slots, while spare or unrelated tools stay in cargo.
 
 <Recipe id="automatons:hammer" />
 

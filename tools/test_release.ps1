@@ -1,4 +1,4 @@
-param([switch]$Worksites, [switch]$Forestry, [switch]$Machine, [switch]$Mining, [switch]$Online)
+param([switch]$Worksites, [switch]$Forestry, [switch]$Machine, [switch]$Mining, [switch]$Expansion, [switch]$Online)
 # Preserve the preceding test world because GameTest does not remove all out-of-template entities.
 $ErrorActionPreference = 'Stop'
 $projectRoot = Split-Path -Parent $PSScriptRoot
@@ -24,5 +24,6 @@ if ($Worksites) { $gradleArguments += '-PworksiteTests' }
 if ($Forestry) { $gradleArguments += '-PforestryTests' }
 if ($Machine) { $gradleArguments += '-PmachineTests' }
 if ($Mining) { $gradleArguments += '-PminingTests' }
+if ($Expansion) { $gradleArguments += '-PexpansionTests' }
 & .\gradlew.bat @gradleArguments build runGameTestServer
 exit $LASTEXITCODE

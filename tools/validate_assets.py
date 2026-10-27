@@ -27,6 +27,12 @@ assert next(p for p in model['parts'] if p['name']=='head')['size']==[9,8,8]
 assert next(p for p in model['parts'] if p['name']=='body')['size']==[9,9,6]
 for path in (resources/'assets/automatons/models/block').glob('*.json'):
     m=json.loads(path.read_text())
+    if 'elements' not in m:
+        assert m.get('parent') == 'minecraft:block/cross', (path, 'Unsupported inherited block model')
+        assert m.get('render_type') == 'minecraft:cutout', path
+        namespace, texture = m['textures']['cross'].split(':', 1)
+        assert (resources / 'assets' / namespace / 'textures' / (texture + '.png')).is_file(), path
+        continue
     for cube in m['elements']:
         dimensions=[cube['to'][i]-cube['from'][i] for i in range(3)]
         for face,data in cube['faces'].items():

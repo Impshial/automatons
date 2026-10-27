@@ -139,9 +139,9 @@ public final class RunningVisualSmoke {
     if (tick == 165) camera(2.5, 64, 8, 180, 6);
     if (tick == 190) shot("minington");
     if (tick == 205) camera(6.5, 64, 8, 180, 6);
-    if (tick == 230) shot("runnington-front");
+    if (tick == 230) shot("runnerton-front");
     if (tick == 245) camera(6.5, 64, 1, 0, 6);
-    if (tick == 270) shot("runnington-backpack");
+    if (tick == 270) shot("runnerton-backpack");
     if (tick == 285) camera(-1, 67, 0, 135, 24);
     if (tick == 315) shot("minehead-ground");
     if (tick == 330) camera(14, 68, -14, 35, 28);
