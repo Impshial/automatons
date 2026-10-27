@@ -1,7 +1,8 @@
 """Launch the user-designated Forge instance for an isolated visual smoke test.
 Uses installed game libraries and an offline test identity, never reads launcher credentials.
-Restores options.txt and Automatons JARs on exit. The harness only opens Automatons Lab.
+Restores options.txt and Automatons JARs for a live-instance run. The harness only opens Automatons Lab.
 --isolated copies the designated mod set/config into a fresh build folder; it never changes the live instance.
+Isolated copies retain their exact reviewed JAR, options and evidence after exit.
 """
 from pathlib import Path
 import json,re,subprocess,zipfile,shutil,sys,time,hashlib
@@ -136,12 +137,16 @@ try:
         if '--machine-review' in sys.argv and 'MACHINE_VISUAL_COMPLETE' not in (PROJECT/'instance-smoke.log').read_text(encoding='utf-8'):
             result=1
             print('Machine review did not complete.',flush=True)
+        if '--worksite-review' in sys.argv and 'AUTOMATONS_WORKSITE_VISUAL_COMPLETE' not in (PROJECT/'instance-smoke.log').read_text(encoding='utf-8'):
+            result=1
+            print('Worksite review did not complete.',flush=True)
 finally:
     if '--isolated' in sys.argv and (PROJECT/'instance-smoke.log').exists():
         shutil.copy2(PROJECT/'instance-smoke.log',INSTANCE/'instance-smoke.log')
-    if original is not None:options.write_bytes(original)
-    elif options.exists():options.unlink()
-    # The smoke is temporary. Final deployment occurs only after reviewing its results.
-    if target.exists():target.unlink()
-    for old in original_mods:shutil.copy2(backup/old.name,old)
+    if '--isolated' not in sys.argv:
+        if original is not None:options.write_bytes(original)
+        elif options.exists():options.unlink()
+        # Restore only the live-instance mode; isolated copies are retained evidence.
+        if target.exists():target.unlink()
+        for old in original_mods:shutil.copy2(backup/old.name,old)
 sys.exit(result)
