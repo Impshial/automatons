@@ -38,6 +38,9 @@ public final class Automatons {
       DeferredRegister.create(ForgeRegistries.ITEMS, ID);
   public static final DeferredRegister<EntityType<?>> ENTITIES =
       DeferredRegister.create(ForgeRegistries.ENTITY_TYPES, ID);
+  public static final RegistryObject<EntityType<WorkerFishingHook>> FISHING_HOOK = ENTITIES.register("worker_fishing_hook",
+      () -> EntityType.Builder.<WorkerFishingHook>of(WorkerFishingHook::new, MobCategory.MISC).noSave().noSummon().sized(.25f, .25f)
+          .clientTrackingRange(8).updateInterval(5).build("worker_fishing_hook"));
   public static final DeferredRegister<BlockEntityType<?>> BES =
       DeferredRegister.create(ForgeRegistries.BLOCK_ENTITY_TYPES, ID);
   public static final DeferredRegister<MenuType<?>> MENUS =

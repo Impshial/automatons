@@ -162,6 +162,9 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
             CubeListBuilder.create().texOffs(32, 61).addBox(-3f, 1f, -4f, 6f, 7f, 1f),
             PartPose.offset(0f, 0f, 0f));
     headPart.addOrReplaceChild("operator_cap", CubeListBuilder.create().texOffs(26,47).addBox(-4.5f,-9f,-4f,9,2,8).addBox(-4.5f,-7.5f,-6f,9,1,2), PartPose.ZERO);
+    root.addOrReplaceChild("fishing_chair", CubeListBuilder.create().texOffs(36, 0)
+        .addBox(-5, 17, -3, 10, 1, 8).addBox(-5, 18, -3, 1, 6, 1).addBox(4, 18, -3, 1, 6, 1)
+        .addBox(-5, 18, 4, 1, 6, 1).addBox(4, 18, 4, 1, 6, 1).addBox(-5, 10, 4, 10, 7, 1), PartPose.ZERO);
     return LayerDefinition.create(mesh, 128, 128);
   }
 
@@ -197,6 +200,9 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
     rightArm.zRot = .015f + Mth.cos(age * .07f) * .01f;
     leftArm.zRot = -rightArm.zRot;
     body.yRot = 0;
+    root.getChild("fishing_chair").visible = w.fishingPose() == 2;
+    if (w.fishingPose() > 0) { rightArm.xRot = -.8f; leftArm.xRot = -.35f; }
+    if (w.fishingPose() == 2) rightLeg.xRot = leftLeg.xRot = -1.25f;
     if (w.isPassenger()) { rightLeg.xRot = leftLeg.xRot = -1.25f; rightArm.xRot = leftArm.xRot = -.6f; }
     if (w.chopTarget() != null) {
       float swing = .5f + .5f * Mth.sin(age * .65f);

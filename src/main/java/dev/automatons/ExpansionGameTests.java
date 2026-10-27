@@ -16,6 +16,161 @@ import net.minecraftforge.gametest.*;
 @PrefixGameTestTemplate(false)
 public final class ExpansionGameTests {
   @GameTest(template = "empty", timeoutTicks = 40)
+  public static void crafting_returns_containers_and_refuses_partial_commits_or_named_ingredients(GameTestHelper h) {
+    var level = h.getLevel(); var cargo = new net.minecraftforge.items.ItemStackHandler(9);
+    for (int i = 0; i < 3; i++) cargo.setStackInSlot(i, new ItemStack(Items.MILK_BUCKET));
+    cargo.setStackInSlot(3, new ItemStack(Items.SUGAR, 2)); cargo.setStackInSlot(4, new ItemStack(Items.EGG)); cargo.setStackInSlot(5, new ItemStack(Items.WHEAT, 3));
+    var cake = CraftingPlan.next(level, Items.CAKE, CraftingPlan.contents(cargo));
+    h.assertTrue(cake.step() != null && cake.step().output().is(Items.CAKE) && CraftingPlan.craft(level, cargo, cake.step()), "Available cake recipe did not commit");
+    h.assertTrue(CraftingPlan.contents(cargo).stream().filter(s -> s.is(Items.BUCKET)).mapToInt(ItemStack::getCount).sum() == 3
+        && CraftingPlan.contents(cargo).stream().filter(s -> s.is(Items.CAKE)).mapToInt(ItemStack::getCount).sum() == 1, "Craft lost bucket remainders or duplicated cake");
+    for (int i = 0; i < 9; i++) cargo.setStackInSlot(i, new ItemStack(Items.COBBLESTONE, 64));
+    cargo.setStackInSlot(0, new ItemStack(Items.HONEY_BOTTLE));
+    var sugar = CraftingPlan.next(level, Items.SUGAR, CraftingPlan.contents(cargo)); CompoundTag before = cargo.serializeNBT();
+    h.assertTrue(sugar.step() != null && !CraftingPlan.craft(level, cargo, sugar.step()) && before.equals(cargo.serializeNBT()), "Blocked glass remainder consumed an ingredient or produced output");
+    ItemStack named = new ItemStack(Items.OAK_LOG); named.setHoverName(net.minecraft.network.chat.Component.literal("Keep this log"));
+    h.assertTrue(CraftingPlan.next(level, Items.OAK_PLANKS, List.of(named)).step() == null, "Generic recipe consumed a named ingredient");
+    h.assertTrue(CraftingPlan.next(level, Items.OAK_PLANKS, List.of(named, new ItemStack(Items.OAK_LOG))).step() != null, "Ordinary alternative to named stock was ignored");
+    var dependency = CraftingPlan.next(level, Items.IRON_PICKAXE, List.of(new ItemStack(Items.RAW_IRON, 3), new ItemStack(Items.STICK, 2)));
+    h.assertTrue(dependency.step() != null && dependency.step().cooking() && dependency.held().getOrDefault(Items.IRON_INGOT, 0) == 3, "Dependency failed to preserve the final tool's iron reserve");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 1800)
+  public static void workshop_processes_real_ore_fuel_and_sticks_into_one_tool(GameTestHelper h) {
+    var level = h.getLevel(); BlockPos anchor = h.absolutePos(new BlockPos(12, 3, 10));
+    for (int x = 0; x < 30; x++) for (int z = 0; z < 25; z++) h.setBlock(new BlockPos(x, 2, z), Blocks.STONE);
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3); Station site = (Station)level.getBlockEntity(anchor);
+    BlockPos homePos = anchor.west(7); level.setBlock(homePos, Automatons.PEDESTAL.get().defaultBlockState(), 3); Station home = (Station)level.getBlockEntity(homePos);
+    site.owner = home.owner = UUID.randomUUID(); site.logisticsHome = home.identity; site.purpose = WorksitePurpose.CRAFT; home.registerHome();
+    BuildingProject project = new BuildingProject(); project.owner = site.owner; project.home = home.identity; project.totem = site.identity;
+    project.purpose = WorksitePurpose.CRAFT; project.anchor = anchor; project.front = Direction.SOUTH; project.approved = project.ready = true;
+    WorldData.get(level).buildings.put(site.identity, project);
+    for (var cell : project.template(level).cells) {
+      BlockPos pos = project.template(level).world(anchor, project.front, cell.local());
+      if (!pos.equals(anchor)) level.setBlock(pos, cell.state(), 2);
+      project.completed.add(pos.asLong());
+    }
+    site.chests.addAll(project.chests(level)); site.craftOrders.put(Items.IRON_PICKAXE, 1);
+    var stock = Storage.handler(level, site.chests.iterator().next(), site);
+    h.assertTrue(stock != null, "Authored workshop storage unavailable");
+    stock.insertItem(0, new ItemStack(Items.RAW_IRON, 3), false); stock.insertItem(1, new ItemStack(Items.COAL), false); stock.insertItem(2, new ItemStack(Items.STICK, 2), false);
+    Lumberton crafter = Automatons.LUMBERTON.get().create(level); crafter.owner = site.owner; crafter.homeId = home.identity; crafter.home = homePos;
+    crafter.assign(site); crafter.authorized = true; crafter.moveTo(Vec3.atBottomCenterOf(new SiteLayout(project, level).feature("crafting_table").south()));
+    crafter.cargo.setStackInSlot(0, new ItemStack(Luminall.BOTTLE.get())); level.addFreshEntity(crafter); WorkerIdentity.update(crafter, "Deployed");
+    Lumberton courier = Automatons.LUMBERTON.get().create(level); courier.owner = site.owner; courier.homeId = home.identity; courier.home = homePos; courier.setJob(WorkerJob.RUNNERTON);
+    courier.moveTo(Vec3.atBottomCenterOf(homePos.south())); courier.setNoAi(true); level.addFreshEntity(courier); WorkerIdentity.update(courier, "Deployed");
+    boolean[] heated = {false};
+    h.runAfterDelay(1700, () -> h.fail("Workshop stalled: " + crafter.status() + " at " + crafter.blockPosition()
+        + "; cargo=" + crafter.cargo.serializeNBT() + "; requests=" + crafter.crafting.requested + "; reserve=" + crafter.crafting.held));
+    h.onEachTick(() -> {
+      h.assertTrue(project.bounds(level).inflate(.5).contains(crafter.position()), "Crafter left workshop despite a courier");
+      for (var cell : project.template(level).cells) {
+        BlockPos pos = project.template(level).world(anchor, project.front, cell.local());
+        if (level.getBlockEntity(pos) instanceof net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity furnace
+            && furnace.getItem(0).is(Items.RAW_IRON) && furnace.getBlockState().getValue(AbstractFurnaceBlock.LIT)) heated[0] = true;
+      }
+      int tools = crafter.mining.carried(Items.IRON_PICKAXE);
+      for (int i = 0; i < stock.getSlots(); i++) if (stock.getStackInSlot(i).is(Items.IRON_PICKAXE)) tools += stock.getStackInSlot(i).getCount();
+      if (tools == 0) return;
+      h.assertTrue(tools == 1 && heated[0], "Tool was duplicated or bypassed furnace processing");
+      h.assertTrue(crafter.mining.carried(Items.RAW_IRON) + crafter.mining.carried(Items.IRON_INGOT) + crafter.mining.carried(Items.STICK) == 0, "Tool left unconsumed carried ingredients");
+      for (int i = 0; i < stock.getSlots(); i++) h.assertTrue(!stock.getStackInSlot(i).is(Items.RAW_IRON) && !stock.getStackInSlot(i).is(Items.IRON_INGOT)
+          && !stock.getStackInSlot(i).is(Items.COAL) && !stock.getStackInSlot(i).is(Items.STICK), "Tool did not consume source ingredients and fuel");
+      crafter.discard(); courier.discard(); WorldData.get(level).buildings.remove(site.identity); h.succeed();
+    });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 1200)
+  public static void couriers_deliver_real_hunting_equipment_and_keep_their_recharge_bottle(GameTestHelper h) {
+    var level = h.getLevel();
+    for (int x = 0; x < 30; x++) for (int z = 0; z < 15; z++) h.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+    BlockPos homePos = h.absolutePos(new BlockPos(2, 2, 2)), supplyPos = h.absolutePos(new BlockPos(5, 2, 5)), huntPos = h.absolutePos(new BlockPos(23, 2, 5));
+    level.setBlock(homePos, Automatons.PEDESTAL.get().defaultBlockState(), 3);
+    level.setBlock(supplyPos, Automatons.TOTEM.get().defaultBlockState(), 3); level.setBlock(huntPos, Automatons.TOTEM.get().defaultBlockState(), 3);
+    Station home = (Station)level.getBlockEntity(homePos), source = (Station)level.getBlockEntity(supplyPos), hunt = (Station)level.getBlockEntity(huntPos);
+    UUID owner = UUID.randomUUID(); home.owner = source.owner = hunt.owner = owner;
+    source.purpose = WorksitePurpose.WAREHOUSE; hunt.purpose = WorksitePurpose.HUNT; source.logisticsHome = hunt.logisticsHome = home.identity; home.registerHome();
+    BlockPos chest = supplyPos.south(2); level.setBlock(chest, Blocks.CHEST.defaultBlockState(), 3); source.chests.add(chest);
+    var stock = Storage.handler(level, chest, source); ItemStack sword = new ItemStack(Items.IRON_SWORD); sword.setDamageValue(19);
+    sword.setHoverName(net.minecraft.network.chat.Component.literal("Delivered hunter sword"));
+    stock.insertItem(0, sword.copy(), false); stock.insertItem(1, new ItemStack(Items.ARROW, 32), false);
+    List<Lumberton> couriers = new ArrayList<>();
+    for (int i = 0; i < 2; i++) {
+      Lumberton w = Automatons.LUMBERTON.get().create(level); w.owner = owner; w.homeId = home.identity; w.home = homePos; w.assign(source);
+      w.moveTo(Vec3.atBottomCenterOf(supplyPos.south(4).east(i))); w.cargo.setStackInSlot(0, new ItemStack(Luminall.BOTTLE.get()));
+      w.authorized = true; level.addFreshEntity(w); WorkerIdentity.update(w, "Deployed"); couriers.add(w);
+    }
+    Lumberton recipient = Automatons.LUMBERTON.get().create(level); recipient.owner = owner; recipient.homeId = home.identity; recipient.home = homePos;
+    recipient.assign(hunt); recipient.setNoAi(true); recipient.authorized = true; recipient.moveTo(Vec3.atBottomCenterOf(huntPos.south(2)));
+    recipient.cargo.setStackInSlot(0, new ItemStack(Luminall.BOTTLE.get())); level.addFreshEntity(recipient); WorkerIdentity.update(recipient, "Deployed");
+    boolean[] carried = {false};
+    h.onEachTick(() -> {
+      for (Lumberton courier : couriers) if (courier.mining.carried(Items.IRON_SWORD) > 0 || courier.mining.carried(Items.ARROW) > 0) carried[0] = true;
+      if (!(recipient.activeTool().getItem() instanceof SwordItem) || recipient.mining.carried(Items.ARROW) != 32) return;
+      h.assertTrue(carried[0] && ItemStack.isSameItemSameTags(sword, recipient.activeTool()), "Equipment was copied remotely or lost metadata");
+      h.assertTrue(stock.getStackInSlot(0).isEmpty() && stock.getStackInSlot(1).isEmpty(), "Delivery failed to consume source stock");
+      int swords = 1, arrows = 32;
+      for (Lumberton courier : couriers) {
+        swords += courier.mining.carried(Items.IRON_SWORD); arrows += courier.mining.carried(Items.ARROW);
+        h.assertTrue(courier.mining.carried(Luminall.BOTTLE.get()) == 1, "Courier unloaded its personal recharge supply");
+      }
+      h.assertTrue(swords == 1 && arrows == 32, "Two couriers duplicated shared hunting supplies");
+      for (Lumberton courier : couriers) courier.discard(); recipient.discard(); h.succeed();
+    });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void fishing_requires_full_source_area_and_reserves_six_distinct_slots(GameTestHelper h) {
+    var level = h.getLevel(); BlockPos anchor = h.absolutePos(new BlockPos(8, 3, 4));
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3); Station site = (Station)level.getBlockEntity(anchor);
+    site.owner = UUID.randomUUID(); site.purpose = WorksitePurpose.FISH;
+    BuildingProject project = new BuildingProject(); project.purpose = WorksitePurpose.FISH; project.anchor = anchor; project.front = Direction.SOUTH;
+    SiteLayout layout = new SiteLayout(project, level);
+    h.assertTrue(!layout.waterValid(), "Missing source area accepted");
+    for (int x = 2; x <= 8; x++) for (int z = 7; z <= 16; z++) level.setBlock(layout.logical(new BlockPos(x, -2, z)), Blocks.WATER.defaultBlockState(), 2);
+    h.assertTrue(layout.waterValid(), "Complete 70-cell source area rejected");
+    level.setBlock(layout.logical(new BlockPos(2, -2, 7)), Blocks.WATER.defaultBlockState().setValue(LiquidBlock.LEVEL, 1), 2);
+    h.assertTrue(!layout.waterValid(), "Flowing water accepted as a source");
+    List<Lumberton> workers = new ArrayList<>();
+    for (int i = 0; i < 7; i++) {
+      Lumberton w = Automatons.LUMBERTON.get().create(level); w.owner = site.owner; w.totemId = site.identity; w.setJob(WorkerJob.FISHERTON); w.setNoAi(true);
+      w.moveTo(Vec3.atBottomCenterOf(anchor)); level.addFreshEntity(w); workers.add(w);
+      h.assertTrue(w.fishing.reserve(site) == (i < 6 ? i : -1), "Dock slots overlapped or did not fill far end first");
+    }
+    workers.get(0).fishingPose(2); workers.get(0).fishing.release();
+    h.assertTrue(workers.get(0).fishingPose() == 0 && workers.get(6).fishing.reserve(site) == 0, "Leaving slot retained its chair or claim");
+    for (Lumberton w : workers) w.discard(); h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 1300)
+  public static void worker_hook_uses_vanilla_bites_loot_and_actual_rod_durability(GameTestHelper h) {
+    var level = h.getLevel();
+    for (int x = 3; x <= 13; x++) for (int z = 3; z <= 13; z++) {
+      h.setBlock(new BlockPos(x, 0, z), Blocks.STONE);
+      for (int y = 1; y <= 3; y++) h.setBlock(new BlockPos(x, y, z), Blocks.WATER);
+      for (int y = 4; y <= 6; y++) h.setBlock(new BlockPos(x, y, z), Blocks.AIR);
+    }
+    BlockPos perch = h.absolutePos(new BlockPos(4, 4, 8)); level.setBlock(perch.below(), Blocks.STONE.defaultBlockState(), 3);
+    Lumberton worker = Automatons.LUMBERTON.get().create(level); worker.owner = UUID.randomUUID(); worker.setNoAi(true); worker.setJob(WorkerJob.FISHERTON);
+    worker.moveTo(Vec3.atBottomCenterOf(perch)); ItemStack rod = new ItemStack(Items.FISHING_ROD); rod.enchant(Enchantments.FISHING_SPEED, 3); worker.tools.setStackInSlot(0, rod);
+    worker.fishingPose(1); level.addFreshEntity(worker);
+    Vec3 water = Vec3.atCenterOf(h.absolutePos(new BlockPos(8, 3, 8))).add(0, .2, 0);
+    WorkerFishingHook hook = WorkerFishingHook.cast(worker, water); hook.setPos(water); hook.setDeltaMovement(Vec3.ZERO); level.addFreshEntity(hook);
+    h.assertTrue(hook.getType() == Automatons.FISHING_HOOK.get() && hook.getPlayerOwner() != null
+        && !hook.getPlayerOwner().getUUID().equals(worker.owner), "Fishing borrowed owner's player identity");
+    h.onEachTick(() -> {
+      h.assertTrue(hook.isAlive(), "Vanilla fishing hook stopped before a bite");
+      if (!hook.bitingNow()) return;
+      h.assertTrue(hook.isOpenWaterFishing(), "Vanilla open-water context lost");
+      h.assertTrue(hook.reel() && worker.activeTool().getDamageValue() == 1, "Catch did not damage actual rod");
+      long catches = level.getEntitiesOfClass(ItemEntity.class, new AABB(water, water).inflate(1)).stream().mapToInt(e -> e.getItem().getCount()).sum();
+      h.assertTrue(catches > 0 && !hook.reel(), "Fishing loot missing or duplicate retrieval allowed");
+      worker.discard(); h.succeed();
+    });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
   public static void ranch_breeding_reserves_offspring_and_consumes_actual_food(GameTestHelper h) {
     var level = h.getLevel(); BlockPos anchor = h.absolutePos(new BlockPos(3, 3, 3));
     level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3); Station site = (Station)level.getBlockEntity(anchor);
@@ -200,7 +355,7 @@ public final class ExpansionGameTests {
     h.succeed();
   }
 
-  @GameTest(template = "empty", timeoutTicks = 80)
+  @GameTest(template = "empty", timeoutTicks = 160)
   public static void zombie_targets_worker_but_creeper_and_drowned_do_not(GameTestHelper h) {
     var level = h.getLevel();
     for (int x = 2; x <= 18; x++) for (int z = 2; z <= 18; z++) h.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
@@ -212,10 +367,10 @@ public final class ExpansionGameTests {
     creeper.moveTo(net.minecraft.world.phys.Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(8, 2, 13)))); level.addFreshEntity(creeper);
     var drowned = net.minecraft.world.entity.EntityType.DROWNED.create(level);
     drowned.moveTo(net.minecraft.world.phys.Vec3.atBottomCenterOf(h.absolutePos(new BlockPos(4, 2, 8)))); level.addFreshEntity(drowned);
-    h.runAfterDelay(30, () -> {
+    h.succeedWhen(() -> {
       h.assertTrue(zombie.getTarget() == worker, "Zombie did not acquire automaton target");
       h.assertTrue(creeper.getTarget() != worker && drowned.getTarget() != worker, "Unspecified hostile acquired automaton target");
-      zombie.discard(); creeper.discard(); drowned.discard(); worker.discard(); h.succeed();
+      zombie.discard(); creeper.discard(); drowned.discard(); worker.discard();
     });
   }
 

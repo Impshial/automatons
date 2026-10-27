@@ -30,9 +30,14 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public final Guarding guarding = new Guarding(this);
   public final Hunting hunting = new Hunting(this);
   public final Ranching ranching = new Ranching(this);
+  public final Fishing fishing = new Fishing(this);
+  public final Crafting crafting = new Crafting(this);
   public final LuminaService luminaService = new LuminaService(this);
   public final HealingVisit healingVisit = new HealingVisit(this);
   private static final EntityDataAccessor<Integer> OPERATING = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+  private static final EntityDataAccessor<Integer> FISHING_POSE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
+  public int fishingPose() { return entityData.get(FISHING_POSE); }
+  public void fishingPose(int value) { entityData.set(FISHING_POSE, value); }
   private static final EntityDataAccessor<Integer> SERVICE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   public int operating() { return entityData.get(OPERATING); }
   public void operating(int value) { entityData.set(OPERATING, Math.max(0, Math.min(WorkerEnergy.CAPACITY, value))); }
@@ -255,6 +260,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     entityData.define(ACTIVE, 0);
     entityData.define(STATUS, "Unassigned");
     entityData.define(OPERATING, WorkerEnergy.CAPACITY);
+    entityData.define(FISHING_POSE, 0);
     entityData.define(SERVICE, 0);
   }
 
@@ -298,6 +304,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public void suspendWork() {
     hunting.release();
     ranching.release();
+    fishing.release();
     if (machineId != null && level() instanceof ServerLevel) MachineOperator.leave(this);
     forestryHelp.release();
     farming.release();
@@ -397,6 +404,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public int cargoKeep(ItemStack stack) {
+    if (job() == WorkerJob.CRAFTERTON) return crafting.keep().getOrDefault(stack.getItem(), 0);
+    if (WorkerStock.accepts(this, stack)) return WorkerStock.required(this).getOrDefault(stack.getItem(), 16);
     if (job() == WorkerJob.FARMINGTON) return farming.reserve().getOrDefault(stack.getItem(), 0);
     if (job() == 2) return mining.keep(stack);
     if (job() == 1 && stack.is(net.minecraft.tags.ItemTags.SAPLINGS)) return 16;
@@ -1374,6 +1383,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       if (isGuard()) { guarding.tick(true); return; }
       hunting.release();
       ranching.release();
+      fishing.release();
       forestryHelp.release();
       farming.release();
       building.release();
@@ -1463,6 +1473,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       return;
     }
     if (job() == WorkerJob.HUNTERTON) { hunting.tick(s); return; }
+    if (job() == WorkerJob.CRAFTERTON) { crafting.tick(s); return; }
+    if (job() == WorkerJob.FISHERTON) { fishing.tick(s); return; }
     if (job() == WorkerJob.RANCHERTON) { ranching.tick(s); return; }
     if (job() == WorkerJob.LUMINARITON) { luminaService.tick(s); return; }
     if (job() >= WorkerJob.CRAFTERTON) { navigation.stop(); state("Profession setup in progress"); return; }
@@ -2003,6 +2015,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     n.put("Guarding", guarding.save());
     n.put("Hunting", hunting.save());
     n.put("Ranching", ranching.save());
+    n.put("Fishing", fishing.save());
+    n.put("Crafting", crafting.save());
     n.put("LuminaService", luminaService.save());
     if (owner != null) n.putUUID("Owner", owner);
     if (homeId != null) n.putUUID("HomeId", homeId);
@@ -2038,6 +2052,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     guarding.load(n.getCompound("Guarding"));
     hunting.load(n.getCompound("Hunting"));
     ranching.load(n.getCompound("Ranching"));
+    fishing.load(n.getCompound("Fishing"));
+    crafting.load(n.getCompound("Crafting"));
     luminaService.load(n.getCompound("LuminaService"));
     harvestSince = n.contains("HarvestSince") ? n.getLong("HarvestSince") : -1;
     owner = n.hasUUID("Owner") ? n.getUUID("Owner") : null;

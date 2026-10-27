@@ -25,6 +25,8 @@ public class Station extends BlockEntity implements MenuProvider {
   public MinePlan mine;
   public FarmPlan farm;
   public final RanchPlan ranch = new RanchPlan();
+  public final Map<Integer, UUID> dockSlots = new HashMap<>();
+  public final Map<Item, Integer> craftOrders = new LinkedHashMap<>();
   public WorksitePurpose purpose = WorksitePurpose.UNCONFIGURED;
   public Direction orientation = Direction.NORTH;
   public String setupIssue = "";
@@ -511,7 +513,7 @@ public class Station extends BlockEntity implements MenuProvider {
    * Bounded discovery of loaded block entities; a larger work range does not scan every air block.
    */
   private void scanChests(ServerLevel l) {
-    int range = workRange();
+    int range = Storage.range(this);
     if (chestScanRange != range) {
       chestScanRange = range;
       storageCursor = 0;
@@ -619,6 +621,7 @@ public class Station extends BlockEntity implements MenuProvider {
     n.put("Inventory", inventory.serializeNBT());
     if (mine != null) n.put("Mine", mine.save());
     n.put("Ranch", ranch.save());
+    ListTag orders = new ListTag(); craftOrders.forEach((item, count) -> orders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", orders);
     ListTag ids = new ListTag();
     for (UUID id : workers) {
       CompoundTag c = new CompoundTag();
@@ -659,6 +662,8 @@ public class Station extends BlockEntity implements MenuProvider {
     alerts = n.getInt("Alerts");
     mine = n.contains("Mine") ? MinePlan.load(n.getCompound("Mine")) : null;
     ranch.load(n.getCompound("Ranch"));
+    craftOrders.clear();
+    for (Tag value : n.getList("CraftOrders", 10)) { ItemStack order = ItemStack.of((CompoundTag)value); if (!order.isEmpty()) craftOrders.put(order.getItem(), Math.min(64, order.getCount())); }
     CompoundTag slots = n.getCompound("Inventory").copy();
     if (!isTotem() && slots.getInt("Size") < 6) slots.putInt("Size", 6);
     inventory.deserializeNBT(slots);

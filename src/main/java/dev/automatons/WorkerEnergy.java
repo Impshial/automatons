@@ -75,6 +75,7 @@ public final class WorkerEnergy {
     worker.clearChop();
     worker.hunting.release();
     worker.ranching.release();
+    worker.fishing.release();
     worker.building.release();
     worker.farming.release();
     worker.mining.releaseWork();

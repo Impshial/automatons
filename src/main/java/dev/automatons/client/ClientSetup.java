@@ -43,6 +43,7 @@ public final class ClientSetup {
   @SubscribeEvent
   public static void renderers(EntityRenderersEvent.RegisterRenderers e) {
     e.registerEntityRenderer(Automatons.LUMINA_ORB.get(), LuminaOrbRenderer::new);
+    e.registerEntityRenderer(Automatons.FISHING_HOOK.get(), WorkerFishingHookRenderer::new);
     e.registerBlockEntityRenderer(Automatons.INFUSER_BE.get(), InfuserRenderer::new);
     e.registerEntityRenderer(Automatons.LUMBERTON.get(), LumbertonRenderer::new);
     e.registerEntityRenderer(Automatons.GUARDINGTON.get(), LumbertonRenderer::new);

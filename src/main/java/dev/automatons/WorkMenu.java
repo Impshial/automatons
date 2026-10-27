@@ -210,6 +210,12 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (isTotem) {
       if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
+      if (station.purpose == WorksitePurpose.CRAFT && action == 230 && !getCarried().isEmpty()) {
+        station.craftOrders.put(getCarried().getItem(), Math.min(64, getCarried().getCount())); station.changed();
+      }
+      if (station.purpose == WorksitePurpose.CRAFT && action == 231 && !getCarried().isEmpty()) {
+        station.craftOrders.remove(getCarried().getItem()); station.changed();
+      }
       if (station.purpose == WorksitePurpose.RANCH) {
         if (action >= 200 && action <= 203) { int species = action - 200; station.ranch.enabled[species] = !station.ranch.enabled[species]; station.changed(); }
         if (action >= 210 && action <= 213) { int species = action - 210; station.ranch.targets[species] = Math.max(2, station.ranch.targets[species] - 1); station.changed(); }
@@ -372,6 +378,7 @@ public class WorkMenu extends AbstractContainerMenu {
     if (station != null && !isTotem) {
       n.put("ActiveBuilds", BuildMaterials.network(station));
       n.put("Ranch", station.ranch.save());
+      ListTag craftOrders = new ListTag(); station.craftOrders.forEach((item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", craftOrders);
       n.putBoolean("Ready", station.ready());
       add(lines, station.recalled ? "Work disabled" : "Work enabled");
       for (BuildingProject project : WorldData.get((ServerLevel) player.level()).buildings.values())
@@ -386,6 +393,8 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (isTotem) {
       n.putInt("Purpose", station.purpose.ordinal());
+      n.put("Ranch", station.ranch.save());
+      ListTag craftOrders = new ListTag(); station.craftOrders.forEach((item, count) -> craftOrders.add(new ItemStack(item, count).save(new CompoundTag()))); n.put("CraftOrders", craftOrders);
       n.putBoolean("Configured", station.project() != null);
       n.putString("Orientation", station.orientation.getName());
       ListTag worksite = new ListTag();

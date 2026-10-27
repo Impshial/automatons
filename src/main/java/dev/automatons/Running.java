@@ -78,7 +78,7 @@ public final class Running {
     LogisticsNetwork network = LogisticsNetwork.get(w);
     network.refresh(l);
     LogisticsNetwork.Parcel parcel = network.parcels.get(w.getUUID());
-    if (parcel == null && !w.cargoEmpty()) {
+    if (parcel == null && looseCargo()) {
       depositUnreserved(network);
       return;
     }
@@ -308,7 +308,8 @@ public final class Running {
     ServerLevel l = (ServerLevel) w.level();
     for (int slot = 0; slot < w.cargo.getSlots(); slot++) {
       ItemStack stack = w.cargo.getStackInSlot(slot);
-      if (stack.isEmpty()) continue;
+      int excess = w.mining.carried(stack.getItem()) - w.cargoKeep(stack);
+      if (stack.isEmpty() || excess <= 0) continue;
       var target = network.warehouseDestination(l, stack, w.getUUID());
       if (target == null) {
         w.state("Warehouse full");
@@ -316,16 +317,24 @@ public final class Running {
       }
       if (travel(network, target, stack, "Unloading backpack")) {
         var h = network.handler(l, target, stack);
-        if (h != null) BuildingProject.move(w.cargo, slot, h, stack.getCount());
+        if (h != null) BuildingProject.move(w.cargo, slot, h, Math.min(stack.getCount(), excess));
         network.changed(l);
       }
       return;
     }
   }
 
+  private boolean looseCargo() {
+    for (int slot = 0; slot < w.cargo.getSlots(); slot++) {
+      ItemStack stack = w.cargo.getStackInSlot(slot);
+      if (!stack.isEmpty() && w.mining.carried(stack.getItem()) > w.cargoKeep(stack)) return true;
+    }
+    return false;
+  }
+
   public void idle(String message) {
     if (w.mining.returnToSurface()) return;
-    if (message.equals("Recalled") && !w.cargoEmpty() && w.homeId != null) {
+    if (message.equals("Recalled") && looseCargo() && w.homeId != null) {
       var network = LogisticsNetwork.get(w);
       network.refresh((ServerLevel) w.level());
       // Only loose cargo may be deposited during recall; suspended parcels keep ownership.

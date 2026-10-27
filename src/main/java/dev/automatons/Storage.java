@@ -17,9 +17,14 @@ public final class Storage {
           net.minecraft.core.registries.Registries.BLOCK, Automatons.id("storage_chests"));
 
   public static boolean inRange(Station s, BlockPos p) {
-    return Math.abs(p.getX() - s.getBlockPos().getX()) <= s.workRange()
-        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= s.workRange()
+    return Math.abs(p.getX() - s.getBlockPos().getX()) <= range(s)
+        && Math.abs(p.getZ() - s.getBlockPos().getZ()) <= range(s)
         && Math.abs(p.getY() - s.getBlockPos().getY()) <= Balance.HEIGHT.get();
+  }
+
+  public static int range(Station station) {
+    // The 96-block hunt area must not make every network chest into hunting-shed stock.
+    return station.purpose == WorksitePurpose.HUNT ? 8 : station.workRange();
   }
 
   public static boolean isChest(ServerLevel l, BlockPos p) {

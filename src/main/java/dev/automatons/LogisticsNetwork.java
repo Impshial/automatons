@@ -119,19 +119,9 @@ public final class LogisticsNetwork {
   private record ReportTarget(
       Station station, BlockPos pos, boolean warehouse, IItemHandler handler) {}
 
-  /** These supplies belong to the workers; couriers never withdraw them from storage. */
+  /** The expansion permits supplies in courier cargo; per-site reserves protect local needs. */
   public static boolean leaveInChest(ItemStack stack) {
-    return stack.is(Automatons.HAMMER.get())
-        || stack.is(net.minecraft.tags.ItemTags.TOOLS)
-        || stack.getItem() instanceof TieredItem
-        || stack.getItem() instanceof ShearsItem
-        || stack.getItem() instanceof FishingRodItem
-        || stack.getItem() instanceof FlintAndSteelItem
-        || stack.getItem() instanceof BrushItem
-        || stack.is(Items.TORCH)
-        || stack.is(Items.SOUL_TORCH)
-        || stack.is(Items.REDSTONE_TORCH)
-        || stack.is(net.minecraft.tags.ItemTags.SAPLINGS);
+    return false;
   }
 
   public static LogisticsNetwork get(Lumberton w) {
@@ -225,22 +215,18 @@ public final class LogisticsNetwork {
     Map<String, Demand> previous = new HashMap<>(demands);
     Map<String, Demand> next = new LinkedHashMap<>();
     for (Lumberton w : workers) {
-      if (!w.authorized || w.job() == 0 || w.station() == null) continue;
-      if (w.job() == WorkerJob.FARMINGTON) {
-        for (var need : w.farming.reserve().entrySet()) {
-          int missing = need.getValue() - w.mining.carried(need.getKey());
-          if (missing > 0)
-            demand(
-                next,
-                w,
-                need.getKey() == Items.BONE_MEAL ? "optional" : "planting",
-                need.getKey(),
-                missing,
-                need.getKey() == Items.BONE_MEAL ? 3 : 1,
-                l);
-        }
-        continue;
+      Station supplySite = WorkerStock.site(w);
+      if (supplySite != null) stations.put(supplySite.identity, supplySite);
+      if (!w.authorized || supplySite == null) continue;
+      if (WorkerStock.needsTool(w)) demand(next, w, "tool", null, 1, 0, l);
+      for (var need : WorkerStock.required(w).entrySet()) {
+        int missing = need.getValue() - WorkerStock.carried(w, need.getKey());
+        if (missing > 0) demand(next, w, need.getKey() == Luminall.BOTTLE.get() ? "energy" : need.getKey() == Items.TORCH ? "torch" : "supplies",
+            need.getKey(), missing, need.getKey() == Luminall.BOTTLE.get() ? 0 : 1, l);
       }
+      if (w.job() == WorkerJob.LUMINARITON && WorkerStock.plants(w) < 16)
+        demand(next, w, "flowers", null, 16 - WorkerStock.plants(w), 2, l);
+      if (w.job() == 0 || w.station() == null) continue;
       if (w.job() == WorkerJob.BUILDINGTON) {
         BuildingProject building = w.building.active();
         if (building != null && !building.ready && w.getUUID().equals(building.builder)) {
@@ -255,21 +241,6 @@ public final class LogisticsNetwork {
         }
         continue;
       }
-      if (w.job() == 1 && !Inventories.axe(w.activeTool()) || w.job() == 2 && w.mining.needsTool())
-        demand(next, w, "tool", null, 1, 0, l);
-      if (w.job() == 2)
-        for (var e : w.mining.requiredStock().entrySet()) {
-          int missing = e.getValue() - w.mining.carried(e.getKey());
-          if (missing > 0)
-            demand(
-                next,
-                w,
-                e.getKey() == Items.TORCH ? "torch" : "material",
-                e.getKey(),
-                missing,
-                (w.alerts & ~Lumberton.WOOD) != 0 ? 0 : 1,
-                l);
-        }
     }
     demands.clear();
     demands.putAll(next);
@@ -399,7 +370,7 @@ public final class LogisticsNetwork {
     Demand d = demands.getOrDefault(id, new Demand());
     d.id = id;
     d.worker = w.getUUID();
-    d.totem = w.totemId;
+    d.totem = WorkerStock.siteId(w);
     d.kind = kind;
     d.item = item;
     d.quantity = amount;
@@ -417,7 +388,16 @@ public final class LogisticsNetwork {
       Map<Item, Integer> required = new LinkedHashMap<>();
       if (station.farm != null) required.putAll(station.farm.reserves(l));
       for (Lumberton worker : workers)
-        if (station.identity.equals(worker.totemId)) {
+        if (station.identity.equals(WorkerStock.siteId(worker))) {
+          WorkerStock.required(worker).forEach((item, count) -> {
+            if (item == Luminall.BOTTLE.get() || worker.job() != WorkerJob.FARMINGTON) required.merge(item, Math.max(0, count - WorkerStock.carried(worker, item)), Integer::sum);
+          });
+          if (worker.job() == WorkerJob.CRAFTERTON) worker.crafting.held.forEach((item, count) ->
+              required.merge(item, Math.max(0, count - worker.mining.carried(item)), Math::max));
+          if (worker.job() == WorkerJob.LUMINARITON && WorkerStock.plants(worker) < 16) {
+            for (Report local : reports.values()) if (local.loaded && local.sites.contains(station.identity))
+              for (ItemStack stack : local.contents) if (LuminaService.plantingStock(stack)) required.merge(stack.getItem(), 16, Math::max);
+          }
           if (worker.job() == WorkerJob.FARMINGTON)
             required.replaceAll((item, count) -> Math.max(0, count - worker.mining.carried(item)));
           if (worker.job() == WorkerJob.BUILDINGTON && worker.building.active() != null)
@@ -519,9 +499,10 @@ public final class LogisticsNetwork {
           || !member(w)
           || !w.isAlive()
           || w.packing
-          || !Objects.equals(e.totem, w.totemId)) return null;
+          || !Objects.equals(e.totem, WorkerStock.siteId(w))) return null;
       if (Inventories.tool(w.job(), item)) return w.tools;
-      return w.job() == 2 && w.mining.wants(item)
+      return WorkerStock.accepts(w, item)
+              || w.job() == 2 && w.mining.wants(item)
               || w.job() == WorkerJob.FARMINGTON && w.farming.reserve().containsKey(item.getItem())
               || w.job() == WorkerJob.BUILDINGTON
                   && w.building.active() != null
@@ -560,6 +541,8 @@ public final class LogisticsNetwork {
 
   public boolean matches(ServerLevel l, Demand d, ItemStack stack) {
     if (stack.isEmpty()) return false;
+    if (d.kind.equals("flowers")) return LuminaService.plantingStock(stack);
+    if (d.item == Luminall.BOTTLE.get()) return WorkerEnergy.fullBottle(stack);
     if (d.item != null) return stack.is(d.item);
     return l.getEntity(d.worker) instanceof Lumberton w
         && member(w)
@@ -574,7 +557,10 @@ public final class LogisticsNetwork {
         || !member(w)
         || !w.authorized
         || w.packing
-        || !Objects.equals(w.totemId, d.totem)) return 0;
+        || !Objects.equals(WorkerStock.siteId(w), d.totem)) return 0;
+    if (d.kind.equals("flowers")) return Math.max(0, 16 - WorkerStock.plants(w) - localStock(l, d));
+    if (d.item != null && WorkerStock.required(w).containsKey(d.item))
+      return Math.max(0, WorkerStock.required(w).get(d.item) - WorkerStock.carried(w, d.item) - localStock(l, d));
     if (d.item != null)
       return w.job() == WorkerJob.FARMINGTON
           ? Math.max(
@@ -598,9 +584,7 @@ public final class LogisticsNetwork {
                           - w.building.active().supplies.count(l, d.item))
                   : 0;
     if (localStock(l, d) > 0) return 0;
-    return w.job() == 1 && !Inventories.axe(w.activeTool()) || w.job() >= 2 && w.mining.needsTool()
-        ? 1
-        : 0;
+    return WorkerStock.needsTool(w) ? 1 : 0;
   }
 
   private int localStock(ServerLevel l, Demand d) {
@@ -736,6 +720,30 @@ public final class LogisticsNetwork {
     return collect(runner);
   }
 
+  public int availableForCrafting(ServerLevel level, Report report, ItemStack item) {
+    return report == null ? 0 : available(level, report, item, null, true, null);
+  }
+
+  /** A crafter without couriers may physically deliver its already-existing output. */
+  public boolean offerCarried(Lumberton worker) {
+    if (parcels.containsKey(worker.getUUID())) return true;
+    ServerLevel level = (ServerLevel)worker.level();
+    for (Demand demand : demands.values().stream().filter(d -> d.source == null && d.worker != null && !d.worker.equals(worker.getUUID()))
+        .sorted(Comparator.comparingInt(d -> d.priority)).toList()) {
+      int needed = neededNow(level, demand); if (needed <= 0) continue;
+      for (int i = 0; i < worker.cargo.getSlots(); i++) {
+        ItemStack stack = worker.cargo.getStackInSlot(i);
+        if (!matches(level, demand, stack) || worker.cargoKeep(stack) >= worker.mining.carried(stack.getItem())) continue;
+        Endpoint destination = new Endpoint(demand.totem, null, demand.worker);
+        int amount = Math.min(Math.min(needed, stack.getCount()), capacity(level, destination, stack, worker.getUUID()));
+        if (amount <= 0) continue;
+        Parcel parcel = reserve(worker, demand.id, new Endpoint(WorkerStock.siteId(worker), null, worker.getUUID()), destination, stack, amount);
+        parcel.picked = amount; parcel.phase = Phase.CARRYING; dirty(level); return true;
+      }
+    }
+    return false;
+  }
+
   private Parcel collect(Lumberton runner) {
     ServerLevel l = (ServerLevel) runner.level();
     List<Report> output =
@@ -854,6 +862,12 @@ public final class LogisticsNetwork {
           && !local.id.equals(exceptProject)
           && projects.add(local.id)) required += local.remaining(l).getOrDefault(item, 0);
       for (Lumberton worker : site.loadedWorkers()) {
+        if (member(worker) && worker.job() != WorkerJob.FARMINGTON && worker.job() != WorkerJob.BUILDINGTON
+            && countedWorkers.add(worker.getUUID())) {
+          int keep = WorkerStock.required(worker).getOrDefault(item, 0);
+          if (worker.job() == WorkerJob.CRAFTERTON) keep = Math.max(keep, worker.crafting.held.getOrDefault(item, 0));
+          required += Math.max(0, keep - WorkerStock.carried(worker, item));
+        }
         if (!member(worker)
             || worker.job() != WorkerJob.FARMINGTON && worker.job() != WorkerJob.BUILDINGTON
             || !countedWorkers.add(worker.getUUID())) continue;

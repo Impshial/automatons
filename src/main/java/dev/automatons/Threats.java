@@ -58,6 +58,7 @@ public final class Threats {
     if (!escaping) {
       worker.hunting.release();
       worker.ranching.release();
+      worker.fishing.release();
       worker.clearChop(); worker.farming.release(); worker.building.release(); worker.mining.releaseWork();
       worker.running.release(); worker.getNavigation().stop(); escaping = true;
       if (worker.getVehicle() instanceof Machine machine) {

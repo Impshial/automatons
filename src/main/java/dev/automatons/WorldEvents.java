@@ -140,6 +140,7 @@ public final class WorldEvents {
     if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w) {
       w.hunting.release();
       w.ranching.release();
+      w.fishing.release();
       w.clearChop();
       w.farming.release();
       if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy()) MachineOperator.leave(w);

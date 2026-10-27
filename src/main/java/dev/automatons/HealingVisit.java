@@ -29,6 +29,7 @@ public final class HealingVisit {
       if (mage == null) return false;
       visiting = mage.getUUID();
       worker.ranching.release();
+      worker.fishing.release();
       worker.hunting.release(); worker.farming.release(); worker.building.release(); worker.mining.releaseWork(); worker.running.release();
       if (worker.getVehicle() instanceof Machine machine) {
         machine.halt("Operator seeking healing"); Vec3 exit = machine.getDismountLocationForPassenger(worker);
