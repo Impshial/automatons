@@ -8,23 +8,20 @@ categories:
   - "worksites"
 ---
 
-# Mine entrance
+# Mine entrance and landings
 
-Configure the matching purpose in **Totem → Worksite Settings** before assigning your Minington. A Buildington constructs the surface building from the current blueprint.
+Configure a Mine Totem and let a Buildington construct its surface entrance. The surface shaft stays open. Supply ladders, torches and **eight chests per landing**. The first landing is 20 blocks down, followed by four-block level spacing.
 
 <GameScene zoom="1.3" interactive={true}>
   <ImportStructure src="../assets/structures/minehead.nbt" />
   <IsometricCamera yaw="135" pitch="30" />
 </GameScene>
 
-The illustration preserves the blueprint's block states and Totem anchor. Item-frame signs are omitted from this scene; their real item costs remain in Build List.
-The foundation is buried one block, keeping the entrance flush with the ground. There is no hatch. The underground shaft, platform, ladders and two double-chest depots are added by Miningtons after the surface handover.
+The illustration shows the surface minehead. Underground geometry uses the supplied landing, shaft-step and strip-level layouts. Each landing provides four double chests; earlier depots remain registered for storage and courier collection.
 
 <a name="supplies" />
 ## Supplies and recovery
 
-Open **Build List** for exact total, remaining, available and missing resources, including stock in valid inventories. Door halves cost one door together; double slabs cost two slabs. Containers start empty.
-The yellow perimeter shows the reserved space. Bring missing supplies or clear a reported hard obstruction, then let the worker retry.
-Use **Pause/Resume** for construction control. **Repair** schedules missing building cells without silently overwriting different blocks.
+Use the missing-material list for real construction quantities. Chest halves cost actual chest items and containers start empty. Keep access, chest lids and supported approaches clear. Inspect reported caves or fluids before acknowledging and resuming work.
 
-[Read the Minington guide](../professions/minington.md).
+[Minington details](../professions/minington.md).

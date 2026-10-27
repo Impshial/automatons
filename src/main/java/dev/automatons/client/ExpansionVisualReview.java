@@ -330,6 +330,35 @@ public final class ExpansionVisualReview {
           mc.getMainRenderTarget(),
           c -> {});
     if (tick == start + 620) {
+      CurrentRunVisualSmoke.validate();
+      server(
+          p ->
+              guideme.GuidesCommon.openGuide(
+                  p,
+                  HandbookItem.GUIDE_ID,
+                  guideme.PageAnchor.page(Automatons.id("professions/luminariton.md"))));
+    }
+    if (tick == start + 650) {
+      if (!(mc.screen instanceof guideme.ui.GuideUiHost))
+        throw new IllegalStateException("Expansion handbook did not open");
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-expansion-mage-handbook.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+      server(
+          p ->
+              guideme.GuidesCommon.openGuide(
+                  p,
+                  HandbookItem.GUIDE_ID,
+                  guideme.PageAnchor.page(Automatons.id("items/components.md"))));
+    }
+    if (tick == start + 680) {
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-expansion-armored-handbook.png",
+          mc.getMainRenderTarget(),
+          c -> {});
       System.out.println("AUTOMATONS_WORKSITE_VISUAL_COMPLETE");
       mc.stop();
     }

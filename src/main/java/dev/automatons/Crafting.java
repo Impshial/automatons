@@ -313,12 +313,25 @@ public final class Crafting {
       if (step.cooking()) {
         held.put(Items.COAL, 1);
         held.put(Items.CHARCOAL, 1);
+        ItemStack fuel = fuel(inventory, step);
+        if (!fuel.isEmpty()) held.merge(fuel.getItem(), 1, Math::max);
       }
       if (step.cooking() && !hasFuel(furnaces)) requested.put(Items.COAL, 1);
       if (WorkSupplies.deposit(worker, site, keep())) return;
-      for (var entry : step.ingredients().entrySet())
-        if (worker.mining.carried(entry.getKey()) < entry.getValue()) {
-          if (!fetch(stock, courier, entry.getKey(), entry.getValue()))
+      List<ItemStack> exactInputs = new ArrayList<>();
+      for (ItemStack input : step.inputs()) {
+        if (input.isEmpty()) continue;
+        ItemStack existing =
+            exactInputs.stream()
+                .filter(s -> ItemStack.isSameItemSameTags(s, input))
+                .findFirst()
+                .orElse(null);
+        if (existing == null) exactInputs.add(input.copy());
+        else existing.grow(input.getCount());
+      }
+      for (ItemStack input : exactInputs)
+        if (carried(input) < input.getCount()) {
+          if (!fetch(stock, courier, input, input.getCount()))
             worker.state(
                 courier ? "Waiting for courier ingredients" : "Needs crafting ingredients");
           return;
@@ -373,13 +386,23 @@ public final class Crafting {
   }
 
   private boolean fetch(List<Stock> stock, boolean courier, Item item, int target) {
+    return fetch(stock, courier, new ItemStack(item), target);
+  }
+
+  private int carried(ItemStack sample) {
+    return CraftingPlan.contents(worker.cargo).stream()
+        .filter(s -> ItemStack.isSameItemSameTags(s, sample))
+        .mapToInt(ItemStack::getCount)
+        .sum();
+  }
+
+  private boolean fetch(List<Stock> stock, boolean courier, ItemStack sample, int target) {
     for (Stock source : stock) {
       if (courier && !source.local || !worker.canReach(source.position)) continue;
       for (int i = 0; i < source.items.getSlots(); i++) {
         ItemStack stack = source.items.getStackInSlot(i);
-        if (!stack.is(item)
-            || !CraftingPlan.ordinary(stack)
-            || !Storage.accepts(worker.cargo, stack)) continue;
+        if (!ItemStack.isSameItemSameTags(stack, sample) || !Storage.accepts(worker.cargo, stack))
+          continue;
         int available =
             source.local
                 ? stack.getCount()
@@ -392,7 +415,7 @@ public final class Crafting {
               source.items,
               i,
               worker.cargo,
-              Math.min(available, Math.max(0, target - worker.mining.carried(item))));
+              Math.min(available, Math.max(0, target - carried(sample))));
         return true;
       }
     }
@@ -400,9 +423,25 @@ public final class Crafting {
   }
 
   private boolean hasFuel(List<AbstractFurnaceBlockEntity> furnaces) {
-    return worker.mining.carried(Items.COAL) > 0
-        || worker.mining.carried(Items.CHARCOAL) > 0
-        || furnaces.stream().anyMatch(f -> lit(f) || !f.getItem(1).isEmpty());
+    return CraftingPlan.contents(worker.cargo).stream().anyMatch(Crafting::safeFuel)
+        || furnaces.stream().anyMatch(f -> lit(f) || safeFuel(f.getItem(1)));
+  }
+
+  private static boolean safeFuel(ItemStack stack) {
+    return !stack.isEmpty()
+        && CraftingPlan.ordinary(stack)
+        && !stack.isDamageableItem()
+        && AbstractFurnaceBlockEntity.isFuel(stack);
+  }
+
+  private ItemStack fuel(List<ItemStack> inventory, CraftingPlan.Step step) {
+    return inventory.stream()
+        .filter(Crafting::safeFuel)
+        .filter(
+            s -> count(inventory, s.getItem()) > step.ingredients().getOrDefault(s.getItem(), 0))
+        .sorted(Comparator.comparingInt(s -> s.is(Items.COAL) ? 0 : s.is(Items.CHARCOAL) ? 1 : 2))
+        .findFirst()
+        .orElse(ItemStack.EMPTY);
   }
 
   private static boolean lit(AbstractFurnaceBlockEntity furnace) {
@@ -433,20 +472,35 @@ public final class Crafting {
           && (!ItemStack.isSameItemSameTags(furnace.getItem(2), step.output())
               || furnace.getItem(2).getCount() + step.output().getCount()
                   > step.output().getMaxStackSize())) continue;
-      if (!lit(furnace) && furnace.getItem(1).isEmpty()) {
-        Item fuel =
-            worker.mining.carried(Items.COAL) > 0
-                ? Items.COAL
-                : worker.mining.carried(Items.CHARCOAL) > 0 ? Items.CHARCOAL : null;
-        if (fuel == null) {
+      if (!lit(furnace) && !safeFuel(furnace.getItem(1))) {
+        if (!furnace.getItem(1).isEmpty()) {
+          if (!Inventories.fits(worker.cargo, List.of(furnace.getItem(1)))) {
+            worker.state("Needs room for furnace fuel container");
+            return;
+          }
+          if (worker.travelTo(
+              furnace.getBlockPos(), "Collecting fuel container", "Collecting fuel container")) {
+            Inventories.insert(
+                worker.cargo, furnace.removeItem(1, furnace.getItem(1).getCount()), false);
+            furnace.setChanged();
+          }
+          return;
+        }
+        ItemStack fuel = fuel(CraftingPlan.contents(worker.cargo), step);
+        if (fuel.isEmpty()) {
           requested.put(Items.COAL, 1);
-          if (!fetch(stock, courier, Items.COAL, 1) && !fetch(stock, courier, Items.CHARCOAL, 1))
-            worker.state("Needs furnace fuel");
+          ItemStack available = fuel(inventory(stock), step);
+          if (!available.isEmpty()) {
+            int needed = step.ingredients().getOrDefault(available.getItem(), 0) + 1;
+            held.merge(available.getItem(), needed, Math::max);
+            if (fetch(stock, courier, available, needed)) return;
+          }
+          worker.state("Needs furnace fuel");
           return;
         }
         if (!worker.travelTo(furnace.getBlockPos(), "Fueling furnace", "Fueling furnace")) return;
         for (int i = 0; i < worker.cargo.getSlots(); i++)
-          if (worker.cargo.getStackInSlot(i).is(fuel)) {
+          if (ItemStack.isSameItemSameTags(worker.cargo.getStackInSlot(i), fuel)) {
             furnace.setItem(1, worker.cargo.extractItem(i, 1, false));
             furnace.setChanged();
             break;

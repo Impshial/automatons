@@ -98,6 +98,31 @@ public final class FarmPlan {
       unknown = false;
       cells.removeIf(p -> !inRange(station, BlockPos.of(p)));
     }
+    // Adopt existing farmland before choosing a new default field. The crop selectors still
+    // govern planting; surveying must not silently replace a player's irregular field.
+    int total = side * side * 7;
+    for (int budget = 0; budget < 192 && scan < total && WorldEvents.budget(1); budget++) {
+      int i = scan++;
+      BlockPos p = station.getBlockPos().offset(i % side - radius, i / (side * side) - 4, i / side % side - radius);
+      if (!l.hasChunkAt(p)) { unknown = true; continue; }
+      if (l.getBlockState(p).is(Blocks.FARMLAND) && available(l, station, p)) cells.add(p.asLong());
+    }
+    if (scan < total) return;
+    if (!cells.isEmpty()) {
+      Direction across = station.orientation.getCounterClockWise();
+      java.util.function.LongToIntFunction coordinate = key -> {
+        BlockPos pos = BlockPos.of(key);
+        return pos.getX() * across.getStepX() + pos.getZ() * across.getStepZ();
+      };
+      int min = cells.stream().mapToInt(coordinate::applyAsInt).min().orElse(0);
+      int width = cells.stream().mapToInt(coordinate::applyAsInt).max().orElse(min) - min + 1;
+      for (long cell : cells) strips.put(cell, Math.min(2, (coordinate.applyAsInt(cell) - min) * 3 / width));
+      discovered = true; reason = "Tending existing farmland"; changed(l, station); return;
+    }
+    if (unknown) {
+      scan = 0; unknown = false; retry = l.getGameTime() + 200;
+      reason = "Farmland survey has unloaded areas"; return;
+    }
     List<BlockPos> centers = new ArrayList<>();
     for (int x = -radius + 4; x <= radius - 4; x++)
       for (int z = -radius + 4; z <= radius - 4; z++)

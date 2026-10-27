@@ -24,11 +24,11 @@ public final class MachineGameTests {
     m.interactAt(p, new net.minecraft.world.phys.Vec3(0, 1, -1), hand);
     h.assertTrue(
         p.getMainHandItem().is(Items.GLASS_BOTTLE)
-            && Math.abs(m.fuel + m.fuelFraction - 7.5) < 1e-7,
+            && Math.abs(m.fuel + m.fuelFraction - 187.5) < 1e-7,
         "Half bottle failed");
     p.setItemInHand(hand, LuminallBottle.create(125));
     m.interact(p, hand);
-    h.assertTrue(m.fuel == 15 && m.fuelFraction < 1e-7, "Two halves did not conserve fuel");
+    h.assertTrue(m.fuel == 375 && m.fuelFraction < 1e-7, "Two halves did not conserve fuel");
     ItemStack tank = new ItemStack(Luminall.TANK_ITEM.get());
     var cap =
         tank.getCapability(
@@ -47,13 +47,13 @@ public final class MachineGameTests {
     h.assertTrue(
         p.getMainHandItem().is(Luminall.TANK_ITEM.get())
             && remaining.getFluidInTank(0).isEmpty()
-            && m.fuel == 495,
+            && m.fuel == 12375,
         "Bulk Tank did not drain in one interaction");
     h.assertTrue(m.engine == Machine.Engine.OFF, "Refueling auto-started engine");
     p.setItemInHand(hand, new ItemStack(Luminall.BUCKET.get()));
     m.interactAt(p, new net.minecraft.world.phys.Vec3(0, 1, -1.49), hand);
     h.assertTrue(
-        p.getMainHandItem().is(Items.BUCKET) && m.fuel == 555,
+        p.getMainHandItem().is(Items.BUCKET) && m.fuel == 13875,
         "Right-click bucket did not empty into engine");
     h.succeed();
   }
@@ -61,17 +61,17 @@ public final class MachineGameTests {
   @GameTest(template = "empty", timeoutTicks = 40)
   public static void partial_refueling_preserves_overflow_and_fraction_on_reload(GameTestHelper h) {
     Machine m = machine(h, 0);
-    m.fuel = MachineRules.FUEL_THIRDS - 1;
+    m.fuel = MachineRules.FUEL_THIRDS - 2;
     ItemStack result = m.refuelContainer(LuminallBottle.create(125));
     h.assertTrue(
-        LuminallBottle.amount(result) == 109
+        LuminallBottle.amount(result) == 124
             && m.fuel == MachineRules.FUEL_THIRDS - 1
-            && Math.abs(m.fuelFraction - .96) < 1e-7,
+            && Math.abs(m.fuelFraction - .5) < 1e-7,
         "Capacity rounding lost fluid");
     CompoundTag saved = m.saveWithoutId(new CompoundTag());
     Machine restored = MachineParts.ENTITY.get().create(h.getLevel());
     restored.load(saved);
-    h.assertTrue(Math.abs(restored.fuelFraction - .96) < 1e-7, "Fractional fuel lost on reload");
+    h.assertTrue(Math.abs(restored.fuelFraction - .5) < 1e-7, "Fractional fuel lost on reload");
     var stranger =
         FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "FuelStranger"));
     stranger.setItemInHand(
@@ -95,7 +95,7 @@ public final class MachineGameTests {
           bottle.finishUsingItem(h.getLevel(), p).is(Items.GLASS_BOTTLE),
           "Creative drink kept full bottle");
     }
-    h.assertTrue(Lumina.thirds(p) == 15, "Partial drinks duplicated/lost energy");
+    h.assertTrue(Lumina.thirds(p) == 375, "Partial drinks duplicated/lost energy");
     var ledger = Ledger.get(p.server);
     var restored = Ledger.load(ledger.save(new CompoundTag()));
     h.assertTrue(

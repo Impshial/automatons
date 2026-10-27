@@ -8,12 +8,8 @@ navigation:
 
 # Operatorton
 
-Choose Operatorton from any Automaton's profession list and Apply Job. It needs no tools or special assembly recipe. Its name, owner and inventory remain the same.
+Use the Wand to assign an ordinary Automaton from the same home network directly to a parked Machine with an empty seat. This gives it the Operatorton profession and preserves its identity and supplies. It needs no production Totem and occupies no production-worker place.
 
-Open [The Machine](../machine/index.md), then assign an eligible Operatorton from Controls. You can also select the worker with the Wand and use the Wand on the Machine. Both must share an owner and home Pedestal network. A worker and Machine each accept only one assignment.
+The operator physically approaches and boards the Machine. Only an actual seated driver enables piloted work. Recall, unloading or a missing driver pauses the Machine's job. Operating charge is separate from engine fuel: the operator stops and leaves safely to obtain its own recharge bottle when low.
 
-The Operatorton walks to the vehicle and sits in its single station. Assignment and boarding do not start work. Choose a Program or Chunk job, then Start Work.
-
-When cargo fills, a seated Operatorton retraces the recorded route to the start, unloads into nearby receiving chests, and returns to the exact work position and heading. The saved instruction and remaining distance continue. If storage is full, it waits for space and can request a Runnerton.
-
-Release operator pauses the job and dismounts the worker. Changing its profession, losing the driver, or invalidating ownership/network membership pauses operation. It never silently switches to unattended operation.
+[The Machine](../machine/index.md) · [Programs](../machine/programs.md).

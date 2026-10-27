@@ -186,11 +186,11 @@ public final class PortableFluidGameTests {
     Lumina.clear(p);
     Lumina.addThirds(p, 35);
     h.assertTrue(
-        LuminaDrain.transfer(p, tank) == 250 && Lumina.thirds(p) == 20,
+        LuminaDrain.transfer(p, tank) == 10 && Lumina.thirds(p) == 20,
         "Drain conversion incorrect");
     h.assertTrue(
-        LuminaDrain.transfer(p, tank) == 250 && Lumina.thirds(p) == 5, "Second transfer incorrect");
-    h.assertTrue(LuminaDrain.transfer(p, tank) == 50 && Lumina.thirds(p) == 2, "Remainder lost");
+        LuminaDrain.transfer(p, tank) == 10 && Lumina.thirds(p) == 5, "Second transfer incorrect");
+    h.assertTrue(LuminaDrain.transfer(p, tank) == 2 && Lumina.thirds(p) == 2, "Remainder lost");
     h.assertTrue(LuminaDrain.transfer(p, tank) == 0, "Drain overdrew player");
     Lumina.addThirds(p, 300);
     tank.tank.fill(new FluidStack(Luminall.SOURCE.get(), tank.capacity()), FluidAction.EXECUTE);

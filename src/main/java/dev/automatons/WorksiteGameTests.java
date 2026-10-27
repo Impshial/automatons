@@ -258,7 +258,7 @@ public final class WorksiteGameTests {
   }
 
   @GameTest(template = "empty", timeoutTicks = 4000)
-  public static void builder_demolishes_structural_obstacles_and_preserves_container_loot(
+  public static void builder_waits_for_valuable_containers_and_resumes_after_player_removal(
       GameTestHelper h) {
     perimeterBuild(h, null, false, true);
   }
@@ -330,6 +330,18 @@ public final class WorksiteGameTests {
     Lumberton w = worker(h, r, 4, new BlockPos(21, 1, 17));
     w.setPos(Vec3.atBottomCenterOf(start));
     w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
+    if (obstructed) h.runAfterDelay(600, () -> {
+      BlockPos chest = template.world(project.anchor, project.front, template.placements().get(2).local());
+      h.assertTrue(h.getLevel().getBlockEntity(chest) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity be
+          && be.getItem(0).is(Items.DIAMOND) && be.getItem(0).getCount() == 7,
+          "Builder changed a valuable existing container");
+      for (var cell : template.cells) {
+        BlockPos at = template.world(project.anchor, project.front, cell.local());
+        if (h.getLevel().getBlockEntity(at) != null && !at.equals(project.anchor)
+            && !Construction.matches(h.getLevel().getBlockState(at), cell.state().rotate(template.rotationFor(project.front))))
+          h.getLevel().destroyBlock(at, true);
+      }
+    });
     int[] previousWear = {0};
     long[] lastPlacement = {-100};
     Set<BlockPos> workPositions = new HashSet<>();
@@ -613,6 +625,7 @@ public final class WorksiteGameTests {
     UUID a = UUID.randomUUID(), b = UUID.randomUUID();
     f.cells.add(p.asLong());
     f.replant.put(p.asLong(), Items.CARROT);
+    Arrays.fill(f.crops, 2);
     f.discovered = true;
     h.assertTrue(f.claim(p, a) && !f.claim(p, b), "Shared field double claim");
     FarmPlan saved = FarmPlan.load(f.save());
@@ -631,6 +644,9 @@ public final class WorksiteGameTests {
   public static void farmington_harvests_and_replants_existing_irregular_cells(GameTestHelper h) {
     Rig r = rig(h, WorksitePurpose.FARM, true);
     BlockPos soil = h.absolutePos(new BlockPos(5, 0, 8));
+    r.site.farm = new FarmPlan();
+    Arrays.fill(r.site.farm.crops, 2);
+    WorldData.get(h.getLevel()).farms.put(r.site.identity, r.site.farm);
     for (BlockPos p : List.of(soil, soil.east(), soil.south(2))) {
       h.getLevel()
           .setBlock(p, Blocks.FARMLAND.defaultBlockState().setValue(FarmBlock.MOISTURE, 7), 3);
@@ -669,7 +685,7 @@ public final class WorksiteGameTests {
       var t = BuildingTemplate.load(l, purpose.blueprint);
       int direction = 0;
       for (Direction front : Direction.Plane.HORIZONTAL) {
-        BlockPos anchor = h.absolutePos(new BlockPos(12 + index * 16, 2, 12 + direction++ * 18));
+        BlockPos anchor = h.absolutePos(new BlockPos(24 + index * 48, 2, 24 + direction++ * 48));
         l.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
         Station site = (Station) l.getBlockEntity(anchor);
         site.owner = UUID.randomUUID();
@@ -686,12 +702,12 @@ public final class WorksiteGameTests {
           if (!cell.local().equals(t.anchor))
             l.setBlock(
                 t.world(anchor, front, cell.local()),
-                cell.state().rotate(BuildingTemplate.rotation(front)),
+                cell.state().rotate(t.rotationFor(front)),
                 2);
         for (var cell : t.cells)
           if (!cell.state().isAir()) {
             BlockPos at = t.world(anchor, front, cell.local());
-            var expected = cell.state().rotate(BuildingTemplate.rotation(front));
+            var expected = cell.state().rotate(t.rotationFor(front));
             h.assertTrue(
                 Construction.matches(l.getBlockState(at), expected),
                 "Rotated cell mismatch: " + purpose + " " + front + " " + cell.local());
@@ -701,15 +717,16 @@ public final class WorksiteGameTests {
         for (BlockPos chest : project.chests(l)) {
           var inv = project.handler(l, chest);
           h.assertTrue(
-              inv != null && inv.getSlots() == 54,
-              "Unusable double chest: " + purpose + " " + front);
+              inv != null && inv.getSlots() == (l.getBlockState(chest).getValue(ChestBlock.TYPE)
+                  == net.minecraft.world.level.block.state.properties.ChestType.SINGLE ? 27 : 54),
+              "Unusable authored chest: " + purpose + " " + front);
           for (int slot = 0; slot < inv.getSlots(); slot++)
             h.assertTrue(inv.getStackInSlot(slot).isEmpty(), "Schematic container copied loot");
         }
         for (var display : t.frames) {
           var frame =
               new net.minecraft.world.entity.decoration.ItemFrame(
-                  l, t.world(anchor, front, display.local()), front);
+                  l, t.world(anchor, front, display.local()), t.rotationFor(front).rotate(display.facing()));
           frame.setItem(new ItemStack(display.item()), false);
           h.assertTrue(frame.survives(), "Display has no valid support: " + purpose + " " + front);
           l.addFreshEntity(frame);
@@ -911,6 +928,7 @@ public final class WorksiteGameTests {
     site.project().ready = true;
     site.farm = new FarmPlan();
     site.farm.boneMeal = false;
+    Arrays.fill(site.farm.crops, 2);
     WorldData.get(h.getLevel()).farms.put(site.identity, site.farm);
     BlockPos chest = site.getBlockPos().east(7);
     h.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), 3);
@@ -919,6 +937,7 @@ public final class WorksiteGameTests {
     for (ItemStack stack :
         List.of(
             new ItemStack(Items.WATER_BUCKET),
+            new ItemStack(Items.GLASS),
             new ItemStack(Items.CARROT, 128),
             new ItemStack(Items.BONE_MEAL, 16)))
       h.assertTrue(
@@ -1011,6 +1030,7 @@ public final class WorksiteGameTests {
     Rig r = rig(h, WorksitePurpose.FARM, true);
     r.site.farm = new FarmPlan();
     r.site.farm.defaultPlant = Items.CARROT;
+    Arrays.fill(r.site.farm.crops, 2);
     WorldData.get(h.getLevel()).farms.put(r.site.identity, r.site.farm);
     for (int n = 0; n < 8; n++)
       r.site.farm.cells.add(r.site.getBlockPos().west(10).offset(n, -1, 0).asLong());

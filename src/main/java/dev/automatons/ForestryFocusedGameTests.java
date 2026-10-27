@@ -10,6 +10,10 @@ import net.minecraftforge.gametest.*;
 @GameTestHolder("automatons_focus")
 @PrefixGameTestTemplate(false)
 public final class ForestryFocusedGameTests {
+  @GameTest(template = "empty", timeoutTicks = 2400)
+  public static void netherite_axe_delivers_harvest(GameTestHelper h) {
+    RedesignGameTests.netherite_axe_fells_processes_and_delivers(h);
+  }
   @GameTest(template = "empty", timeoutTicks = 2500)
   public static void clears_elevated_fall_obstacles(GameTestHelper h) {
     TimberGameTests.lumberton_clears_fall_obstacles_and_finishes_tree(h);

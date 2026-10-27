@@ -118,7 +118,7 @@ public final class ForestryHelp {
         && w.job() == WorkerJob.MININGTON
         && w.station() != null
         && w.station().purpose == WorksitePurpose.MINE
-        && (w.station().mine == null || !w.station().mine.paused)
+        && !w.station().recalled
         && home != null
         && home.exists()
         && !home.recalled();

@@ -1,5 +1,16 @@
 # Changelog
 
+## 0.10.0 - Thirteen professions and supplied layouts
+
+- Reuse six professions and add Hunterton, Crafterton, Fisherton, Rancherton, Quarryton, Luminariton and armored Guardington.
+- Assign professions through eleven configured Totem purposes or directly through Machine assignment. Add purpose-specific menus, six production places and a separate guard roster.
+- Import ten supplied native layouts with matching schematics and exact material bills. Add fixed strip-mine levels, external-shaft quarrying, dock reservations, ranch handling and physical mage workshop access.
+- Add operating energy, a separate mage healing reserve, 2 mB per Lumina conversion and quarter-rate Collectors. Persist plant/crop exhaustion; dead vegetation drops nothing when broken.
+- Extend real crafting, furnace fuel/remainders, equipment deliveries, livestock protection, threat retreat, patrols and chest-grave recovery.
+- Add thirteen native appearances, armored components, expanded tests and updated editable handbook pages. Release verification and installation status are recorded separately in VERIFICATION.md.
+
+Entries below describe earlier releases and are historical records, not current setup instructions.
+
 ## 0.9.1 - Mine access, portable Machines and fluid handling
 
 - Miningtons open the first shaft block and build twenty ladder rungs through the surface, without requiring an existing output chest.

@@ -4,6 +4,7 @@ import java.util.*;
 import net.minecraft.core.*;
 import net.minecraft.gametest.framework.*;
 import net.minecraft.nbt.CompoundTag;
+import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.item.*;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -15,6 +16,352 @@ import net.minecraftforge.gametest.*;
 @GameTestHolder("automatons_expansion")
 @PrefixGameTestTemplate(false)
 public final class ExpansionGameTests {
+  @GameTest(template = "empty", timeoutTicks = 2500)
+  public static void forestry_clearing_remains_functional_after_expansion(GameTestHelper h) {
+    TimberGameTests.lumberton_clears_fall_obstacles_and_finishes_tree(h);
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2400)
+  public static void netherite_forestry_delivery_remains_functional_after_expansion(
+      GameTestHelper h) {
+    RedesignGameTests.netherite_axe_fells_processes_and_delivers(h);
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2200)
+  public static void guards_spread_patrol_physically_and_restore_site_after_home_recall(
+      GameTestHelper h) {
+    ServerLevel level = h.getLevel();
+    for (int x = 0; x < 64; x++)
+      for (int z = 0; z < 64; z++) h.setBlock(new BlockPos(x, 1, z), Blocks.STONE);
+    BlockPos homePos = h.absolutePos(new BlockPos(32, 2, 32));
+    BlockPos sitePos = h.absolutePos(new BlockPos(14, 2, 14));
+    level.setBlock(homePos, Automatons.PEDESTAL.get().defaultBlockState(), 3);
+    level.setBlock(sitePos, Automatons.TOTEM.get().defaultBlockState(), 3);
+    Station home = (Station) level.getBlockEntity(homePos),
+        site = (Station) level.getBlockEntity(sitePos);
+    home.owner = site.owner = UUID.randomUUID();
+    site.logisticsHome = home.identity;
+    home.registerHome();
+    WorksiteGameTests.readyFixture(site, WorksitePurpose.BUILDER);
+    List<Lumberton> guards = new ArrayList<>();
+    for (int i = 0; i < 2; i++) {
+      Lumberton guard = Automatons.GUARDINGTON.get().create(level);
+      guard.owner = site.owner;
+      guard.homeId = home.identity;
+      guard.home = homePos;
+      guard.moveTo(Vec3.atBottomCenterOf(sitePos.south(3).east(i * 4)));
+      guard.assign(site);
+      guard.cargo.setStackInSlot(0, new ItemStack(Luminall.BOTTLE.get()));
+      guard.tools.setStackInSlot(0, new ItemStack(Items.IRON_SWORD));
+      level.addFreshEntity(guard);
+      WorkerIdentity.update(guard, "Deployed");
+      guards.add(guard);
+    }
+    boolean[] spread = {false}, far = {false};
+    h.onEachTick(
+        () -> {
+          if (h.getTick() < 600) {
+            spread[0] |= guards.get(0).distanceToSqr(guards.get(1)) > 36;
+            far[0] |=
+                guards.stream().anyMatch(g -> g.distanceToSqr(Vec3.atCenterOf(homePos)) > 225);
+          }
+          for (Lumberton guard : guards)
+            h.assertTrue(
+                guard.guarding.site.equals(site.identity) && !guard.guarding.circuit,
+                "Recall replaced saved patrol mode or assignment");
+        });
+    h.runAfterDelay(
+        600,
+        () -> {
+          h.assertTrue(
+              spread[0] && far[0], "Guards did not spread beyond the home recall perimeter");
+          home.recall(true);
+        });
+    h.runAfterDelay(
+        1300,
+        () -> {
+          for (Lumberton guard : guards)
+            h.assertTrue(
+                guard.distanceToSqr(Vec3.atBottomCenterOf(homePos)) <= 110,
+                "Guard failed to return to home perimeter: "
+                    + guard.status()
+                    + " "
+                    + guard.position());
+          home.recall(false);
+        });
+    h.runAfterDelay(
+        2100,
+        () -> {
+          for (Lumberton guard : guards)
+            h.assertTrue(
+                guard.distanceToSqr(Vec3.atBottomCenterOf(sitePos)) < 150,
+                "Guard failed to resume assigned-site patrol: "
+                    + guard.status()
+                    + " "
+                    + guard.position());
+          guards.forEach(Lumberton::discard);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "mine_test", timeoutTicks = 5000)
+  public static void rancher_leads_one_surplus_adult_closes_gate_and_recovers_lead(
+      GameTestHelper h) {
+    ServerLevel level = h.getLevel();
+    BlockPos anchor = h.absolutePos(new BlockPos(12, 40, 10));
+    for (int x = 0; x < 42; x++)
+      for (int z = 0; z < 42; z++) {
+        h.setBlock(new BlockPos(x, 39, z), Blocks.GRASS_BLOCK);
+        for (int y = 40; y < 47; y++) h.setBlock(new BlockPos(x, y, z), Blocks.AIR);
+      }
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
+    Station site = (Station) level.getBlockEntity(anchor);
+    BlockPos homePos = anchor.west(8);
+    level.setBlock(homePos, Automatons.PEDESTAL.get().defaultBlockState(), 3);
+    Station home = (Station) level.getBlockEntity(homePos);
+    home.owner = site.owner = UUID.randomUUID();
+    site.logisticsHome = home.identity;
+    home.registerHome();
+    WorksiteGameTests.readyFixture(site, WorksitePurpose.RANCH);
+    BuildingProject project = site.project();
+    project.front = Direction.SOUTH;
+    project.approved = true;
+    for (var cell : project.template(level).cells) {
+      BlockPos pos = project.template(level).world(anchor, project.front, cell.local());
+      if (!pos.equals(anchor)) level.setBlock(pos, cell.state(), 2);
+      project.completed.add(pos.asLong());
+    }
+    site.chests.addAll(project.chests(level));
+    site.ranch.targets[1] = 2;
+    SiteLayout layout = new SiteLayout(project, level);
+    List<net.minecraft.world.entity.animal.Cow> cows = new ArrayList<>();
+    int[][] places = {{8, 8}, {17, 10}, {17, 13}, {19, 13}};
+    for (int i = 0; i < places.length; i++) {
+      var cow = net.minecraft.world.entity.EntityType.COW.create(level);
+      cow.moveTo(
+          Vec3.atBottomCenterOf(layout.logical(new BlockPos(places[i][0], 0, places[i][1]))));
+      if (i == 3) cow.setAge(-24000);
+      if (i > 0) cow.setNoAi(true);
+      cow.setPersistenceRequired();
+      level.addFreshEntity(cow);
+      cows.add(cow);
+    }
+    Ranching.stock(site, layout);
+    site.ranch.handling = cows.get(0).getUUID();
+    Lumberton rancher = Automatons.LUMBERTON.get().create(level);
+    rancher.owner = site.owner;
+    rancher.homeId = home.identity;
+    rancher.home = homePos;
+    rancher.assign(site);
+    rancher.authorized = true;
+    rancher.cargo.setStackInSlot(0, new ItemStack(Items.LEAD));
+    rancher.moveTo(Vec3.atBottomCenterOf(layout.logical(new BlockPos(3, 0, 9))));
+    level.addFreshEntity(rancher);
+    WorkerIdentity.update(rancher, "Deployed");
+    boolean[] led = {false}, opened = {false};
+    h.runAfterDelay(
+        4900,
+        () ->
+            h.fail(
+                "Ranch route stalled: "
+                    + rancher.status()
+                    + " at "
+                    + rancher.position()
+                    + "; animal="
+                    + cows.get(0).position()
+                    + "; lead="
+                    + cows.get(0).getLeashHolder()));
+    h.onEachTick(
+        () -> {
+          if (h.getTick() % 200 == 0)
+            org.apache.logging.log4j.LogManager.getLogger("au.test")
+                .info(
+                    "RANCH ROUTE tick={} worker={} status={} cow={} alive={} led={} gate={}"
+                        + " adults={} cargo={}",
+                    h.getTick(),
+                    rancher.position(),
+                    rancher.status(),
+                    cows.get(0).position(),
+                    cows.get(0).isAlive(),
+                    cows.get(0).getLeashHolder() == rancher,
+                    level.getBlockState(layout.feature("pen_gate")),
+                    Ranching.stock(site, layout).size(),
+                    rancher.cargo.serializeNBT());
+          led[0] |= cows.get(0).getLeashHolder() == rancher;
+          var gate = level.getBlockState(layout.feature("pen_gate"));
+          opened[0] |= gate.getValue(FenceGateBlock.OPEN);
+          if (cows.get(0).isAlive() || rancher.mining.carried(Items.LEAD) == 0) return;
+          h.assertTrue(
+              led[0] && opened[0] && !gate.getValue(FenceGateBlock.OPEN),
+              "Dispatch bypassed lead or gate closure");
+          h.assertTrue(
+              cows.subList(1, 4).stream().allMatch(net.minecraft.world.entity.LivingEntity::isAlive)
+                  && cows.get(3).isBaby(),
+              "Dispatch harmed breeding pair or baby");
+          int leads = rancher.mining.carried(Items.LEAD);
+          for (var drop :
+              level.getEntitiesOfClass(ItemEntity.class, project.bounds(level).inflate(2)))
+            if (drop.getItem().is(Items.LEAD)) leads += drop.getItem().getCount();
+          h.assertTrue(leads == 1, "Reusable lead duplicated");
+          rancher.discard();
+          cows.forEach(net.minecraft.world.entity.Entity::discard);
+          WorldData.get(level).buildings.remove(site.identity);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void profession_change_uses_linked_storage_and_rejects_full_storage_atomically(
+      GameTestHelper h) {
+    ServerLevel level = h.getLevel();
+    BlockPos anchor = h.absolutePos(new BlockPos(5, 1, 5));
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
+    Station site = (Station) level.getBlockEntity(anchor);
+    site.owner = UUID.randomUUID();
+    site.logisticsHome = UUID.randomUUID();
+    WorksiteGameTests.readyFixture(site, WorksitePurpose.LUMBER);
+    BlockPos pos = anchor.east(6);
+    level.setBlock(pos, Blocks.CHEST.defaultBlockState(), 3);
+    site.chests.add(pos);
+    site.storageComplete = true;
+    var chest = Storage.handler(level, pos, site);
+    for (int i = 0; i < chest.getSlots(); i++)
+      chest.insertItem(i, new ItemStack(Items.STONE, 64), false);
+    Lumberton worker = Automatons.LUMBERTON.get().create(level);
+    worker.owner = site.owner;
+    worker.homeId = site.logisticsHome;
+    worker.home = anchor.south(8);
+    worker.assign(site);
+    worker.setNoAi(true);
+    worker.setHealth(9);
+    worker.operating(123456);
+    ItemStack axe = new ItemStack(Items.DIAMOND_AXE);
+    axe.setHoverName(net.minecraft.network.chat.Component.literal("Kept axe"));
+    axe.setDamageValue(31);
+    axe.enchant(Enchantments.UNBREAKING, 2);
+    worker.tools.setStackInSlot(0, axe);
+    for (int i = 0; i < worker.cargo.getSlots(); i++)
+      worker.cargo.setStackInSlot(i, new ItemStack(Items.COBBLESTONE, 64));
+    h.assertTrue(
+        !worker.setJob(WorkerJob.MININGTON)
+            && worker.job() == WorkerJob.LUMBERTON
+            && ItemStack.isSameItemSameTags(worker.tools.getStackInSlot(0), axe)
+            && worker.mining.carried(Items.COBBLESTONE) == 576,
+        "Full storage partially changed worker");
+    chest.extractItem(0, 64, false);
+    h.assertTrue(
+        worker.setJob(WorkerJob.MININGTON)
+            && worker.tools.getStackInSlot(0).isEmpty()
+            && ItemStack.isSameItemSameTags(chest.getStackInSlot(0), axe)
+            && worker.mining.carried(Items.COBBLESTONE) == 576
+            && worker.getHealth() == 9
+            && worker.operating() == 123456,
+        "Linked-storage reassignment lost inventory or identity state");
+    h.succeed();
+  }
+
+  @GameTest(template = "mine_test", timeoutTicks = 4000)
+  public static void mage_fetches_upper_glass_bottles_ground_fluid_and_returns_stock(
+      GameTestHelper h) {
+    mageRoute(h, Direction.SOUTH);
+  }
+
+  @GameTest(template = "mine_test", timeoutTicks = 4000)
+  public static void mage_completes_north_facing_workshop_route(GameTestHelper h) {
+    mageRoute(h, Direction.NORTH);
+  }
+
+  @GameTest(template = "mine_test", timeoutTicks = 4000)
+  public static void mage_completes_east_facing_workshop_route(GameTestHelper h) {
+    mageRoute(h, Direction.EAST);
+  }
+
+  @GameTest(template = "mine_test", timeoutTicks = 4000)
+  public static void mage_completes_west_facing_workshop_route(GameTestHelper h) {
+    mageRoute(h, Direction.WEST);
+  }
+
+  private static void mageRoute(GameTestHelper h, Direction front) {
+    ServerLevel level = h.getLevel();
+    BlockPos anchor = h.absolutePos(new BlockPos(32, 40, 32));
+    for (int x = 0; x < 64; x++)
+      for (int z = 0; z < 64; z++) {
+        for (int y = 40; y < 51; y++) h.setBlock(new BlockPos(x, y, z), Blocks.AIR);
+        h.setBlock(new BlockPos(x, 39, z), Blocks.STONE);
+      }
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
+    Station site = (Station) level.getBlockEntity(anchor);
+    BlockPos homePos = anchor.west(29).north(29);
+    level.setBlock(homePos, Automatons.PEDESTAL.get().defaultBlockState(), 3);
+    Station home = (Station) level.getBlockEntity(homePos);
+    site.owner = home.owner = UUID.randomUUID();
+    site.logisticsHome = home.identity;
+    home.registerHome();
+    WorksiteGameTests.readyFixture(site, WorksitePurpose.LUMINA);
+    BuildingProject project = site.project();
+    project.front = front;
+    project.approved = true;
+    for (var cell : project.template(level).cells) {
+      BlockPos pos = project.template(level).world(anchor, project.front, cell.local());
+      if (!pos.equals(anchor))
+        level.setBlock(pos, cell.state().rotate(project.template(level).rotationFor(front)), 2);
+      project.completed.add(pos.asLong());
+    }
+    SiteLayout layout = new SiteLayout(project, level);
+    site.chests.addAll(project.chests(level));
+    var stock = Storage.handler(level, site.chests.iterator().next(), site);
+    h.assertTrue(stock != null, "Upper workshop chest inaccessible");
+    stock.insertItem(0, new ItemStack(Items.GLASS_BOTTLE, 4), false);
+    BlockPos collector = layout.collectors().get(0);
+    Reservoir source = (Reservoir) level.getBlockEntity(collector);
+    source.tank.fill(
+        new net.minecraftforge.fluids.FluidStack(Luminall.SOURCE.get(), 1000),
+        net.minecraftforge.fluids.capability.IFluidHandler.FluidAction.EXECUTE);
+    Lumberton mage = Automatons.LUMBERTON.get().create(level);
+    mage.owner = site.owner;
+    mage.homeId = home.identity;
+    mage.home = homePos;
+    mage.assign(site);
+    mage.authorized = true;
+    mage.serviceReserve(400000);
+    mage.moveTo(Vec3.atBottomCenterOf(layout.feature("healing_position")));
+    level.addFreshEntity(mage);
+    WorkerIdentity.update(mage, "Deployed");
+    boolean[] climbed = {false}, descended = {false};
+    h.runAfterDelay(
+        3900,
+        () ->
+            h.fail(
+                "Mage route stalled: "
+                    + mage.status()
+                    + " at "
+                    + mage.position()
+                    + "; cargo="
+                    + mage.cargo.serializeNBT()
+                    + "; fluid="
+                    + source.tank.getFluidAmount()));
+    h.onEachTick(
+        () -> {
+          if (mage.getY() >= layout.feature("upper_dismount").getY() - .2) climbed[0] = true;
+          if (climbed[0]
+              && mage.getY() <= anchor.getY() + .2
+              && mage.mining.carried(Items.GLASS_BOTTLE) > 0) descended[0] = true;
+          int stored = 0;
+          for (BlockPos pos : site.chests) {
+            var chest = Storage.handler(level, pos, site);
+            if (chest == null) continue;
+            for (int i = 0; i < chest.getSlots(); i++)
+              if (WorkerEnergy.fullBottle(chest.getStackInSlot(i))) stored++;
+          }
+          if (stored == 0) return;
+          h.assertTrue(climbed[0] && descended[0], "Bottles bypassed physical ladder travel");
+          h.assertTrue(source.tank.getFluidAmount() <= 500, "Bottling generated free fluid");
+          mage.discard();
+          WorldData.get(level).buildings.remove(site.identity);
+          h.succeed();
+        });
+  }
+
   @GameTest(template = "empty", timeoutTicks = 40)
   public static void quarry_uses_supplied_footprint_external_shaft_and_persistent_partial_cells(
       GameTestHelper h) {
@@ -510,6 +857,12 @@ public final class ExpansionGameTests {
     lease.putUUID("Animal", cow.getUUID());
     lease.putLong("Site", pos.asLong());
     worker.ranching.load(lease);
+    WorldEvents.leave(new net.minecraftforge.event.entity.EntityLeaveLevelEvent(worker, level));
+    h.assertTrue(
+        cow.getLeashHolder() == worker
+            && site.ranch.handling.equals(cow.getUUID())
+            && worker.ranching.save().getUUID("Animal").equals(cow.getUUID()),
+        "Tracking unload destroyed the persisted handling route or spawned its lead early");
     worker.unassign();
     worker.ranching.release();
     h.assertTrue(
@@ -664,7 +1017,17 @@ public final class ExpansionGameTests {
     workshop(h, 2);
   }
 
+  @GameTest(template = "empty", timeoutTicks = 3000)
+  public static void crafter_fetches_remote_stock_uses_bucket_fuel_and_delivers_without_courier(
+      GameTestHelper h) {
+    workshop(h, 1, true);
+  }
+
   private static void workshop(GameTestHelper h, int workers) {
+    workshop(h, workers, false);
+  }
+
+  private static void workshop(GameTestHelper h, int workers, boolean deliver) {
     var level = h.getLevel();
     BlockPos anchor = h.absolutePos(new BlockPos(12, 3, 10));
     for (int x = 0; x < 30; x++)
@@ -693,11 +1056,43 @@ public final class ExpansionGameTests {
       project.completed.add(pos.asLong());
     }
     site.chests.addAll(project.chests(level));
-    site.craftOrders.put(Items.IRON_PICKAXE, 1);
-    var stock = Storage.handler(level, site.chests.iterator().next(), site);
+    if (!deliver) site.craftOrders.put(Items.IRON_PICKAXE, 1);
+    Station source = site;
+    Lumberton recipient = Automatons.LUMBERTON.get().create(level);
+    if (deliver) {
+      BlockPos sourcePos = h.absolutePos(new BlockPos(2, 3, 4));
+      level.setBlock(sourcePos, Automatons.TOTEM.get().defaultBlockState(), 3);
+      source = (Station) level.getBlockEntity(sourcePos);
+      source.owner = site.owner;
+      source.logisticsHome = home.identity;
+      WorksiteGameTests.readyFixture(source, WorksitePurpose.HUNT);
+      BlockPos chest = sourcePos.south(3);
+      level.setBlock(chest, Blocks.CHEST.defaultBlockState(), 3);
+      source.chests.add(chest);
+      source.storageComplete = true;
+      BlockPos targetPos = h.absolutePos(new BlockPos(27, 3, 21));
+      level.setBlock(targetPos, Automatons.TOTEM.get().defaultBlockState(), 3);
+      Station target = (Station) level.getBlockEntity(targetPos);
+      target.owner = site.owner;
+      target.logisticsHome = home.identity;
+      WorksiteGameTests.readyFixture(target, WorksitePurpose.MINE);
+      recipient.owner = site.owner;
+      recipient.homeId = home.identity;
+      recipient.home = homePos;
+      recipient.assign(target);
+      recipient.setNoAi(true);
+      recipient.authorized = true;
+      recipient.cargo.setStackInSlot(0, new ItemStack(Items.TORCH, 16));
+      recipient.cargo.setStackInSlot(1, new ItemStack(Luminall.BOTTLE.get()));
+      recipient.moveTo(Vec3.atBottomCenterOf(targetPos.north()));
+      level.addFreshEntity(recipient);
+      WorkerIdentity.update(recipient, "Deployed");
+      LogisticsNetwork.get(recipient).refresh(level);
+    }
+    var stock = Storage.handler(level, source.chests.iterator().next(), source);
     h.assertTrue(stock != null, "Authored workshop storage unavailable");
     stock.insertItem(0, new ItemStack(Items.RAW_IRON, 3 * workers), false);
-    stock.insertItem(1, new ItemStack(Items.COAL), false);
+    stock.insertItem(1, new ItemStack(deliver ? Items.LAVA_BUCKET : Items.COAL), false);
     stock.insertItem(2, new ItemStack(Items.STICK, 2 * workers), false);
     Lumberton crafter = Automatons.LUMBERTON.get().create(level);
     crafter.owner = site.owner;
@@ -731,11 +1126,13 @@ public final class ExpansionGameTests {
     courier.setJob(WorkerJob.RUNNERTON);
     courier.moveTo(Vec3.atBottomCenterOf(homePos.south()));
     courier.setNoAi(true);
-    level.addFreshEntity(courier);
-    WorkerIdentity.update(courier, "Deployed");
+    if (!deliver) {
+      level.addFreshEntity(courier);
+      WorkerIdentity.update(courier, "Deployed");
+    }
     boolean[] heated = {false};
     h.runAfterDelay(
-        1700,
+        deliver ? 2900 : 1700,
         () ->
             h.fail(
                 "Workshop stalled: "
@@ -751,7 +1148,7 @@ public final class ExpansionGameTests {
     h.onEachTick(
         () -> {
           h.assertTrue(
-              project.bounds(level).inflate(.5).contains(crafter.position()),
+              deliver || project.bounds(level).inflate(.5).contains(crafter.position()),
               "Crafter left workshop despite a courier");
           for (var cell : project.template(level).cells) {
             BlockPos pos = project.template(level).world(anchor, project.front, cell.local());
@@ -763,6 +1160,32 @@ public final class ExpansionGameTests {
                 && furnace.getBlockState().getValue(AbstractFurnaceBlock.LIT)) heated[0] = true;
           }
           int tools = crafters.stream().mapToInt(w -> w.mining.carried(Items.IRON_PICKAXE)).sum();
+          if (deliver) {
+            boolean received = false;
+            for (int i = 0; i < recipient.tools.getSlots(); i++)
+              received |= recipient.tools.getStackInSlot(i).is(Items.IRON_PICKAXE);
+            if (!received) return;
+            tools++;
+            int buckets = crafter.mining.carried(Items.BUCKET);
+            for (var cell : project.template(level).cells) {
+              var furnace =
+                  level.getBlockEntity(
+                      project.template(level).world(anchor, project.front, cell.local()));
+              if (furnace
+                      instanceof net.minecraft.world.level.block.entity.AbstractFurnaceBlockEntity f
+                  && f.getItem(1).is(Items.BUCKET)) buckets += f.getItem(1).getCount();
+            }
+            Set<BlockPos> countedChests = new HashSet<>();
+            for (BlockPos chest : site.chests) {
+              if (!countedChests.add(Storage.canonical(level, chest))) continue;
+              var localStock = Storage.handler(level, chest, site);
+              if (localStock != null)
+                for (int i = 0; i < localStock.getSlots(); i++)
+                  if (localStock.getStackInSlot(i).is(Items.BUCKET))
+                    buckets += localStock.getStackInSlot(i).getCount();
+            }
+            h.assertTrue(buckets == 1, "Furnace lost or duplicated its actual fuel bucket");
+          }
           for (int i = 0; i < stock.getSlots(); i++)
             if (stock.getStackInSlot(i).is(Items.IRON_PICKAXE))
               tools += stock.getStackInSlot(i).getCount();
@@ -798,6 +1221,7 @@ public final class ExpansionGameTests {
           }
           crafters.forEach(Lumberton::discard);
           courier.discard();
+          recipient.discard();
           WorldData.get(level).buildings.remove(site.identity);
           h.succeed();
         });

@@ -115,11 +115,13 @@ public final class LuminaCollection {
         if (before.isAir() || DeadVegetation.isDead(before)) SourceReserves.get(level).forget(pos);
         continue;
       }
-      if (entry.getValue().stream().noneMatch(m -> budgets.getOrDefault(m, 0) > 0 && m.space() > 0)) continue;
+      if (entry.getValue().stream().noneMatch(m -> budgets.getOrDefault(m, 0) > 0 && m.space() > 0))
+        continue;
       int available = SourceReserves.get(level).available(pos, before, category, configured.get());
       int produced = 0;
       List<Reservoir> candidates = entry.getValue();
-      int start = Math.floorMod(cycle + pos.asLong(), candidates.size());
+      int start = SourceReserves.get(level).recipient(pos, before, category, candidates.size());
+      int next = start;
       while (available > 0) {
         boolean accepted = false;
         for (int i = 0; i < candidates.size() && available > 0; i++) {
@@ -132,12 +134,14 @@ public final class LuminaCollection {
           budgets.put(machine, budget - moved);
           available -= moved;
           produced += moved;
+          next = (start + i + 1) % candidates.size();
           accepted = true;
           machine.lastProducer = pos;
           machine.lastCollection = level.getGameTime();
         }
         if (!accepted) break;
       }
+      if (produced > 0) SourceReserves.get(level).nextRecipient(pos, before, category, next);
       SourceReserves.get(level).debit(level, pos, before, category, produced);
     }
     for (Reservoir machine : machines) machine.synchronize();

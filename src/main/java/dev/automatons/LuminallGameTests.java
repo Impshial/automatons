@@ -53,8 +53,9 @@ public final class LuminallGameTests {
         h.absolutePos(origin.offset(-1, 0, -1)),
         Blocks.DANDELION.defaultBlockState());
     LuminaCollection.collect(h.getLevel(), List.of(machine), 0);
+    LuminaCollection.collect(h.getLevel(), List.of(machine), 1);
     h.assertTrue(
-        machine.tank.getFluidAmount() == 4,
+        machine.tank.getFluidAmount() == 2,
         "Scan included outside boundary or excluded planted flower");
     var box = LuminaCollection.bounds(machine.getBlockPos(), 4);
     h.assertTrue(
@@ -80,18 +81,20 @@ public final class LuminallGameTests {
     var a = machine(h, new BlockPos(8, 1, 8), true);
     var b = machine(h, new BlockPos(9, 1, 8), true);
     plant(h, new BlockPos(8, 1, 9), Blocks.POPPY);
-    LuminaCollection.collect(h.getLevel(), List.of(a, b), 0);
+    for (int cycle = 0; cycle < 4; cycle++) LuminaCollection.collect(h.getLevel(), List.of(a, b), cycle);
     h.assertTrue(
         a.tank.getFluidAmount() == 1 && b.tank.getFluidAmount() == 1,
         "Overlap multiplied or failed to share output");
     a.tank.fill(new FluidStack(Luminall.SOURCE.get(), a.capacity()), FluidAction.EXECUTE);
     int before = b.tank.getFluidAmount();
-    LuminaCollection.collect(h.getLevel(), List.of(a, b), 1);
-    h.assertTrue(b.tank.getFluidAmount() == before + 2, "Full collector monopolized producer");
+    LuminaCollection.collect(h.getLevel(), List.of(a, b), 4);
+    LuminaCollection.collect(h.getLevel(), List.of(a, b), 5);
+    h.assertTrue(b.tank.getFluidAmount() == before + 1, "Full collector monopolized producer");
     for (int x = -1; x <= 2; x++)
       for (int z = -1; z <= 2; z++) plant(h, new BlockPos(8 + x, 3, 8 + z), Blocks.POPPY);
     b.tank.drain(Integer.MAX_VALUE, FluidAction.EXECUTE);
     LuminaCollection.collect(h.getLevel(), List.of(b), 2);
+    LuminaCollection.collect(h.getLevel(), List.of(b), 3);
     h.assertTrue(
         b.tank.getFluidAmount() == Balance.COLLECTOR_MAX.get(),
         "Collector exceeded/did not reach configured cap");
@@ -286,13 +289,13 @@ public final class LuminallGameTests {
         });
   }
 
-  @GameTest(template = "empty", timeoutTicks = 260)
+  @GameTest(template = "empty", timeoutTicks = 460)
   public static void collector_runs_on_server_ticks_and_resumes_after_extraction(GameTestHelper h) {
     var m = machine(h, new BlockPos(8, 1, 8), true);
     plant(h, new BlockPos(9, 1, 8), Blocks.POPPY);
     int interval = Balance.COLLECTOR_INTERVAL.get();
     h.runAfterDelay(
-        interval + 5,
+        interval * 2 + 5,
         () -> {
           h.assertTrue(
               m.tank.getFluidAmount() > 0,
@@ -301,7 +304,7 @@ public final class LuminallGameTests {
           m.tank.drain(10, FluidAction.EXECUTE);
           int before = m.tank.getFluidAmount();
           h.runAfterDelay(
-              interval + 5,
+              interval * 2 + 5,
               () -> {
                 h.assertTrue(
                     m.tank.getFluidAmount() > before && m.tank.getFluidAmount() <= m.capacity(),
@@ -369,16 +372,12 @@ public final class LuminallGameTests {
         tank.assemble(grid, h.getLevel().registryAccess()).is(Luminall.TANK_ITEM.get()),
         "Tank recipe mismatch");
     for (int i = 0; i < 9; i++)
-      grid.setItem(
-          i,
-          new ItemStack(
-              i == 4
-                  ? Luminall.TANK_ITEM.get()
-                  : i % 2 == 0 ? Items.STONE : Automatons.LUMINA_CORE.get()));
+      grid.setItem(i, i == 3 || i == 5 ? ItemStack.EMPTY : new ItemStack(i == 4
+          ? Luminall.TANK_ITEM.get() : i % 2 == 0 ? Items.STONE : Automatons.INFUSED_LUMITE.get()));
     var collector = recipes.getRecipeFor(RecipeType.CRAFTING, grid, h.getLevel()).orElseThrow();
     h.assertTrue(
         collector.assemble(grid, h.getLevel().registryAccess()).is(Luminall.COLLECTOR_ITEM.get()),
-        "Collector recipe does not use four infused cores and Tank");
+        "Collector recipe does not use two infused shards and Tank");
     var data = new CompoundTag();
     data.put("Tank", new FluidStack(Luminall.SOURCE.get(), 500).writeToNBT(new CompoundTag()));
     BlockItem.setBlockEntityData(grid.getItem(4), Luminall.TANK_BE.get(), data);

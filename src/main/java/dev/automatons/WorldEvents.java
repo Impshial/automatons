@@ -18,11 +18,14 @@ public final class WorldEvents {
   }
 
   private static long tick;
+
   @SubscribeEvent
   public static void graves(TickEvent.LevelTickEvent e) {
-    if (e.phase == TickEvent.Phase.END && e.level instanceof ServerLevel l && l.getGameTime() % 20 == 0)
-      Graves.get(l).retry(l);
+    if (e.phase == TickEvent.Phase.END
+        && e.level instanceof ServerLevel l
+        && l.getGameTime() % 20 == 0) Graves.get(l).retry(l);
   }
+
   private static int spent;
   private static int paths, conversions, plans;
   private static final java.util.Set<Station> loadedStations =
@@ -95,7 +98,8 @@ public final class WorldEvents {
       Station station = scanners.removeFirst();
       queued.remove(station.identity);
       if (!station.isRemoved()
-          && (!station.workers.isEmpty() || !station.guards.isEmpty()
+          && (!station.workers.isEmpty()
+              || !station.guards.isEmpty()
               || station.worker != null
               || station.project() != null && !station.project().ready)
           && station.getLevel() instanceof ServerLevel l
@@ -139,11 +143,18 @@ public final class WorldEvents {
   public static void leave(net.minecraftforge.event.entity.EntityLeaveLevelEvent e) {
     if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w) {
       w.hunting.release();
-      w.ranching.release();
-      w.fishing.release();
+      if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy()) {
+        w.ranching.release();
+        w.fishing.release();
+      } else {
+        w.ranching.unload();
+        w.fishing.unload();
+      }
+      w.worksiteAccess.release();
       w.clearChop();
       w.farming.release();
-      if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy()) MachineOperator.leave(w);
+      if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy())
+        MachineOperator.leave(w);
       if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy())
         w.building.release();
       w.mining.release();
@@ -156,7 +167,8 @@ public final class WorldEvents {
     if (!(event.getSource().getEntity() instanceof Lumberton worker)) return;
     if (worker.job() == WorkerJob.HUNTERTON) {
       Station site = worker.station();
-      if (site == null || !(event.getEntity() instanceof net.minecraft.world.entity.animal.Animal animal)
+      if (site == null
+          || !(event.getEntity() instanceof net.minecraft.world.entity.animal.Animal animal)
           || !Hunting.eligible(animal, site)) event.setCanceled(true);
     } else if (worker.isGuard() && !Threats.supported(event.getEntity())) event.setCanceled(true);
   }

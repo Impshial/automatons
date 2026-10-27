@@ -10,23 +10,14 @@ categories:
 
 # Minington
 
-Give a Minington a pickaxe and assign it to a completed **Mine** site. The surface entrance is built by a Buildington and has **no trapdoor**.
-Before digging its infrastructure, supply **20 ladders, four chests and ordinary torches**. A shovel helps with diggable terrain. No surface storage chest is required if the miner carries its starting supplies; it opens the ground and installs ladders through the top of the shaft itself.
+Assign an ordinary worker to a Mine Totem and provide a suitable pickaxe, optional shovel, ladders, chests and ordinary torches. A Buildington constructs the surface minehead. Miningtons then build the shaft and underground infrastructure from real supplies.
 
-The shared shaft descends **20 blocks** to an underground platform. Two double chests sit against the walls beside the ladder; miners unload there and Runnertons can collect their output.
-Later miners use the completed entrance and shared infrastructure.
+The first landing is **20 blocks below** the entrance; subsequent landings are **four blocks lower**. Each landing is **5×5 with three blocks of clearance**. Eight chest blocks form four double chests, stacked in two tiers against the back wall. Earlier depots remain available.
 
-**Tunnel** is the default mode. Different miners claim different lanes starting beyond the platform. Quarry selection is temporarily hidden.
-Change mode in **Worksite Settings → Mine**. Workers remember their excavation position through unloading and resume instead of returning to the surface Totem between blocks.
+Each floor has a three-wide, two-high center corridor extending 25 blocks beyond the landing, plus **20 side branches in ten opposing pairs**. The first four branches extend 24 blocks; the other sixteen extend 25. Workers claim separate branches and resume their saved positions after unloading. A new floor starts only after the current floor's work is settled and workers have left safely.
 
-Mining progress matches an ordinary grounded player's tool and Efficiency enchantment. Movement, lighting, falling-material settling and unloading add time.
-For sand or gravel, the miner uses a safe stance at least two horizontal blocks away, then waits for falling material to settle.
-Water or lava in an established branch sends it back to the underground platform to try another direction. A hazard blocking the only shaft can still require player repair.
+A side branch stops at an exposed cave or fluid boundary. A central-corridor obstruction pauses the floor for player inspection and acknowledgement. Full storage, missing tools, blocked access and unloaded chunks are waits, never completed excavation.
 
-Miners place real torches and use actual block light, with a default target of eight. Held lights, skylight and glowing Lumite veins do not satisfy this check.
-Supply torches locally; Runnertons never withdraw them. See [mine recovery](../troubleshooting.md#mine).
+Torches are real inventory items. Managed workspaces need actual block light of at least eight; skylight, glowing ore and held lights do not substitute. Couriers can supply tools and torches and collect registered depots through the ladder route. Miningtons can also clear eligible pickaxe obstacles requested by Lumbertons on the same network.
 
-
-[Building and setup](../worksites/mine.md).
-
-Natural stones from Blocks You Need: Luna, including Jadestone and Shale, are valid excavation terrain.
+[Mine entrance](../worksites/mine.md) · [Quarryton](quarryton.md) · [Recovery](../troubleshooting.md#mine)

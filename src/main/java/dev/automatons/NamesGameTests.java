@@ -200,6 +200,7 @@ public final class NamesGameTests {
     h.getLevel().setBlock(shared, Automatons.TOTEM.get().defaultBlockState(), 3);
     Station totem = (Station) h.getLevel().getBlockEntity(shared);
     totem.owner = p.getUUID();
+    WorksiteGameTests.readyFixture(totem, WorksitePurpose.LUMBER);
     wa.assign(totem);
     wb.assign(totem);
     ServerLevel nether = h.getLevel().getServer().getLevel(Level.NETHER);
@@ -279,6 +280,7 @@ public final class NamesGameTests {
     h.getLevel().setBlock(at, Automatons.TOTEM.get().defaultBlockState(), 3);
     Station totem = (Station) h.getLevel().getBlockEntity(at);
     totem.owner = p.getUUID();
+    WorksiteGameTests.readyFixture(totem, WorksitePurpose.LUMBER);
     w.assign(totem);
     other.assign(totem);
     p.moveTo(Vec3.atBottomCenterOf(at.south()));

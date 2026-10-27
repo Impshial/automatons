@@ -8,47 +8,29 @@ navigation:
 
 # Troubleshooting
 
-Open the worker's GUI and read its current task. An amber Totem beacon points to a site needing attention; it does not identify the missing item by itself.
+Read the worker's Status and the site's Overview before changing anything. A waiting message identifies the current missing supply, blocked route or unavailable operation.
 
 ## Worker will not start
 
-Check its job, assignment, matching site purpose, home work toggle and recall state. A ready profession still needs a completed worksite and usable tools.
-Unloaded areas cannot supply work or stock. Stay near the relevant route while testing.
+Configure the Totem before assignment, use an ordinary body for production, and stay within six production workers. Check owner/home network, recall, worksite readiness, required tools and operating charge. A powered-down worker needs a full bottle. Unloaded chunks do not advance work or recharge time.
 
-## Construction waiting or changed block
+## Construction waiting
 
-Open **Build List**, scroll through missing resources and put them in cargo or a reachable registered chest. Partial supplies are accepted.
-The builder must finish its own shed before taking other projects. If another builder owns a project, inspect that worker's supply or route status.
-Clear reported hard obstructions yourself. A different block at a blueprint cell needs review; unrelated surrounding blocks do not invalidate construction.
-Keep container lids, doorways and a walkable approach open. Resume a deliberately paused project, or use Repair for missing completed blocks.
+Supply missing materials in reachable chests outside the footprint. Keep lids and approaches open. Partial kits are accepted. Existing valuable containers are preserved: move a conflicting block yourself, then resume. A changed profession starts a paused plan and leaves the old building standing.
 
 <a name="mine" />
-## Mine waiting
+## Mine or quarry waiting
 
-**Waiting for builder**: complete the surface entrance first. Later miners share that completion.
-**Needs torches**: provide ordinary torches locally. **Updating lighting**: allow the light update to settle.
-**Lighting blocked**: repair the safe placement space or permissions. Glowing ore, shaders and held lights do not count.
-**Waiting for path / Access blocked**: check the open entrance, continuous ladder, platform and route. There should be no trapdoor in the minehead.
-A hazard in a finished branch can be avoided by choosing another direction; a broken only route needs repair.
-After unloading, the miner returns to its saved work position. Avoid repeatedly pausing or recalling it during a long trip.
+Finish the surface site, supply real ladders, chests, torches and tools, and keep the access route intact. Minington landings use eight chest blocks each. Quarrytons also need suitable filler. Actual block light must reach eight. Repair a broken shaft or blocked chest lid. Inspect cave/fluid alerts before acknowledging them; storage and path waits do not count as finished excavation.
 
-## Full storage or courier waits
+## Couriers and crafting
 
-Empty valid chests and leave lids usable. Double chests need both halves accessible. The two underground double chests are registered mine pickup points.
-Workers keep their real items when unloading fails. Runnertons will not fetch tools, torches or saplings; stock those at the destination yourself.
-Farm planting stock is reserved rather than treated as spare output.
+Keep the entire route loaded. Local planting/construction reserves remain protected. Explicit supply requests can move tools and torches; ordinary bulk collection leaves spare equipment in place. A full or changed destination retains real cargo. Crafters need valid recipes, a table, compatible furnaces and actual fuel. A missing recipe or cyclic dependency cannot produce free output.
 
-## Infusion paused
+## Ranch and garden
 
-Stay within four blocks of your selected corner with Lumina available. Only that shard's donor pays. A partial shard keeps progress when removed.
-The four corners share one transfer rate; filling all four does not quadruple the pedestal's speed.
+Repair missing fences and keep the handling gate clear. Bring livestock and actual supplies. Babies and a minimum breeding pair are protected. For mage service, keep the tower ladder and upper dismount clear, supply empty bottles and living plants, and ensure collectors contain fluid. Dead plants/crops drop nothing.
 
-## No new Lumite
+## Infusion and handbook
 
-Explore new eligible Overworld chunks at the right heights. Existing terrain is never refilled, and the mod has no regeneration commands.
-Optional JER shows the bundled-default estimate; server data packs can change actual generation.
-
-## Cannot open the handbook
-
-Install GuideME **20.1.15 for Forge 1.20.1** on client and server alongside Automatons. No Applied Energistics installation is needed.
-Right-click the handbook or hover an associated inventory item and hold the configured GuideME key. Check Controls for key conflicts.
+Player infusion needs the shard's donor within four blocks with energy available. Partial shards preserve paid progress. The handbook needs GuideME 20.1.15 for Forge 1.20.1 plus the enabled Automatons-Guide resource pack. Use F3+T after editing that pack.

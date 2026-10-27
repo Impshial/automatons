@@ -10,46 +10,33 @@ item_ids:
   - "automatons:tank"
   - "automatons:luminall_bottle"
   - "automatons:luminall_bucket"
+  - "automatons:dead_plant"
+  - "automatons:dead_crop"
 ---
 
-# Luminall and the Collector
+# Luminall, collectors and upkeep
 
-The **Lumina Collector** quietly condenses Lumina from a nearby garden into pale purple **Luminall**. Plants stay intact; no fuel or external power is needed.
+The fixed conversion is **one Lumina point = two mB**. A full bottle holds **250 mB = 125 points**, a bucket **1,000 mB = 500 points**, and an 8,000 mB tank holds **4,000 points**. The Machine's engine capacity remains 10,000 points.
 
 <Recipe id="automatons:tank" />
 <Recipe id="automatons:lumina_collector" />
 
-The Collector uses **four Lumina Cores** (the existing infused cores) and a crafted Tank. Total cost is four Stone, eight Glass blocks, four Lumina Cores and one Empty Core. Empty a Tank before using it in the Collector recipe so its stored fluid is not lost.
+The Collector recipe uses four Stone, **two Infused Lumite Shards** and an empty Tank. Its reservoir holds 4,000 mB by default. It produces at most **five mB every 100 ticks**, one quarter of the original rate. Per-source fractions accumulate; low-yield plants still produce over time. Overlapping collectors share one source budget, and full collectors stop extracting.
 
-## Garden and range
+## Source footprint and exhaustion
 
-Hold the Automaton Wand and look at the Collector to see its boundary. The horizontal footprint is exactly **4 × 4**: offsets **−1 through +2 on X and Z**, extending farther east and south. Default vertical reach is **four blocks above and four below**.
+The world-aligned footprint is 4×4: X/Z offsets −1 through +2, with four blocks of vertical reach in either direction. Eligible sources include flowers, mature supported crops, ripe berries, stems, pumpkins/melons, grass and recognized living trees. Planted vegetation can contribute; structural wood and immature crops do not. Tall plants are one source.
 
-Flowers, fruit such as pumpkins and melons, mature crops and berries, stems, grass and recognized living trees contribute. Planted vegetation counts; wooden structures do not count as living trees. Immature crops contribute nothing until mature. Additional plants increase output, up to the rate limit.
+Non-tree plants begin with 200 lifetime Lumina and crops with 100, configurable through plantLifetimeLumina and cropLifetimeLumina. Only actual extraction spends that reserve. Growth and reloads preserve it. Exhaustion replaces the source with **Dead Plant** or **Dead Crop**. These blocks do not grow, accept bone meal or drop anything when broken. Trees and leaves are never killed by collector depletion.
 
-Collectors sharing a plant divide that plant's output. A full Collector yields its share to others with room. Spread Collectors across more garden space to increase total production. Nothing force-loads chunks.
+## Containers and recharge
 
-## Storage and bottles
+Place a Glass Bottle on a collector by right-clicking; it fills from actual stored fluid. Retrieve it with an empty hand. Players can drink partial bottles proportionally. Automatons require a full bottle, use it for 32 ticks and return an empty Glass Bottle. Any worker-meter overflow is spent.
 
-The Collector stores **4,000 mB** by default. Its visible reservoir rises as it fills; at capacity it pauses until fluid is removed. Every five seconds, it collects at most **20 mB**. Default per-plant contributions per collection are three mB for logs, mature crops and fruit; two for flowers and mature berries; one for leaves, grass and stems.
-
-Right-click with a Glass Bottle to put one on top. The physical bottle fills from stored fluid, at five mB per tick. An empty-hand click retrieves it. Partial bottles retain their exact contents, can be put back, and can be drunk for a proportional reward.
-
-A full bottle holds **250 mB** and restores **five Lumina**, even at full hunger. Drinking always returns an empty Glass Bottle, including in creative mode. Fractions from partial bottles accumulate without loss. If your Lumina bank has no room for the full reward, drinking is refused. Existing bottles retain their volume and reward if server settings change.
-
-## Buckets, pipes and Tanks
-
-An empty bucket collects **1,000 mB** when that much is available. Luminall Buckets can place fluid sources in the world; only actual sources can be picked up. Luminall does not regenerate infinite sources.
-
-Compatible Forge pipes can extract from the Collector's sides and bottom. The top is reserved for its bottle. The Collector is output-only; use a **Tank** for general fluid input and output. Tanks hold **8,000 mB** by default, support all faces and compatible fluids, and do not mix different fluids.
-
-**Shift-right-click a Tank with the Wand** to carry it with its fluid intact. Place it again or right-click the Machine with the filled Tank to transfer its fuel. Breaking a Tank normally drops an empty Tank and spills its fluid; the uncollectable puddle evaporates in three seconds. A Collector still retains its reservoir and bottle when broken. Server settings control reach, capacities, interval, rate limit, category contributions, bottle volume and Lumina reward.
-
-
-## Lumina Drain
+Buckets transfer 1,000 mB. Compatible pipes extract through collector sides/bottom; its top is reserved for the bottle. Tanks accept compatible registered fluids on all faces and never mix fluids. Shift-right-click a Tank with the Wand to carry its contents. Breaking a Tank normally drops an empty tank and spills its fluid; a Collector retains its stored fluid and bottle when broken.
 
 <Recipe id="automatons:lumina_drain" />
 
-Craft three Iron Bars above Stone, Empty Core, Stone. Place the Drain directly on top of a Tank, then stand on it to convert your personal Lumina into Luminall. At default settings it moves **five Lumina per second (250 mB)**. Step off to stop. It stops automatically when your usable Lumina runs out, the Tank is full, or the Tank contains a different fluid. Fractional Lumina below the next whole transfer remains yours.
+Place a Lumina Drain above a Tank and stand on it to convert personal energy at **five points per second = ten mB**. Full or incompatible tanks refuse the transfer. Fractional energy remains conserved.
 
-Use the Wand to carry that filled Tank to the Machine and right-click the Machine to refuel in bulk.
+[Luminariton service](../professions/luminariton.md) maintains collectors, bottles, living plants and healing stock.

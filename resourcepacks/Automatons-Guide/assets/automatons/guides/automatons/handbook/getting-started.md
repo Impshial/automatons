@@ -6,17 +6,17 @@ navigation:
   icon: "automatons:pedestal"
 ---
 
-# Your first Network
+# Your first working network
 
-1. Gather **Lumina** from eligible natural plants and trees. Mining ore does not give Lumina.
-2. Mine [Lumite](magic/lumite.md) with a stone pickaxe or better. Find a diamond for your first Infusing Pedestal.
-3. [Infuse shards](magic/infusing-pedestal.md), then craft [Lumina Cores](magic/cores.md). The recipe pictures use your world's current recipes.
-4. Craft an [Automaton Pedestal](network/automaton-pedestal.md), the four kinds of body parts, a Wand and a Totem.
-5. Assemble the head, torso, two arms and two legs at your Pedestal. Take the Automaton, then place it near its home.
-6. Configure your first Totem as **Builder** in **Worksite Settings**. Choose its facing before **Create Worksite**.
-7. Give the worker a Hammer, select **Buildington** in its job list and click **Apply Job**. In Wand Assign mode, select it and right-click your Builder Totem.
-8. Put materials in a reachable chest inside the Totem's range, outside the shed and doorway. Open **Build List** to see what is missing. The Buildington completes its own shed first.
-9. Configure more Totems. Your established builder constructs their buildings. Assign the matching workers when each site is ready.
+1. Mine Lumite Ore with a stone pickaxe or better. Collect personal Lumina from eligible natural vegetation.
+2. Craft an Infusing Pedestal and Empty Cores. Infuse raw shards at 25 Lumina each; craft four infused shards around an Empty Core for a Lumina Core.
+3. Craft an Automaton Pedestal, Wand, Totem and the six ordinary body parts. Assemble the parts in the pedestal's body-shaped slots. The pedestal becomes the worker's home.
+4. Place the Automaton on clear ground. It starts paused. Open the Totem and choose **Building**, then its orientation. This bootstrap site does not need an already completed workshop.
+5. Put a Hammer in the worker's tool slots. Supply materials in reachable chests outside the building footprint. Use the site's missing-material list for quantities.
+6. Select the worker with the Wand and right-click the configured Totem. It becomes a Buildington and builds its shed from real supplies.
+7. Configure more Totems on the same home network. Builders construct their layouts. Assign ordinary workers to give them the appropriate jobs, up to six per Totem.
+8. Supply tools, planting items and full Luminall bottles. Workers have 200 operating Lumina and consume one point per minute of loaded time. A full 250 mB bottle adds 125 points.
 
-A warehouse and a Runnerton are useful later; your first builder can fetch local supplies itself.
-If nothing happens, check the worker's status, work permission, tools, supplies and route in [Troubleshooting](troubleshooting.md).
+Use a fresh test world for this prerelease expansion. A profession change preserves existing world blocks and creates a paused replacement construction plan; it does not demolish the old building.
+
+[Totems and assignments](network/totems.md) · [All professions](professions/index.md) · [Luminall](magic/luminall.md)

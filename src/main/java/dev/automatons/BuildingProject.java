@@ -440,16 +440,16 @@ public final class BuildingProject {
         cursor++;
         continue;
       }
-      if (now.hasBlockEntity() && !Construction.matches(now, target)) {
-        missing = true;
-        reason = "Move the existing container or workstation before construction";
-        cursor++;
-        continue;
-      }
       // Air is not a required building block. Clear loose terrain for headroom, but
       // leave extra player workstations/containers alone instead of demanding tools
       // for demolition and preventing the remaining structure from being finished.
       if (target.isAir() && !Construction.soft(now) && !template(l).explicitAir) {
+        cursor++;
+        continue;
+      }
+      if (now.hasBlockEntity() && !Construction.matches(now, target)) {
+        missing = true;
+        reason = "Move the existing container or workstation before construction";
         cursor++;
         continue;
       }
@@ -625,6 +625,10 @@ public final class BuildingProject {
 
   private void clearObstacle(Lumberton w, BlockPos p, BlockState now) {
     ServerLevel l = (ServerLevel) w.level();
+    if (now.hasBlockEntity()) {
+      w.state("Move the existing container or workstation before construction");
+      return;
+    }
     if (WorldData.get(l).protectedAt(p)) {
       w.state("Worksite protected");
       return;

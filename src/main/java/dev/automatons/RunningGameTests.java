@@ -320,6 +320,7 @@ public final class RunningGameTests {
     Station home = (Station) l.getBlockEntity(homePos),
         anchor = (Station) l.getBlockEntity(anchorPos);
     home.owner = anchor.owner = UUID.randomUUID();
+    anchor.purpose = WorksitePurpose.WAREHOUSE;
     home.registerHome();
     Lumberton runner = worker(l, home, anchor, anchorPos.west(3));
     return new Rig(home, anchor, runner);
@@ -464,6 +465,8 @@ public final class RunningGameTests {
   }
 
   private static Lumberton worker(ServerLevel l, Station home, Station anchor, BlockPos at) {
+    if (anchor.purpose == WorksitePurpose.UNCONFIGURED)
+      WorksiteGameTests.readyFixture(anchor, WorksitePurpose.LUMBER);
     Lumberton w = Automatons.LUMBERTON.get().create(l);
     w.owner = home.owner;
     w.homeId = home.identity;

@@ -55,4 +55,8 @@ manifest=json.loads((book/'assets/structures/source-manifest.json').read_text())
 for entry in manifest.values():assert hashlib.sha256((root/entry['source']).read_bytes()).hexdigest()==entry['sha256']
 if args.baseline:
     assert len(pages)==30 and len(recipes)==19 and len(indexed)==24 and len(structures)==7,(len(pages),len(recipes),len(indexed),len(structures))
+else:
+    for name in ['armored_head', 'armored_torso', 'armored_arm', 'armored_leg', 'dead_plant', 'dead_crop', 'gravestone']:
+        assert f'automatons:{name}' in indexed, ('Missing expansion item association', name)
+    assert 'guardington' in recipes, 'Missing live armored assembly recipe'
 print(f'PASS: {len(pages)} pages; {len(recipes)} live recipes; {len(indexed)} unique item associations; {len(structures)} valid vanilla structures; all links/anchors/navigation and authoritative PNG bytes.')

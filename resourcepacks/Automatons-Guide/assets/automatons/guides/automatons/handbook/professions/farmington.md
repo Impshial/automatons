@@ -10,16 +10,10 @@ categories:
 
 # Farmington
 
-Give a Farmington a hoe and assign it to a completed **Farm**. Supply wheat seeds, carrots, potatoes or beetroot seeds in cargo or registered local storage.
-It adopts existing farmland inside the shared range. If the fully loaded area has none, the Totem plans one reachable, level **9 × 9 field**, with 80 crop cells around a central water cell.
+Assign to a completed Farm Totem and provide a hoe, planting stock, one water bucket and a glass block. The three Settings sample slots select **Left**, **Middle** and **Right** strips. Samples are not consumed. Wheat or wheat seeds select wheat; carrots, potatoes, beetroot or beetroot seeds select their corresponding crops. Clear a slot to disable planting there.
 
-A new field needs a real **water bucket**; irrigation leaves an empty bucket. Several farmers share the same field board instead of creating a plot each.
-They collect field drops, harvest mature crops, replant, then prepare and plant other cells. Tilling wears the hoe. Normal crop growth applies, and workers do not trample farmland.
+The default field is **9×9**, divided into three **3×9** strips. E5 is the water source, with a full glass block above it, leaving 80 crop cells. Existing suitable farmland is adopted instead of being replaced. A changed selector waits for an existing crop to mature before harvesting and planting its replacement.
 
-Choose crop preference and optional bone meal in **Worksite Settings → Farm**. Bone meal is used only when enabled and available; running out is not an error.
-The site retains enough planting stock across farmer cargo and chests. Runnertons collect only surplus produce.
+Workers use real stock, keep planting reserves, and optionally use bone meal. Dead Crop is cleared without drops and replaced from stock. No harvest is awarded for dead vegetation. Multiple farmers share cell claims and irrigation rather than duplicating water or harvests.
 
-Keep the route, supplies and storage available. Full storage preserves cargo; protected or unloaded field cells are left alone.
-
-
-[Building and setup](../worksites/farm.md).
+[Farm setup](../worksites/farm.md).

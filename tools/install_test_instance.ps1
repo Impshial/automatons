@@ -6,7 +6,7 @@ $ErrorActionPreference = 'Stop'
 $instanceRoot = [System.IO.Path]::GetFullPath('C:\Users\impsh\curseforge\minecraft\Instances\Rackworks Tester')
 $running = Get-CimInstance Win32_Process -Filter "Name='javaw.exe' OR Name='java.exe'" | Where-Object { $_.CommandLine -and ($_.CommandLine.Replace('/','\') -match [regex]::Escape($instanceRoot)) }
 if ($running) { throw 'Save and close Rackworks Tester before installing. No game process or files were changed.' }
-$releaseVersion = '0.9.1'
+$releaseVersion = '0.10.0'
 if (-not $ReleaseDirectory) {
     if (Test-Path -LiteralPath (Join-Path $PSScriptRoot "automatons-$releaseVersion.jar")) { $ReleaseDirectory = $PSScriptRoot }
     else { $ReleaseDirectory = Join-Path (Split-Path -Parent $PSScriptRoot) 'build\libs' }

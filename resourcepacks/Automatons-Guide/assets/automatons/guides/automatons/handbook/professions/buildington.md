@@ -10,19 +10,10 @@ categories:
 
 # Buildington
 
-Equip a **Hammer**, choose Buildington and assign the worker to a **Builder** Totem. Your first builder constructs its own shed before taking other projects.
-Use a reachable staging chest inside the shared range and outside the shed doorway. This bootstrap does not need a warehouse or courier.
+Configure a Building Totem, equip an ordinary Automaton with a Hammer and assign it using the Wand. Assignment gives it the Buildington profession; no completed workshop or manual job selector is required. It builds its own shed before taking other network projects.
 
-Open **Build List** to see total, remaining, available and missing items. Include one extra chest item. The builder places a temporary supply chest outside the footprint, stages available supplies there, and begins building with a partial load. It uses what is available before fetching more; the full material list is not required to start. Runnertons can deliver materials directly there; tools, torches and saplings are fetched locally by the builder.
-Missing materials cause a recoverable wait after inventory and local storage checks.
+Supply actual materials in reachable chests outside the footprint. Partial kits are useful. The missing-material list includes real chest halves, ladders, machines, frames, display items and armor stands. Containers and stands begin empty. Builders place from supported positions outside the footprint and preserve progress through shortages and reloads.
 
-After its shed is ready, the Buildington accepts another worksite's construction project in the same Network. Its claim survives supply trips. When no project is available, it returns inside its completed shed and waits there without pacing. A new construction request sends it back out to work. Recall still brings it to the main Pedestal.
-The builder chooses safe footing outside the building footprint and places the blueprint from there, including empty foundation cells and upper blocks. It faces the target and swings its Hammer. The builder walks between safe perimeter positions after small batches. Blocks can be placed every two ticks when placement rules allow. Each successful placement plays its block sound and consumes real material and Hammer wear.
+The supplied schematic geometry, orientation and explicit clearing cells govern the new layouts. Existing valuable block entities are not overwritten. Move a reported conflicting chest or workstation yourself, then resume. Omitted cells are preserved, and changing a Totem's profession never automatically demolishes its old building.
 
-It validates blueprint cells while building. Unrelated surrounding changes do not cancel construction.
-Obstructing blocks in required blueprint cells are broken automatically, including hard blocks and containers. Contents are preserved; unbreakable blocks and protection rules still stop work. Extra workstations and containers in blueprint air cells remain. After building, the builder reclaims its temporary chest and returns it and leftover materials to its Builder site storage. Breaking the Totem frees the reserved zone and leaves stored items intact.
-
-Completed buildings are not automatically rebuilt over your edits. Use **Repair** to schedule missing cells; different blocks at expected cells require review.
-
-
-[Building and setup](../worksites/builders-shed.md).
+[Builder shed](../worksites/builders-shed.md).

@@ -128,6 +128,7 @@ public final class TimberGameTests {
     Lumberton m = miner(h, r, false);
     h.assertTrue(!m.forestryHelp.tick(), "Foreign network accepted request");
     m.homeId = r.worker.homeId;
+    m.station().logisticsHome = m.homeId;
     h.assertTrue(!m.forestryHelp.tick(), "Iron pickaxe accepted obsidian");
     m.tools.setStackInSlot(0, new ItemStack(Items.DIAMOND_PICKAXE));
     h.runAfterDelay(

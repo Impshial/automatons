@@ -10,7 +10,7 @@ categories:
 
 # Builder's Shed
 
-Configure the matching purpose in **Totem → Worksite Settings** before assigning your Buildington. A Buildington constructs the surface building from the current blueprint.
+Configure the matching purpose in **the Totem profession chooser** before assigning your Buildington. A Buildington constructs the surface building from the current blueprint.
 
 <GameScene zoom="1.3" interactive={true}>
   <ImportStructure src="../assets/structures/builder.nbt" />

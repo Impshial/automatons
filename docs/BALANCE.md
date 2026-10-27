@@ -1,4 +1,4 @@
-# Recipes and provisional balance — 0.6.0
+# Recipes and balance — 0.10.0
 
 For the 0.9.0 Machine, see [Machine assembly and balance](MACHINE.md). `MachineRules` keeps its 48-block whole-footprint radius, 108 cargo slots, 10,000-Lumina capacity, 30-tick startup, 12-tick moves/turns/shutdown, four-tick cutting cadence and one-third-point action costs together. Refueling uses existing Luminall bottle volume/reward settings rather than equating mB with Lumina. Blade harvests use existing eligibility and rewards; Bore work pays no Lumina.
 
@@ -44,7 +44,7 @@ Hammer has 2,000 durability and retains its recipe, Buildington eligibility and 
 
 Minington work is `ceil(hardness × 30 / effectiveToolSpeed)`, minimum one tick. Effective speed is the real stack's speed plus `efficiency² + 1` when base speed exceeds one and its actual enchantment is positive. No retired upgrade supplies a bonus. Unenchanted stone takes 12/8/6 work ticks with stone/iron/diamond picks, excluding travel, lighting and service.
 
-Buildingtons retain one placement every two ticks within reach with supplies and valid survival/permission checks. Door halves cost one operation. Five blueprint costs including displays are in the Build List and `reference/worksites`. New mines have no trapdoor, descend twenty blocks and use nineteen ladders plus four chests for two underground double chests.
+Buildingtons retain one placement every two ticks within reach with supplies and valid survival/permission checks. Door halves cost one operation. Blueprint costs including displays are in Build List and the supplied manifests. Strip mines descend twenty blocks to a 5×5×3 landing with eight chests forming four doubles; subsequent levels are four blocks lower.
 
 ## Lumina yields and orb sizes
 
@@ -93,7 +93,7 @@ Lumina minima/maxima live under `magicaYields.<category>.minimum/maximum`. Numer
 
 ## Base work settings
 
-One surface work/chest range: Lumber/Farm 32, Mine 6, Builder/Warehouse 8 blocks. No inner exclusion or installed bonus. Underground mining extent defaults to 32 independently of the small entrance area.
+One surface work/chest range: Lumber/Farm 32, Mine 6, Builder/Warehouse 8 blocks. No inner exclusion or installed bonus. The fixed underground layout and separate 15×15 quarry are described in [MININGTON.md](MININGTON.md).
 
 Forestry work time is `baseTicks × 6 / toolSpeed + extraTicks`. Extra ticks: 10 for Diamond/Netherite, 20 for Stone/Iron, zero for Wood/Gold. Actual tool Efficiency scales this by `toolSpeed / (toolSpeed + efficiencyBonus)`; the bonus is zero at Efficiency 0, otherwise `efficiency² + 1`. Round to five-tick intervals, minimum ten. Preparation repeats for each base cut.
 
@@ -121,9 +121,9 @@ Species JSON bounds normal trees by height/spread/log count. Associated foliage 
 
 ## Logistics and compatibility
 
-Runnertons retain 18 default cargo slots, a 0.215 walking attribute and their backpack. Reports reconcile every forty ticks, sampling 512 slots per home network; batches cap at 256 items. Overlapping ranges share physical containers. Tools, Hammers, torches and saplings remain in chests for local workers.
+Runnertons retain 18 cargo slots, a 0.215 walking attribute and their backpack. Reports reconcile every forty ticks, sampling 512 slots per home network; batches cap at 256 items. Overlapping ranges share physical containers. Bulk collection leaves tools, Hammers, torches and saplings in chests; explicit worker requests can deliver them.
 
-Lumbertons retain up to sixteen saplings per type and a stack of dirt or planks for climbing. Paused miners hold position. Quarry starts at the platform edge; tunnel miners claim separate branches. Construction now allows one successful action every two ticks, half the previous placement rate; forestry and mining speeds remain unchanged. Each building also uses one temporary chest item, recovered during cleanup.
+Lumbertons retain up to sixteen saplings per type and a stack of dirt or planks for climbing. Paused miners hold position. Strip miners claim separate passages; Quarrytons use the external access shaft. Construction allows one successful action every two ticks. Each building also uses one temporary chest item, recovered during cleanup.
 
 Serialized configuration keys `retainMagicaOnDeath` and `magicaYields`, old reward tag paths and core/orb registry IDs remain deliberate compatibility aliases. Player-facing names are Lumina; existing settings and items are preserved.
 

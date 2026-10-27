@@ -484,13 +484,13 @@ public final class ModGameTests {
         5,
         () -> {
           int axes = 0, logs = 0;
-          for (var item :
-              h.getLevel()
-                  .getEntitiesOfClass(
-                      net.minecraft.world.entity.item.ItemEntity.class,
-                      w.getBoundingBox().inflate(3))) {
-            if (item.getItem().is(Items.IRON_AXE)) axes += item.getItem().getCount();
-            if (item.getItem().is(Items.OAK_LOG)) logs += item.getItem().getCount();
+          var grave = h.getLevel().getBlockEntity(w.blockPosition());
+          h.assertTrue(grave instanceof ChestBlockEntity, "Death recovery chest missing");
+          ChestBlockEntity chest = (ChestBlockEntity) grave;
+          for (int i = 0; i < chest.getContainerSize(); i++) {
+            ItemStack item = chest.getItem(i);
+            if (item.is(Items.IRON_AXE)) axes += item.getCount();
+            if (item.is(Items.OAK_LOG)) logs += item.getCount();
           }
           h.assertTrue(
               axes == 3 && logs == 10,

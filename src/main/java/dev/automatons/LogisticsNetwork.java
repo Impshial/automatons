@@ -160,9 +160,21 @@ public final class LogisticsNetwork {
   private record ReportTarget(
       Station station, BlockPos pos, boolean warehouse, IItemHandler handler) {}
 
-  /** The expansion permits supplies in courier cargo; per-site reserves protect local needs. */
+  /** Keep equipment and fixtures out of bulk collection; explicit supply requests may move them. */
   public static boolean leaveInChest(ItemStack stack) {
-    return false;
+    return stack.is(Automatons.HAMMER.get())
+        || stack.is(net.minecraft.tags.ItemTags.TOOLS)
+        || stack.getItem() instanceof TieredItem
+        || stack.getItem() instanceof ShearsItem
+        || stack.getItem() instanceof FishingRodItem
+        || stack.getItem() instanceof FlintAndSteelItem
+        || stack.getItem() instanceof BrushItem
+        || stack.getItem() instanceof BowItem
+        || stack.getItem() instanceof ArmorItem
+        || stack.is(Items.TORCH)
+        || stack.is(Items.SOUL_TORCH)
+        || stack.is(Items.REDSTONE_TORCH)
+        || stack.is(net.minecraft.tags.ItemTags.SAPLINGS);
   }
 
   public static LogisticsNetwork get(Lumberton w) {
@@ -393,7 +405,8 @@ public final class LogisticsNetwork {
               // Packed/dead cargo follows worker inventory drops; never put its parcel back at the
               // source.
               if (!record.getString("State").equals("Deployed")
-                  || record.getInt("Job") != 3
+                  || (record.getInt("Job") != WorkerJob.RUNNERTON
+                      && record.getInt("Job") != WorkerJob.CRAFTERTON)
                   || !record.hasUUID("HomeId")
                   || !home.equals(record.getUUID("HomeId"))) return true;
               return p.outstanding() == 0 && l.getGameTime() - p.touched > 200;
@@ -756,7 +769,7 @@ public final class LogisticsNetwork {
         if (!r.loaded || !r.supply || construction == null && r.supplySites.contains(d.totem))
           continue;
         for (ItemStack stack : r.contents)
-          if (!leaveInChest(stack) && matches(l, d, stack)) {
+          if (matches(l, d, stack)) {
             Endpoint to =
                 construction != null && construction.supplies.handler(l) != null
                     ? new Endpoint(construction.totem, construction.supplies.chest, null)
@@ -906,7 +919,7 @@ public final class LogisticsNetwork {
       UUID except,
       boolean committing,
       BuildingProject construction) {
-    if (leaveInChest(item) || ConstructionSupply.reserved(l, r.endpoint.pos)) return 0;
+    if (ConstructionSupply.reserved(l, r.endpoint.pos)) return 0;
     IItemHandler h = handler(l, r.endpoint, item);
     if (h == null) return 0;
     int same = 0, total = 0;

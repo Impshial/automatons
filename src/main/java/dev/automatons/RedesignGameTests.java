@@ -463,6 +463,7 @@ public final class RedesignGameTests {
     Lumberton w = worker(h, r, new BlockPos(5, 1, 3));
     w.authorized = false;
     r.home.recall(true);
+    w.unassign();
     w.setJob(0);
     h.runAfterDelay(
         50,
@@ -470,7 +471,7 @@ public final class RedesignGameTests {
           h.assertTrue(
               w.status().equals("Recalled"), "Placement pause blocked home recall: " + w.status());
           h.assertTrue(
-              w.alerts == 0 && !w.tools.getStackInSlot(0).isEmpty() && w.activeTool().isEmpty(),
+              w.alerts == 0 && w.mining.carried(Items.IRON_AXE) == 1 && w.activeTool().isEmpty(),
               "Unassigned job lost tools or contributed alerts");
           h.assertTrue(
               !w.tools.insertItem(1, new ItemStack(Items.IRON_AXE), false).isEmpty(),

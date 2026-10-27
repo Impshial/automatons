@@ -75,6 +75,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public final Mining mining = new Mining(this);
+  public final WorksiteAccess worksiteAccess = new WorksiteAccess(this);
   public final Building building = new Building(this);
   public final Farming farming = new Farming(this);
   public final Running running = new Running(this);
@@ -310,17 +311,11 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public boolean setJob(int job) {
     int next = WorkerJob.valid(job);
     if (isGuard() != (next == WorkerJob.GUARDINGTON)) return false;
-    ItemStackHandler packed = new ItemStackHandler(Inventories.cargoSlots(next));
-    for (int i = 0; i < cargo.getSlots(); i++)
-      if (!Inventories.insert(packed, cargo.getStackInSlot(i), false).isEmpty()) return false;
-    for (int i = 0; i < tools.getSlots(); i++)
-      if (!Inventories.tool(next, tools.getStackInSlot(i))
-          && !Inventories.insert(packed, tools.getStackInSlot(i), false).isEmpty()) {
-        state(
-            net.minecraft.network.chat.Component.translatable("automatons.runner.unload")
-                .getString());
-        return false;
-      }
+    ItemStackHandler packed = JobEquipment.pack(this, next);
+    if (packed == null) {
+      state("Needs cargo or linked chest space before changing profession");
+      return false;
+    }
     cargo.deserializeNBT(packed.serializeNBT());
     for (int i = 0; i < tools.getSlots(); i++)
       if (!Inventories.tool(next, tools.getStackInSlot(i)))
@@ -333,6 +328,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public void suspendWork() {
+    worksiteAccess.release();
     hunting.release();
     ranching.release();
     fishing.release();
@@ -622,12 +618,17 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       return;
     }
     if (mining != null && mining.travelControlled()) return;
+    if (worksiteAccess != null && worksiteAccess.travelControlled()) return;
     super.travel(input);
   }
 
   @Override
   public void tick() {
     super.tick();
+    if (!level().isClientSide) {
+      mining.motionTick();
+      worksiteAccess.motionTick();
+    }
     if (!level().isClientSide && isAlive() && !packing) {
       if (tickCount % 20 == 0) Assignments.validate(this);
       if (energy.tick()) {
@@ -638,7 +639,6 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     if (!level().isClientSide && isAlive() && !packing && !isNoAi() && tickCount % 5 == 0)
       pickupNearbyItems();
     if (!level().isClientSide && tickCount % 20 == 0) WorkerNames.sync(this);
-    if (!level().isClientSide) mining.motionTick();
     if (!level().isClientSide && chopTarget() != null) aimAt(chopTarget());
     if (!level().isClientSide
         && isAlive()
@@ -875,10 +875,11 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
 
   public boolean canReach(BlockPos p) {
     pathDeferred = false;
-    return inReach(p) || pathTo(p) != null;
+    return worksiteAccess.canRoute(p) || inReach(p) || pathTo(p) != null;
   }
 
   public boolean travelTo(BlockPos p, String moving, String arrived) {
+    if (worksiteAccess.travel(p)) return false;
     if (inReach(p)) {
       navigation.stop();
       blockedSince = -1;
@@ -1836,7 +1837,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         + " timber="
         + (t == null ? "none" : t.next() + ":" + t.targets + " progress=" + t.processingTicks)
         + " servicing="
-        + servicing;
+        + servicing
+        + " serviceReason="
+        + serviceReason
+        + " alerts="
+        + alerts
+        + " tools="
+        + tools.serializeNBT()
+        + " cargo="
+        + cargo.serializeNBT();
   }
 
   private boolean replant(Station s) {

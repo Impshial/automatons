@@ -26,6 +26,7 @@ public final class MiningGameTests {
         FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "FindOwner"));
     owner.moveTo(Vec3.atCenterOf(p));
     station.owner = owner.getUUID();
+    WorksiteGameTests.readyFixture(station, WorksitePurpose.LUMBER);
     Lumberton w = Automatons.LUMBERTON.get().create(h.getLevel());
     w.owner = owner.getUUID();
     w.setNoAi(true);
@@ -586,7 +587,7 @@ public final class MiningGameTests {
     UUID identity = w.getUUID();
     w.setJob(2);
     h.assertTrue(
-        w.activeTool().isEmpty() && w.tools.getStackInSlot(0).is(Items.IRON_AXE),
+        w.activeTool().isEmpty() && w.tools.getStackInSlot(0).isEmpty() && w.mining.carried(Items.IRON_AXE) == 1,
         "Retained axe used or lost");
     h.assertTrue(
         !w.tools.isItemValid(1, new ItemStack(Items.IRON_AXE))
@@ -612,7 +613,7 @@ public final class MiningGameTests {
         "Mining worker persistence");
     w.setJob(1);
     h.assertTrue(
-        w.getUUID().equals(identity) && w.activeTool().is(Items.IRON_AXE),
+        w.getUUID().equals(identity) && w.mining.carried(Items.IRON_AXE) == 1 && w.activeTool().isEmpty(),
         "Job change changed identity/tools");
     h.succeed();
   }
@@ -1162,6 +1163,7 @@ public final class MiningGameTests {
     Station station = (Station) l.getBlockEntity(anchor);
     station.owner = r.home.owner;
     BuildingProject warehouse = new BuildingProject();
+    station.purpose = WorksitePurpose.WAREHOUSE;
     warehouse.home = r.home.identity;
     warehouse.owner = r.home.owner;
     warehouse.totem = station.identity;
@@ -1201,7 +1203,7 @@ public final class MiningGameTests {
           }
           if (!shortage[0]) return;
           for (var demand : network.demands.values())
-            if ("torch".equals(demand.kind) && r.worker.getUUID().equals(demand.worker)) {
+            if (demand.item == Items.TORCH && r.worker.getUUID().equals(demand.worker)) {
               if (request[0] == null) request[0] = demand.id;
               else h.assertTrue(request[0].equals(demand.id), "Shortage request identity changed");
             }

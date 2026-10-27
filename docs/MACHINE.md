@@ -28,7 +28,7 @@ Craft components using JEI or the handbook's live recipes. The Bore consumes thr
 
 Right-click the body for Controls, Program, and Storage tabs. Right-click the empty central seat to board, or use **Board empty seat** in Controls. An occupied seat is never forcibly emptied. The **I** key opens Controls while riding; **R** starts/stops the engine. Forward/back and left/right use your configured movement keys. Turning requests a cardinal 90-degree turn. Your configured sneak key dismounts and parks. Space has no Machine action.
 
-Put a full **Luminall Bottle** or supported Luminall fluid container into the refueling slot. Bottles return Glass Bottles and buckets return their container. The existing bottle settings define the conversion: by default **250 mB = five Lumina**. Tank contents transfer on assembly. Stopped engines consume no fuel. Starting the engine alone never resumes a saved job.
+Put a full or partial **Luminall Bottle**, bucket or filled Tank into the refueling slot. The fixed conversion is **250 mB = 125 Lumina**. Only fluid that fits is transferred; excess stays in its container. Empty bottles return glass. Tank contents transfer on assembly. Stopped engines consume no fuel. Starting the engine alone never resumes a saved job.
 
 The initial balance in `MachineRules` is: 10,000 Lumina capacity; 30-tick startup; 12-tick shutdown, movement and turning; four ticks per cutting transaction; one third of a Lumina per block moved, quarter-turn, or block broken. These are simulation ticks, so movement takes 0.6 seconds at 20 TPS. Breaking costs are applied to each harvested block, including recognized trees.
 
@@ -77,7 +77,7 @@ Install the Blade, choose Chunk mode, and select the current chunk. A yellow out
 
 ## Operatorton and delivery
 
-Choose **Operatorton** in an existing Automaton's profession list and Apply Job. No special worker recipe or tools are needed. Its identity, owner and cargo remain intact. Assign an eligible worker from Machine Controls, or select it with the Wand and use the Wand on the Machine. Worker and Machine must belong to the same owner and home network. Each can have only one assignment.
+Assign an eligible ordinary worker from Machine Controls, or select it with the Wand and use the Wand on the Machine. Assignment automatically selects **Operatorton**. Its identity, owner, energy and cargo remain intact; incompatible equipment is safely relocated or assignment is rejected if no space exists. Worker and Machine must belong to the same owner and home network. Each can have only one assignment.
 
 The worker walks to the Machine and physically boards. Assignment/boarding alone does not start work. Once seated, Start Work runs the chosen Program or Chunk job. If cargo fills, the pilot reverses/retraces the recorded route to the start, unloads, then returns to the exact saved work position and heading. Work progress is preserved. Unattended Machines instead request a Runnerton and retry when space is available.
 

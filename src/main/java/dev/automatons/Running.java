@@ -109,7 +109,9 @@ public final class Running {
   private void pickup(
       LogisticsNetwork network, LogisticsNetwork.Parcel p, LogisticsNetwork.Demand demand) {
     // Recheck persisted reservations too, so updating the mod cannot revive an old tool pickup.
-    if (p.source.worker() == null && LogisticsNetwork.leaveInChest(p.item)) {
+    if (p.request.startsWith("collect:")
+        && p.source.worker() == null
+        && LogisticsNetwork.leaveInChest(p.item)) {
       network.release(w);
       return;
     }

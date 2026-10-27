@@ -33,6 +33,7 @@ public final class WandGameTests {
     home.owner = player.getUUID();
     home.registerHome();
     totem.owner = player.getUUID();
+    WorksiteGameTests.readyFixture(totem, WorksitePurpose.LUMBER);
     Lumberton worker = Automatons.LUMBERTON.get().create(h.getLevel());
     worker.owner = player.getUUID();
     worker.home = home.getBlockPos();

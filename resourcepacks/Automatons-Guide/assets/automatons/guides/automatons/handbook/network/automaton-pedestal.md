@@ -18,6 +18,10 @@ Put the six [body parts](../items/components.md) into their matching positions: 
 
 <Recipe id="automatons:automaton" />
 
+For a Guardington, use a complete armored set in the same six positions. Mixed ordinary and armored sets are rejected.
+
+<Recipe id="automatons:guardington" />
+
 The assembly shown here is a live Creation Pedestal recipe. It is not a crafting-table recipe and the display itself creates no worker identity.
 The floating figure above the Pedestal is a display; it is not an extra worker.
 

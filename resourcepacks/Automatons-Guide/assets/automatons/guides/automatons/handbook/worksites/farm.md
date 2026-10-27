@@ -10,7 +10,7 @@ categories:
 
 # Farmer's Shed
 
-Configure the matching purpose in **Totem → Worksite Settings** before assigning your Farmington. A Buildington constructs the surface building from the current blueprint.
+Configure the matching purpose in **the Totem profession chooser** before assigning your Farmington. A Buildington constructs the surface building from the current blueprint.
 
 <GameScene zoom="1.3" interactive={true}>
   <ImportStructure src="../assets/structures/farm.nbt" />
@@ -18,7 +18,7 @@ Configure the matching purpose in **Totem → Worksite Settings** before assigni
 </GameScene>
 
 The illustration preserves the blueprint's block states and Totem anchor. Item-frame signs are omitted from this scene; their real item costs remain in Build List.
-The shed is separate from the field. Existing farmland can be adopted; otherwise farmers plan one shared 9 × 9 plot. Supply a hoe, planting stock and a water bucket.
+The shed is separate from the field. Existing farmland can be adopted; otherwise farmers plan one shared 9 × 9 plot. Supply a hoe, planting stock, a water bucket and a glass block; set the three crop selectors.
 
 <a name="supplies" />
 ## Supplies and recovery

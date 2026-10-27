@@ -8,34 +8,18 @@ item_ids:
   - "automatons:totem"
 ---
 
-# Totems and one shared range
+# Configured Totems
 
-Place a Totem where the building's rear-wall anchor should remain. Open **Worksite Settings**, choose its purpose and facing, then **Create Worksite**.
-The yellow glowing perimeter marks the planned building. The Totem stays in place.
+An unconfigured Totem opens a profession chooser. Choose one of eleven production purposes, then use **Overview**, **Workers** and **Settings**. Overview shows current work, storage and shortages. Workers lists production workers and guards separately. Settings contains only controls relevant to the selected profession.
 
 <Recipe id="automatons:totem" />
 
-Each Totem has **one horizontal range** for work and nearby chests. There is no inner exclusion and no separate storage radius.
+A Totem accepts at most **six ordinary workers** from one owner and home network. Assignment automatically gives each worker the site's profession. Guard protection does not consume those six places. Operatortons assigned to a Machine do not count at unrelated Totems.
 
-| Purpose | Default radius |
-| --- | ---: |
-| Lumber Yard | 32 blocks |
-| Farm | 32 blocks |
-| Mine entrance | 6 blocks |
-| Builder | 8 blocks |
-| Warehouse | 8 blocks |
+The site's name can be changed. Find outlines an owned loaded worker for 30 seconds. Unloaded workers retain their identity and assignment but cannot work or receive remote items.
 
-These are horizontal square areas. The mine's underground workings and registered depot extend beyond its small surface range.
-**Show Work Area** displays coverage. Chests are input and output by default; both halves of a double chest need valid access and open lids.
+Changing a Totem's profession requires confirmation and no assigned production workers or active work claims. Existing blocks remain. The replacement plan starts paused so its placement and supplies can be reviewed before construction.
 
-**Workers** shows assignments and individual pages. **Find** outlines an owned loaded worker for 30 seconds.
-**Logistics** lists current activities, requests and deliveries. An amber beacon means this site has workers needing attention; open their status to see why.
-The Worksite Settings popup groups profession controls in tabs.
+Lumber and farm work ranges default to 32 blocks; mine surface storage to six; builder and warehouse to eight. Hunters search a fixed 96-block area while using their local shed for supplies. Mine depots, the authored quarry and registered garden/pasture use their own geometry. Both halves of a double chest need loaded, usable access.
 
-![Totem workers and shared range](../assets/images/totem-gui.png)
-The Workers and Logistics tabs share one worksite range.
-
-![Worksite configuration popup](../assets/images/worksite-settings.png)
-Choose the purpose and orientation in the Worksite tab before approving construction.
-
-An assigned worker joins a site to its home Network. A site cannot be shared by unrelated home Networks.
+[Construction](../professions/buildington.md) · [Professions](../professions/index.md)

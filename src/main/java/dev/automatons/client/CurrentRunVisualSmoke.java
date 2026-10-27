@@ -56,7 +56,7 @@ public final class CurrentRunVisualSmoke {
     ((GuideUiHost) mc.screen).navigateTo(Automatons.id(path));
   }
 
-  private static void validate() {
+  public static void validate() {
     Guide guide = Guides.getById(HandbookItem.GUIDE_ID);
     check(guide != null, "Guide not registered");
     check(
