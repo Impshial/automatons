@@ -20,6 +20,8 @@ public final class Ranching {
   private final Lumberton worker;
   private UUID animal;
   private BlockPos sitePosition;
+  private BlockPos drops;
+  private long collectUntil;
   private long nextAction;
 
   public Ranching(Lumberton worker) {
@@ -30,12 +32,18 @@ public final class Ranching {
     var n = new CompoundTag();
     if (animal != null) n.putUUID("Animal", animal);
     if (sitePosition != null) n.putLong("Site", sitePosition.asLong());
+    if (drops != null) {
+      n.putLong("Drops", drops.asLong());
+      n.putLong("CollectUntil", collectUntil);
+    }
     return n;
   }
 
   public void load(CompoundTag n) {
     animal = n.hasUUID("Animal") ? n.getUUID("Animal") : null;
     sitePosition = n.contains("Site") ? BlockPos.of(n.getLong("Site")) : null;
+    drops = n.contains("Drops") ? BlockPos.of(n.getLong("Drops")) : null;
+    collectUntil = n.getLong("CollectUntil");
   }
 
   public void release() {
@@ -57,6 +65,7 @@ public final class Ranching {
     }
     animal = null;
     sitePosition = null;
+    drops = null;
   }
 
   /**
@@ -242,6 +251,25 @@ public final class Ranching {
         worker.state("Repair pasture enclosure");
         return;
       }
+    }
+    if (drops != null) {
+      // Real lead and loot entities can bounce beyond passive pickup range.
+      // Retain this short collection trip through a chunk unload/reload.
+      var items =
+          level.getEntitiesOfClass(
+              ItemEntity.class, new AABB(drops).inflate(4), worker::canCollectDrop);
+      for (ItemEntity item :
+          items.stream().sorted(Comparator.comparingDouble(worker::distanceToSqr)).toList()) {
+        if (!Storage.accepts(worker.cargo, item.getItem())) break;
+        if (worker.distanceToSqr(item) < 4 && worker.hasLineOfSight(item)) worker.pickupDrop(item);
+        else go(layout, item.blockPosition(), "Collecting ranch products and lead", true);
+        return;
+      }
+      if (level.getGameTime() < collectUntil && !WorkSupplies.full(worker)) {
+        go(layout, drops, "Collecting ranch products and lead", true);
+        return;
+      }
+      drops = null;
     }
     if (site.ranch.handling != null) {
       if (level.getEntity(site.ranch.handling) instanceof Animal target) {
@@ -515,6 +543,8 @@ public final class Ranching {
           .getPersistentData()
           .putLong("AutomatonsDispatchBlockedUntil", level.getGameTime() + 200);
     release();
+    drops = target.blockPosition();
+    collectUntil = level.getGameTime() + 100;
     site.ranch.handling = null;
     site.changed();
     nextAction = level.getGameTime() + 40;

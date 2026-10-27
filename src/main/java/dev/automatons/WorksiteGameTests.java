@@ -330,18 +330,28 @@ public final class WorksiteGameTests {
     Lumberton w = worker(h, r, 4, new BlockPos(21, 1, 17));
     w.setPos(Vec3.atBottomCenterOf(start));
     w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
-    if (obstructed) h.runAfterDelay(600, () -> {
-      BlockPos chest = template.world(project.anchor, project.front, template.placements().get(2).local());
-      h.assertTrue(h.getLevel().getBlockEntity(chest) instanceof net.minecraft.world.level.block.entity.ChestBlockEntity be
-          && be.getItem(0).is(Items.DIAMOND) && be.getItem(0).getCount() == 7,
-          "Builder changed a valuable existing container");
-      for (var cell : template.cells) {
-        BlockPos at = template.world(project.anchor, project.front, cell.local());
-        if (h.getLevel().getBlockEntity(at) != null && !at.equals(project.anchor)
-            && !Construction.matches(h.getLevel().getBlockState(at), cell.state().rotate(template.rotationFor(project.front))))
-          h.getLevel().destroyBlock(at, true);
-      }
-    });
+    if (obstructed)
+      h.runAfterDelay(
+          600,
+          () -> {
+            BlockPos chest =
+                template.world(project.anchor, project.front, template.placements().get(2).local());
+            h.assertTrue(
+                h.getLevel().getBlockEntity(chest)
+                        instanceof net.minecraft.world.level.block.entity.ChestBlockEntity be
+                    && be.getItem(0).is(Items.DIAMOND)
+                    && be.getItem(0).getCount() == 7,
+                "Builder changed a valuable existing container");
+            for (var cell : template.cells) {
+              BlockPos at = template.world(project.anchor, project.front, cell.local());
+              if (h.getLevel().getBlockEntity(at) != null
+                  && !at.equals(project.anchor)
+                  && !Construction.matches(
+                      h.getLevel().getBlockState(at),
+                      cell.state().rotate(template.rotationFor(project.front))))
+                h.getLevel().destroyBlock(at, true);
+            }
+          });
     int[] previousWear = {0};
     long[] lastPlacement = {-100};
     Set<BlockPos> workPositions = new HashSet<>();
@@ -679,13 +689,13 @@ public final class WorksiteGameTests {
   public static void five_templates_have_usable_rotated_storage_doors_and_displays(
       GameTestHelper h) {
     var l = h.getLevel();
-    int index = 0;
     for (WorksitePurpose purpose : WorksitePurpose.values()) {
       if (purpose == WorksitePurpose.UNCONFIGURED) continue;
       var t = BuildingTemplate.load(l, purpose.blueprint);
-      int direction = 0;
       for (Direction front : Direction.Plane.HORIZONTAL) {
-        BlockPos anchor = h.absolutePos(new BlockPos(24 + index * 48, 2, 24 + direction++ * 48));
+        // Check each layout in the same isolated footprint. A gallery of all 44
+        // rotations extends beyond the 64-block fixture into neighboring tests.
+        BlockPos anchor = h.absolutePos(new BlockPos(32, 2, 32));
         l.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
         Station site = (Station) l.getBlockEntity(anchor);
         site.owner = UUID.randomUUID();
@@ -701,9 +711,7 @@ public final class WorksiteGameTests {
         for (var cell : t.cells)
           if (!cell.local().equals(t.anchor))
             l.setBlock(
-                t.world(anchor, front, cell.local()),
-                cell.state().rotate(t.rotationFor(front)),
-                2);
+                t.world(anchor, front, cell.local()), cell.state().rotate(t.rotationFor(front)), 2);
         for (var cell : t.cells)
           if (!cell.state().isAir()) {
             BlockPos at = t.world(anchor, front, cell.local());
@@ -717,8 +725,12 @@ public final class WorksiteGameTests {
         for (BlockPos chest : project.chests(l)) {
           var inv = project.handler(l, chest);
           h.assertTrue(
-              inv != null && inv.getSlots() == (l.getBlockState(chest).getValue(ChestBlock.TYPE)
-                  == net.minecraft.world.level.block.state.properties.ChestType.SINGLE ? 27 : 54),
+              inv != null
+                  && inv.getSlots()
+                      == (l.getBlockState(chest).getValue(ChestBlock.TYPE)
+                              == net.minecraft.world.level.block.state.properties.ChestType.SINGLE
+                          ? 27
+                          : 54),
               "Unusable authored chest: " + purpose + " " + front);
           for (int slot = 0; slot < inv.getSlots(); slot++)
             h.assertTrue(inv.getStackInSlot(slot).isEmpty(), "Schematic container copied loot");
@@ -726,13 +738,18 @@ public final class WorksiteGameTests {
         for (var display : t.frames) {
           var frame =
               new net.minecraft.world.entity.decoration.ItemFrame(
-                  l, t.world(anchor, front, display.local()), t.rotationFor(front).rotate(display.facing()));
+                  l,
+                  t.world(anchor, front, display.local()),
+                  t.rotationFor(front).rotate(display.facing()));
           frame.setItem(new ItemStack(display.item()), false);
           h.assertTrue(frame.survives(), "Display has no valid support: " + purpose + " " + front);
           l.addFreshEntity(frame);
+          frame.discard();
         }
+        for (var cell : t.cells)
+          l.setBlock(t.world(anchor, front, cell.local()), Blocks.AIR.defaultBlockState(), 2);
+        l.setBlock(anchor, Blocks.AIR.defaultBlockState(), 2);
       }
-      index++;
     }
     h.succeed();
   }

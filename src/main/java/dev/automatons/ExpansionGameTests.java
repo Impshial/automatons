@@ -16,6 +16,75 @@ import net.minecraftforge.gametest.*;
 @GameTestHolder("automatons_expansion")
 @PrefixGameTestTemplate(false)
 public final class ExpansionGameTests {
+  @GameTest(template = "empty", timeoutTicks = 500)
+  public static void rancher_recovers_distant_real_lead_and_products_after_reload(
+      GameTestHelper h) {
+    ServerLevel level = h.getLevel();
+    for (int x = 0; x < 42; x++)
+      for (int z = 0; z < 42; z++) h.setBlock(new BlockPos(x, 0, z), Blocks.GRASS_BLOCK);
+    BlockPos anchor = h.absolutePos(new BlockPos(12, 1, 10));
+    level.setBlock(anchor, Automatons.TOTEM.get().defaultBlockState(), 3);
+    level.setBlock(anchor.west(8), Automatons.PEDESTAL.get().defaultBlockState(), 3);
+    Station site = (Station) level.getBlockEntity(anchor);
+    Station home = (Station) level.getBlockEntity(anchor.west(8));
+    home.owner = site.owner = UUID.randomUUID();
+    home.registerHome();
+    site.logisticsHome = home.identity;
+    WorksiteGameTests.readyFixture(site, WorksitePurpose.RANCH);
+    BuildingProject project = site.project();
+    project.front = Direction.SOUTH;
+    project.approved = true;
+    for (var cell : project.template(level).cells) {
+      BlockPos p = project.template(level).world(anchor, project.front, cell.local());
+      if (!p.equals(anchor)) level.setBlock(p, cell.state(), 2);
+      project.completed.add(p.asLong());
+    }
+    SiteLayout layout = new SiteLayout(project, level);
+    BlockPos destination = layout.logical(new BlockPos(3, 0, 11));
+    Lumberton rancher = Automatons.LUMBERTON.get().create(level);
+    rancher.owner = site.owner;
+    rancher.homeId = home.identity;
+    rancher.home = home.getBlockPos();
+    rancher.assign(site);
+    rancher.authorized = true;
+    Vec3 start = Vec3.atBottomCenterOf(layout.logical(new BlockPos(3, 0, 8)));
+    rancher.moveTo(start);
+    CompoundTag collection = new CompoundTag();
+    collection.putLong("Drops", destination.asLong());
+    collection.putLong("CollectUntil", level.getGameTime() + 100);
+    rancher.ranching.load(collection);
+    rancher.ranching.load(rancher.ranching.save());
+    level.addFreshEntity(rancher);
+    WorkerIdentity.update(rancher, "Deployed");
+    List<ItemEntity> drops = new ArrayList<>();
+    for (Item item : List.of(Items.LEAD, Items.LEATHER)) {
+      ItemEntity drop =
+          new ItemEntity(
+              level,
+              destination.getX() + .5,
+              destination.getY(),
+              destination.getZ() + .5,
+              new ItemStack(item),
+              0,
+              0,
+              0);
+      drop.setNoPickUpDelay();
+      level.addFreshEntity(drop);
+      drops.add(drop);
+    }
+    h.succeedWhen(
+        () -> {
+          h.assertTrue(
+              rancher.mining.carried(Items.LEAD) == 1 && rancher.mining.carried(Items.LEATHER) == 1,
+              "Rancher did not recover actual drops: " + rancher.diagnostic());
+          h.assertTrue(
+              rancher.position().distanceToSqr(start) > 1
+                  && drops.stream().allMatch(net.minecraft.world.entity.Entity::isRemoved),
+              "Collection was remote or duplicated a drop");
+          rancher.setNoAi(true);
+        });
+  }
+
   @GameTest(template = "empty", timeoutTicks = 2500)
   public static void forestry_clearing_remains_functional_after_expansion(GameTestHelper h) {
     TimberGameTests.lumberton_clears_fall_obstacles_and_finishes_tree(h);

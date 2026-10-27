@@ -25,14 +25,18 @@ public final class RedesignGameTests {
   private record Rig(ServerPlayer player, Station home, Station totem) {}
 
   private static Rig rig(GameTestHelper h) {
+    return rig(h, BlockPos.ZERO);
+  }
+
+  private static Rig rig(GameTestHelper h, BlockPos offset) {
     for (int x = 0; x < 28; x++)
-      for (int z = 0; z < 28; z++) h.setBlock(new BlockPos(x, 0, z), Blocks.GRASS_BLOCK);
+      for (int z = 0; z < 28; z++) h.setBlock(offset.offset(x, 0, z), Blocks.GRASS_BLOCK);
     ServerPlayer p =
         FakePlayerFactory.get(h.getLevel(), new GameProfile(UUID.randomUUID(), "RedesignTest"));
-    h.setBlock(new BlockPos(3, 1, 3), Automatons.PEDESTAL.get());
-    h.setBlock(new BlockPos(14, 1, 14), Automatons.TOTEM.get());
-    Station home = (Station) h.getLevel().getBlockEntity(h.absolutePos(new BlockPos(3, 1, 3))),
-        totem = (Station) h.getLevel().getBlockEntity(h.absolutePos(new BlockPos(14, 1, 14)));
+    h.setBlock(offset.offset(3, 1, 3), Automatons.PEDESTAL.get());
+    h.setBlock(offset.offset(14, 1, 14), Automatons.TOTEM.get());
+    Station home = (Station) h.getLevel().getBlockEntity(h.absolutePos(offset.offset(3, 1, 3))),
+        totem = (Station) h.getLevel().getBlockEntity(h.absolutePos(offset.offset(14, 1, 14)));
     home.owner = p.getUUID();
     home.registerHome();
     totem.owner = p.getUUID();
@@ -938,10 +942,12 @@ public final class RedesignGameTests {
   }
 
   private static void harvestWithAxe(GameTestHelper h, Item axe) {
-    Rig r = rig(h);
-    var c = chest(h, r, new BlockPos(13, 1, 14));
-    tree(h, new BlockPos(20, 1, 14));
-    var w = worker(h, r, new BlockPos(16, 1, 14));
+    // Keep the full 32-block work radius inside this 64-block test fixture.
+    BlockPos offset = new BlockPos(18, 0, 18);
+    Rig r = rig(h, offset);
+    var c = chest(h, r, offset.offset(13, 1, 14));
+    tree(h, offset.offset(20, 1, 14));
+    var w = worker(h, r, offset.offset(16, 1, 14));
     w.tools.setStackInSlot(0, new ItemStack(axe));
     boolean[] aimed = {false};
     h.onEachTick(
@@ -957,7 +963,12 @@ public final class RedesignGameTests {
         () -> {
           h.assertTrue(
               count(c, Items.OAK_LOG) == 5,
-              "Axe did not complete delivery: " + axe + " " + w.diagnostic());
+              "Axe did not complete delivery: "
+                  + axe
+                  + " logs="
+                  + count(c, Items.OAK_LOG)
+                  + " "
+                  + w.diagnostic());
           h.assertTrue(aimed[0], "Worker never aimed at chopping target");
           h.assertTrue(w.chopTarget() == null, "Chopping overlay persisted after delivery");
           h.assertTrue(
