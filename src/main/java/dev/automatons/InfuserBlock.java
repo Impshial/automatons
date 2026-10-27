@@ -89,7 +89,7 @@ public final class InfuserBlock extends BaseEntityBlock {
       infuser.lastTransfer[corner] = -1000;
       infuser.changed();
     } else if (held.isEmpty()) {
-      if (!p.getUUID().equals(infuser.donors[corner]) && !p.hasPermissions(2)) {
+      if (!ownsDonor(p, infuser.donors[corner]) && !p.hasPermissions(2)) {
         p.displayClientMessage(Component.literal("This shard belongs to its donor"), true);
         return InteractionResult.CONSUME;
       }
@@ -100,6 +100,13 @@ public final class InfuserBlock extends BaseEntityBlock {
       infuser.changed();
     } else p.displayClientMessage(Component.literal("That corner is occupied"), true);
     return InteractionResult.CONSUME;
+  }
+
+  private static boolean ownsDonor(Player player, java.util.UUID donor) {
+    if (player.getUUID().equals(donor)) return true;
+    if (donor == null || !(player.level() instanceof net.minecraft.server.level.ServerLevel level)) return false;
+    var worker = Ledger.get(level.getServer()).workers.get(donor);
+    return worker != null && worker.hasUUID("Owner") && player.getUUID().equals(worker.getUUID("Owner"));
   }
 
   public static int corner(BlockHitResult hit, Player player) {

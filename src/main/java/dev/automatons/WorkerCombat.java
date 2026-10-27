@@ -13,6 +13,8 @@ import net.minecraft.world.phys.*;
 public final class WorkerCombat {
   private final Lumberton worker;
   private int cooldown, draw;
+  private int lastFight = -100;
+  public boolean busy() { return worker.tickCount - lastFight < 40; }
   public WorkerCombat(Lumberton worker) { this.worker = worker; }
   private int equipment(Class<?> kind) {
     for (int i = 0; i < worker.tools.getSlots(); i++) {
@@ -39,6 +41,7 @@ public final class WorkerCombat {
     return true;
   }
   public void fight(LivingEntity target) {
+    lastFight = worker.tickCount;
     if (worker.operating() <= WorkerEnergy.LOW || !target.isAlive()) { worker.stopUsingItem(); draw = 0; return; }
     worker.getLookControl().setLookAt(target, 30, 30);
     int bow = equipment(BowItem.class), sword = equipment(SwordItem.class), ammo = arrowSlot();

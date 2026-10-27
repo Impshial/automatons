@@ -192,6 +192,7 @@ public final class Automatons {
   }
 
   public Automatons() {
+    net.minecraftforge.common.ForgeMod.enableMilkFluid();
     IEventBus bus = FMLJavaModLoadingContext.get().getModEventBus();
     Luminall.register(bus);
     Graves.register();

@@ -189,6 +189,8 @@ public class WorkMenu extends AbstractContainerMenu {
       if (action == 15) station.showNames(!station.showNames);
     }
     if (worker != null) {
+      if (worker.isGuard() && action == 190) worker.guarding.mode(true);
+      if (worker.isGuard() && action == 191 && worker.guarding.assigned() != null) worker.guarding.mode(false);
       if (action == 6) {
         worker.authorized = true;
         WorkerIdentity.update(worker, "Deployed");
@@ -208,6 +210,11 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (isTotem) {
       if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
+      if (station.purpose == WorksitePurpose.RANCH) {
+        if (action >= 200 && action <= 203) { int species = action - 200; station.ranch.enabled[species] = !station.ranch.enabled[species]; station.changed(); }
+        if (action >= 210 && action <= 213) { int species = action - 210; station.ranch.targets[species] = Math.max(2, station.ranch.targets[species] - 1); station.changed(); }
+        if (action >= 220 && action <= 223) { int species = action - 220; station.ranch.targets[species] = Math.min(64, station.ranch.targets[species] + 1); station.changed(); }
+      }
       if (action >= 61 && action <= 65) station.configure(WorksitePurpose.of(action - 60));
       if (action == 66 && station.project() == null) {
         station.orientation = station.orientation.getClockWise();
@@ -312,6 +319,14 @@ public class WorkMenu extends AbstractContainerMenu {
     ListTag lines = new ListTag();
     if (worker != null) {
       add(lines, worker.getDisplayName().getString());
+      n.putString("WorkerName", worker.getDisplayName().getString());
+      n.putString("Activity", worker.status());
+      n.putFloat("Health", worker.getHealth());
+      n.putFloat("MaxHealth", worker.getMaxHealth());
+      n.putInt("Operating", worker.operating());
+      n.putInt("Service", worker.serviceReserve());
+      n.putInt("Armor", worker.getArmorValue());
+      n.put("Guarding", worker.guarding.save());
       add(lines, "Job: " + WorkerJob.name(worker.job()));
       status(lines, worker.status());
       if (worker.job() == 2)
@@ -356,6 +371,7 @@ public class WorkMenu extends AbstractContainerMenu {
     }
     if (station != null && !isTotem) {
       n.put("ActiveBuilds", BuildMaterials.network(station));
+      n.put("Ranch", station.ranch.save());
       n.putBoolean("Ready", station.ready());
       add(lines, station.recalled ? "Work disabled" : "Work enabled");
       for (BuildingProject project : WorldData.get((ServerLevel) player.level()).buildings.values())
@@ -537,6 +553,15 @@ public class WorkMenu extends AbstractContainerMenu {
       n.put("Members", members);
       n.putInt("WorkerPage", workerPage + 1);
       n.putInt("WorkerCount", ids.size());
+      n.putInt("ProductionCount", Assignments.productionCount(station));
+      ListTag guards = new ListTag();
+      for (UUID guard : station.guards) {
+        CompoundTag record = ledger.workers.get(guard);
+        if (record != null && !record.getString("State").equals("Destroyed")) {
+          CompoundTag copy = record.copy(); copy.putUUID("Id", guard); guards.add(copy);
+        }
+      }
+      n.put("Guards", guards);
       add(lines, "Workers: " + ids.size());
       if (selectedWorker != null && station.workers.contains(selectedWorker)) {
         CompoundTag record = ledger.workers.get(selectedWorker);

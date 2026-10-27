@@ -73,6 +73,8 @@ public final class WorkerEnergy {
     }
     if (worker.operating() > LOW) return false;
     worker.clearChop();
+    worker.hunting.release();
+    worker.ranching.release();
     worker.building.release();
     worker.farming.release();
     worker.mining.releaseWork();
@@ -88,15 +90,19 @@ public final class WorkerEnergy {
       worker.state("Powered down — needs a full Luminall bottle");
       return true;
     }
-    if (drink(false)) return true;
     if (worker.mining.returnToSurface()) return true;
-    Station site = worker.station();
+    Station site = worker.isGuard() ? worker.guarding.rechargePoint() : worker.station();
     if (site == null && worker.home != null && worker.level().hasChunkAt(worker.home)
         && worker.level().getBlockEntity(worker.home) instanceof Station home
         && java.util.Objects.equals(home.owner, worker.owner)) site = home;
     if (site == null) {
       worker.getNavigation().stop();
       worker.state("Low charge — supply point unavailable");
+      return true;
+    }
+    for (int slot = 0; slot < worker.cargo.getSlots(); slot++) {
+      if (!fullBottle(worker.cargo.getStackInSlot(slot))) continue;
+      if (worker.travelTo(site.getBlockPos(), "Returning for recharge", "Recharging")) drink(false);
       return true;
     }
     if (retry > worker.tickCount) {

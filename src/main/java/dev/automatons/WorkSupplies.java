@@ -10,6 +10,20 @@ import net.minecraftforge.items.IItemHandler;
  * Local physical service shared by builders/farmers. Courier restrictions apply to couriers only.
  */
 public final class WorkSupplies {
+  public static boolean equipment(Lumberton worker, Station station, java.util.function.Predicate<ItemStack> match) {
+    for (BlockPos pos : station.chests) {
+      if (ConstructionSupply.reserved((ServerLevel)worker.level(), pos)) continue;
+      IItemHandler stock = Storage.handler((ServerLevel)worker.level(), pos, station);
+      if (stock == null) continue;
+      for (int i = 0; i < stock.getSlots(); i++) {
+        ItemStack stack = stock.getStackInSlot(i);
+        if (!match.test(stack) || !Inventories.tool(worker.job(), stack) || !Storage.accepts(worker.tools, stack) || !worker.canReach(pos)) continue;
+        if (worker.travelTo(pos, "Collecting equipment", "Collecting equipment")) BuildingProject.move(stock, i, worker.tools, 1);
+        return true;
+      }
+    }
+    return false;
+  }
   public static boolean full(Lumberton w) {
     for (int i = 0; i < w.cargo.getSlots(); i++)
       if (w.cargo.getStackInSlot(i).isEmpty()) return false;

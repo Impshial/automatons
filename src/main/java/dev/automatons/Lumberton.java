@@ -27,6 +27,11 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public final WorkerEnergy energy = new WorkerEnergy(this);
   public final Threats threats = new Threats(this);
   public final WorkerCombat combat = new WorkerCombat(this);
+  public final Guarding guarding = new Guarding(this);
+  public final Hunting hunting = new Hunting(this);
+  public final Ranching ranching = new Ranching(this);
+  public final LuminaService luminaService = new LuminaService(this);
+  public final HealingVisit healingVisit = new HealingVisit(this);
   private static final EntityDataAccessor<Integer> OPERATING = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   private static final EntityDataAccessor<Integer> SERVICE = SynchedEntityData.defineId(Lumberton.class, EntityDataSerializers.INT);
   public int operating() { return entityData.get(OPERATING); }
@@ -151,6 +156,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public boolean navigationBlocked(BlockPos node) {
+    if (isGuard() && guarding != null && guarding.forbidden(node)) return true;
     if (avoidedNodes != null
         && avoidedNodes.getOrDefault(node.asLong(), 0L) > level().getGameTime()) return true;
     AABB box = getDimensions(Pose.STANDING).makeBoundingBox(Vec3.atBottomCenterOf(node));
@@ -290,6 +296,8 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public void suspendWork() {
+    hunting.release();
+    ranching.release();
     if (machineId != null && level() instanceof ServerLevel) MachineOperator.leave(this);
     forestryHelp.release();
     farming.release();
@@ -451,6 +459,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public void unassign() {
+    if (isGuard()) guarding.clear();
     Station old = station();
     if (old != null) {
       old.workers.remove(getUUID());
@@ -474,6 +483,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   }
 
   public String assign(Station target) {
+    if (isGuard()) return guarding.protect(target);
     String rejection = Assignments.rejection(this, target);
     if (!rejection.isEmpty()) return rejection;
     if (!target.isTotem() || owner == null || !owner.equals(target.owner))
@@ -592,6 +602,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       if (tickCount % 20 == 0) recoverStalledNavigation();
       if (job() != 0) running.doorTick();
       brain();
+      OpportunisticFlowers.tick(this);
       if (tickCount % 20 == 0) {
         WorkerIdentity.update(this, "Deployed");
       }
@@ -1360,6 +1371,9 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       storageCondition(station());
     }
     if (h != null && h.recalled()) {
+      if (isGuard()) { guarding.tick(true); return; }
+      hunting.release();
+      ranching.release();
       forestryHelp.release();
       farming.release();
       building.release();
@@ -1390,6 +1404,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       state("Paused at placement — Start Work");
       return;
     }
+    if (healingVisit.tick()) return;
     if (job() == 0) {
       alerts = 0;
       if (mining.returnToSurface()) return;
@@ -1397,6 +1412,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       state("Unassigned — choose a job");
       return;
     }
+    if (isGuard()) { guarding.tick(false); return; }
     if (job() == WorkerJob.OPERATORTON) {
       MachineOperator.tick(this);
       return;
@@ -1446,6 +1462,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       farming.tick(s);
       return;
     }
+    if (job() == WorkerJob.HUNTERTON) { hunting.tick(s); return; }
+    if (job() == WorkerJob.RANCHERTON) { ranching.tick(s); return; }
+    if (job() == WorkerJob.LUMINARITON) { luminaService.tick(s); return; }
+    if (job() >= WorkerJob.CRAFTERTON) { navigation.stop(); state("Profession setup in progress"); return; }
     if (job() == 2) {
       mining.tick(s);
       return;
@@ -1980,6 +2000,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public void addAdditionalSaveData(CompoundTag n) {
     super.addAdditionalSaveData(n);
     n.put("Energy", energy.save());
+    n.put("Guarding", guarding.save());
+    n.put("Hunting", hunting.save());
+    n.put("Ranching", ranching.save());
+    n.put("LuminaService", luminaService.save());
     if (owner != null) n.putUUID("Owner", owner);
     if (homeId != null) n.putUUID("HomeId", homeId);
     if (totemId != null) n.putUUID("TotemId", totemId);
@@ -2011,6 +2035,10 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
   public void readAdditionalSaveData(CompoundTag n) {
     super.readAdditionalSaveData(n);
     energy.load(n.getCompound("Energy"));
+    guarding.load(n.getCompound("Guarding"));
+    hunting.load(n.getCompound("Hunting"));
+    ranching.load(n.getCompound("Ranching"));
+    luminaService.load(n.getCompound("LuminaService"));
     harvestSince = n.contains("HarvestSince") ? n.getLong("HarvestSince") : -1;
     owner = n.hasUUID("Owner") ? n.getUUID("Owner") : null;
     homeId = n.hasUUID("HomeId") ? n.getUUID("HomeId") : null;

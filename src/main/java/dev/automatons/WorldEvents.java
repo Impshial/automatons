@@ -95,7 +95,7 @@ public final class WorldEvents {
       Station station = scanners.removeFirst();
       queued.remove(station.identity);
       if (!station.isRemoved()
-          && (!station.workers.isEmpty()
+          && (!station.workers.isEmpty() || !station.guards.isEmpty()
               || station.worker != null
               || station.project() != null && !station.project().ready)
           && station.getLevel() instanceof ServerLevel l
@@ -138,6 +138,8 @@ public final class WorldEvents {
   @SubscribeEvent
   public static void leave(net.minecraftforge.event.entity.EntityLeaveLevelEvent e) {
     if (e.getLevel() instanceof ServerLevel l && e.getEntity() instanceof Lumberton w) {
+      w.hunting.release();
+      w.ranching.release();
       w.clearChop();
       w.farming.release();
       if (w.getRemovalReason() != null && w.getRemovalReason().shouldDestroy()) MachineOperator.leave(w);
@@ -146,6 +148,16 @@ public final class WorldEvents {
       w.mining.release();
       WorldData.get(l).release(w.getUUID());
     }
+  }
+
+  @SubscribeEvent
+  public static void workerAttack(net.minecraftforge.event.entity.living.LivingAttackEvent event) {
+    if (!(event.getSource().getEntity() instanceof Lumberton worker)) return;
+    if (worker.job() == WorkerJob.HUNTERTON) {
+      Station site = worker.station();
+      if (site == null || !(event.getEntity() instanceof net.minecraft.world.entity.animal.Animal animal)
+          || !Hunting.eligible(animal, site)) event.setCanceled(true);
+    } else if (worker.isGuard() && !Threats.supported(event.getEntity())) event.setCanceled(true);
   }
 
   @SubscribeEvent

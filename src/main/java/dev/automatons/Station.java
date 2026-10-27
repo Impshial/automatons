@@ -24,6 +24,7 @@ public class Station extends BlockEntity implements MenuProvider {
   public boolean showNames = true;
   public MinePlan mine;
   public FarmPlan farm;
+  public final RanchPlan ranch = new RanchPlan();
   public WorksitePurpose purpose = WorksitePurpose.UNCONFIGURED;
   public Direction orientation = Direction.NORTH;
   public String setupIssue = "";
@@ -84,6 +85,7 @@ public class Station extends BlockEntity implements MenuProvider {
   public BlockPos buildOutlineMin, buildOutlineMax;
   public int alerts;
   public final Set<UUID> workers = new HashSet<>();
+  public final Set<UUID> guards = new HashSet<>();
   public final Map<Long, Integer> chestFlags = new HashMap<>();
   public final List<BlockPos> chests = new ArrayList<>();
   public final LinkedHashMap<Long, TreeFinder.Tree> trees = new LinkedHashMap<>();
@@ -307,7 +309,7 @@ public class Station extends BlockEntity implements MenuProvider {
       s.workerHome = null;
       s.changed();
     }
-    if (!s.workers.isEmpty() || s.project() != null && !s.project().ready)
+    if (!s.workers.isEmpty() || !s.guards.isEmpty() || s.project() != null && !s.project().ready)
       WorldEvents.requestScan(s);
     if (level.getGameTime() % 20 == 0) {
       if (s.mine != null) s.changed();
@@ -616,6 +618,7 @@ public class Station extends BlockEntity implements MenuProvider {
     n.putInt("Alerts", alerts);
     n.put("Inventory", inventory.serializeNBT());
     if (mine != null) n.put("Mine", mine.save());
+    n.put("Ranch", ranch.save());
     ListTag ids = new ListTag();
     for (UUID id : workers) {
       CompoundTag c = new CompoundTag();
@@ -623,6 +626,9 @@ public class Station extends BlockEntity implements MenuProvider {
       ids.add(c);
     }
     n.put("Workers", ids);
+    ListTag guardIds = new ListTag();
+    for (UUID id : guards) { CompoundTag c = new CompoundTag(); c.putUUID("Id", id); guardIds.add(c); }
+    n.put("Guards", guardIds);
     ListTag flags = new ListTag();
     chestFlags.forEach(
         (p, f) -> {
@@ -652,10 +658,13 @@ public class Station extends BlockEntity implements MenuProvider {
     showNames = !n.contains("ShowNames") || n.getBoolean("ShowNames");
     alerts = n.getInt("Alerts");
     mine = n.contains("Mine") ? MinePlan.load(n.getCompound("Mine")) : null;
+    ranch.load(n.getCompound("Ranch"));
     CompoundTag slots = n.getCompound("Inventory").copy();
     if (!isTotem() && slots.getInt("Size") < 6) slots.putInt("Size", 6);
     inventory.deserializeNBT(slots);
     workers.clear();
+    guards.clear();
+    for (Tag t : n.getList("Guards", 10)) guards.add(((CompoundTag)t).getUUID("Id"));
     for (Tag t : n.getList("Workers", 10)) workers.add(((CompoundTag) t).getUUID("Id"));
     if (isTotem() && worker != null) workers.add(worker);
     chestFlags.clear();

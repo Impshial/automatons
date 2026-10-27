@@ -152,7 +152,7 @@ public class WandItem extends Item {
     if (l.getBlockEntity(c.getClickedPos()) instanceof Station s) {
       String result = n.getBoolean("Rebind") ? w.rebind(s) : w.assign(s);
       p.displayClientMessage(Component.literal(result), true);
-      if (result.equals("Home rebound")
+        if (result.equals("Home rebound") || result.equals("Protection assigned")
           || s.isTotem() && s.identity.equals(w.totemId) && w.owner.equals(s.owner)) cancel(wand);
     } else
       p.displayClientMessage(

@@ -25,6 +25,8 @@ public final class WorkerIdentity {
     n.putInt("Job", w.job());
     n.putBoolean("Armored", w.isGuard());
     n.put("Energy", w.energy.save());
+    n.put("Guarding", w.guarding.save());
+    n.put("LuminaService", w.luminaService.save());
     n.putFloat("Health", w.getHealth());
     if (w.hasCustomName()) WorkerNames.writeName(n, w.getCustomName().getString());
     n.putBoolean("ShowNames", w.showNames());
@@ -43,6 +45,8 @@ public final class WorkerIdentity {
     w.totemDimension = n.getString("TotemDimension");
     w.setJob(n.getInt("Job"));
     w.energy.load(n.getCompound("Energy"));
+    w.guarding.load(n.getCompound("Guarding"));
+    w.luminaService.load(n.getCompound("LuminaService"));
     w.setHealth(Math.max(.1f, Math.min(w.getMaxHealth(), n.getFloat("Health"))));
     if (n.contains("Name")) w.setCustomName(Component.Serializer.fromJson(n.getString("Name")));
     w.showNames(!n.contains("ShowNames") || n.getBoolean("ShowNames"));

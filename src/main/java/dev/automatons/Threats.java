@@ -25,7 +25,13 @@ public final class Threats {
     if (!(event.getLevel() instanceof ServerLevel) || !(event.getEntity() instanceof Mob mob) || !supported(mob)) return;
     mob.targetSelector.addGoal(3, new NearestAttackableTargetGoal<Lumberton>(mob, Lumberton.class, 10, true, false,
         target -> target.isAlive() && aggressive(mob)) {
-      @Override public boolean canContinueToUse() { return aggressive(mob) && super.canContinueToUse(); }
+      @Override public boolean canContinueToUse() {
+        if ((mob.getType() == EntityType.SPIDER || mob.getType() == EntityType.CAVE_SPIDER)
+            && mob.getLightLevelDependentMagicValue() >= .5f && mob.getRandom().nextInt(100) == 0) {
+          mob.setTarget(null); return false;
+        }
+        return super.canContinueToUse();
+      }
     });
   }
 
@@ -50,6 +56,8 @@ public final class Threats {
     }
     if (danger == null && level.getGameTime() >= clearAt) { escaping = false; shelter = null; return false; }
     if (!escaping) {
+      worker.hunting.release();
+      worker.ranching.release();
       worker.clearChop(); worker.farming.release(); worker.building.release(); worker.mining.releaseWork();
       worker.running.release(); worker.getNavigation().stop(); escaping = true;
       if (worker.getVehicle() instanceof Machine machine) {
