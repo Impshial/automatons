@@ -31,6 +31,7 @@ public class Station extends BlockEntity implements MenuProvider {
   public WorksitePurpose purpose = WorksitePurpose.UNCONFIGURED;
   public Direction orientation = Direction.NORTH;
   public String setupIssue = "";
+  public List<BuildConflicts.Conflict> setupConflicts = List.of();
   public String customName = "";
 
   public String professionChangeIssue() {
@@ -127,12 +128,14 @@ public class Station extends BlockEntity implements MenuProvider {
     plan.front = orientation;
     plan.purpose = value;
     plan.created = l.getGameTime();
+    setupConflicts = BuildConflicts.find(l, plan);
     if (!plan.reserve(l)) {
       setupIssue = plan.reason;
       changed();
       return false;
     }
     setupIssue = "";
+    setupConflicts = List.of();
     purpose = value;
     WorldData.get(l).buildings.put(identity, plan);
     if (value == WorksitePurpose.FARM && farm == null) {
@@ -800,8 +803,16 @@ public class Station extends BlockEntity implements MenuProvider {
   @Override
   public AABB getRenderBoundingBox() {
     if (!isTotem()) return new AABB(worldPosition).inflate(.5).expandTowards(0, 3, 0);
-    return new AABB(worldPosition)
-        .expandTowards(
-            0, level == null ? 320 : level.getMaxBuildHeight() - worldPosition.getY(), 0);
+    AABB bounds =
+        new AABB(worldPosition)
+            .expandTowards(
+                0, level == null ? 320 : level.getMaxBuildHeight() - worldPosition.getY(), 0);
+    if (buildOutlineMin != null && buildOutlineMax != null)
+      bounds = bounds.minmax(new AABB(buildOutlineMin, buildOutlineMax).inflate(.2));
+    if (mine != null && mine.entrance != null && mine.stage == MinePlan.Stage.ARCH)
+      bounds =
+          bounds.minmax(
+              new AABB(mine.entrance.offset(-3, 0, -3), mine.entrance.offset(4, 1, 4)).inflate(.2));
+    return bounds;
   }
 }

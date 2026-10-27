@@ -1,4 +1,22 @@
-# Expansion verification — 0.10.0
+# Release verification - 0.10.1
+
+All **289 full regression tests passed** on October 27, 2026. The test server saved all dimensions and exited cleanly (BUILD SUCCESSFUL in 15m 54s). The focused worksite suite also passed **46/46 tests** with clean shutdown.
+
+The added cases cover late delivery of materials into a Builder Shed, material stock split across multiple chests, full construction chests preserving incoming and returned cargo, assignment-only build lists, clearing the whole footprint before placement, physical clearing to 16 blocks with paid and recovered climbing blocks, preservation of existing structure and containers, usable Quarryton pickaxes and harvest tiers, recalled quarry workers reaching and staying at home, precise protected/reserved regions, and overlapping perimeters at different elevations. Existing mining, forestry, farming, crafting, ranching, logistics, combat, energy and machine regressions also pass.
+
+Resource checks pass 232 JSON assets, 51 texture dimensions, 40 authored handbook pages, 34 live recipes, 42 item associations and seven structure previews. Five handbook installer tests pass. All ten supplied layouts remain unchanged and match their native cells and manifests.
+
+The final model audit covers unassigned workers and all 13 professions: 1,735 exposed quads, no overlapping coplanar faces within an animated bone, no intersecting solids across articulated groups in the standing pose, retained base boots, and unchanged native atlas density. Guardington now has a one-unit neck gap, a 16-unit torso and an 11-by-11-by-10 head, retaining its 40-unit overall height. Packaged client review `build/packaged-smoke/20261027-133646` completed all 50 captures, passed the Builder GUI and current handbook checks, saved all dimensions and exited 0. Standing, angled and powered-down model views were inspected, along with the shared build list, full-chest Details dialog, green conflict outline and yellow perimeter after camera turns.
+
+The final JAR matches all 304 authored resources. Its SHA256 is `1899AF6612516100FC3A6EDEF6C165D9A317DC73EE2E1A5DE8F54A81AB2B0C76`. Compared with the full server-tested JAR, every gameplay class and data resource is identical. Only the final client model class, its geometry/textures and the build timestamp changed. The exact final JAR was used in the completed client review; the comparison is recorded in `expansion-artifact-identity.log`.
+
+Installed in Rackworks Tester at 13:42 on October 27, 2026, after the player saved and closed Minecraft. Exactly one Automatons JAR is installed, with the final reviewed SHA256 above. The installer updated three handbook files and found no conflicting local edits. The previous 0.10.0 JAR and changed guide files are preserved in `.automatons-release-backups/20261027-134238-765`. Player worlds were not modified.
+
+Versioned release files are `F:/Minecraft/Automatons/releases/automatons-0.10.1.jar`, `automatons-0.10.1-source.zip` and `0.10.1-manifest.json`. Matching schematics, material bills and editable handbook are under `releases/0.10.1`; verification logs, installation receipt and all 50 client captures are under `verification/0.10.1`. The Git branch remains `codex/full-expansion`; master retains the pre-expansion checkpoint.
+
+Multiplayer, long-duration and broad third-party compatibility testing remain manual. Use a fresh test world.
+
+## Previous release: 0.10.0
 
 All **277 full regression tests passed** at 10:48 on October 27, 2026. The focused expansion suite also passed all **44 tests**, including clean shutdown. The full server saved all dimensions and exited cleanly (BUILD SUCCESSFUL in 10m 50s).
 

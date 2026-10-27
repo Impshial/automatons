@@ -13,6 +13,7 @@ import net.minecraft.world.phys.*;
 public final class ForestryAccess {
   private final Lumberton worker;
   private BlockPos base, target;
+  private UUID constructionId;
   private final LinkedHashMap<BlockPos, BlockState> placed = new LinkedHashMap<>();
   private boolean cleaning;
   private int stuck;
@@ -51,14 +52,41 @@ public final class ForestryAccess {
   private boolean safe(BlockPos p) {
     Station s = worker.station();
     WorldData data = WorldData.get(level());
-    return (s != null && TreeFinder.within(s, p) || placed.containsKey(p))
+    BuildingProject construction =
+        worker.job() == WorkerJob.BUILDINGTON ? worker.building.active() : null;
+    if (construction == null && constructionId != null)
+      construction =
+          data.buildings.values().stream()
+              .filter(pj -> pj.id.equals(constructionId))
+              .findFirst()
+              .orElse(null);
+    boolean buildArea =
+        construction != null
+            && construction.clearingArea(level()).inflate(2, 0, 2).contains(Vec3.atCenterOf(p));
+    boolean structure = data.buildingProtected(level(), p);
+    if (buildArea) {
+      BuildingProject clearingProject = construction;
+      structure =
+          data.buildings.values().stream()
+              .anyMatch(
+                  project ->
+                      project != clearingProject && project.contains(level(), p)
+                          || project == clearingProject
+                              && !placed.containsKey(p)
+                              && clearingProject.preserveDuringClearing(level(), p));
+    }
+    return (buildArea || s != null && TreeFinder.within(s, p) || placed.containsKey(p))
         && level().hasChunkAt(p)
         && !level().isOutsideBuildHeight(p)
         && level().getFluidState(p).isEmpty()
         && !data.protectedAt(p)
         && !data.mineProtected(p, null)
-        && !data.buildingProtected(level(), p)
-        && Permissions.allowed(level(), p, worker.owner, Permissions.Action.CUT);
+        && !structure
+        && !data.farmProtected(p)
+        && !SiteLayout.protectedBed(level(), p)
+        && (buildArea
+            ? MiningRules.breakPermission(worker, p, level().getBlockState(p)) >= 0
+            : Permissions.allowed(level(), p, worker.owner, Permissions.Action.CUT));
   }
 
   /** Planning is read-only; no blocks are placed until the claimed job approaches its target. */
@@ -68,14 +96,21 @@ public final class ForestryAccess {
     List<BlockPos> choices = new ArrayList<>();
     for (Direction d : Direction.Plane.HORIZONTAL) {
       BlockPos column = log.relative(d);
-      for (int down = 2; down <= Balance.ROOT_HEIGHT.get() + 2; down++) {
+      for (int down = 2;
+          down <= (worker.job() == WorkerJob.BUILDINGTON ? 18 : Balance.ROOT_HEIGHT.get() + 2);
+          down++) {
         BlockPos feet = column.below(down);
         if (!safe(feet)) break;
         if (!MiningRules.supported(level(), feet)) continue;
         boolean clear = true;
-        for (int y = feet.getY(); y <= log.getY() + 1; y++) {
+        for (int y = feet.getY();
+            y <= log.getY() + (worker.job() == WorkerJob.BUILDINGTON ? -1 : 1);
+            y++) {
           BlockPos p = new BlockPos(feet.getX(), y, feet.getZ());
-          if (!safe(p) || !level().getBlockState(p).isAir()) {
+          if (!safe(p)
+              || !level().getBlockState(p).isAir()
+                  && !(worker.job() == WorkerJob.BUILDINGTON
+                      && Construction.naturalObstacle(level().getBlockState(p)))) {
             clear = false;
             break;
           }
@@ -84,13 +119,18 @@ public final class ForestryAccess {
         for (int i = 0; i < worker.cargo.getSlots(); i++)
           if (buildingBlock(worker.cargo.getStackInSlot(i)))
             blocks += worker.cargo.getStackInSlot(i).getCount();
-        if (clear && blocks >= log.getY() - feet.getY() - 1) choices.add(feet);
+        if (clear
+            && level().getBlockState(feet).isAir()
+            && level().getBlockState(feet.above()).isAir()
+            && blocks >= log.getY() - feet.getY() - 1) choices.add(feet);
         break;
       }
     }
     choices.sort(Comparator.comparingDouble(p -> worker.distanceToSqr(Vec3.atBottomCenterOf(p))));
     for (BlockPos feet : choices) {
       if (worker.canReach(feet)) {
+        var project = worker.job() == WorkerJob.BUILDINGTON ? worker.building.active() : null;
+        constructionId = project == null ? null : project.id;
         base = feet;
         target = log.immutable();
         cleaning = false;
@@ -116,11 +156,31 @@ public final class ForestryAccess {
       if (horizontal < 2 && Math.abs(worker.getY() - next.getY()) < .3) {
         worker.getNavigation().stop();
         worker.getMoveControl().setWantedPosition(feet.x, feet.y, feet.z, 1);
-      } else worker.travelTo(next, "Approaching climbing position", "Climbing for wood");
+      } else if (worker.job() == WorkerJob.BUILDINGTON)
+        WorkerMovement.walkGround(worker, next, "Approaching construction climbing position");
+      else
+        worker.travelTo(
+            next,
+            "Approaching climbing position",
+            worker.job() == WorkerJob.BUILDINGTON
+                ? "Climbing to clear construction"
+                : "Climbing for wood");
       return true;
     }
     worker.getNavigation().stop();
     worker.state("Building temporary climbing blocks");
+    if (worker.job() == WorkerJob.BUILDINGTON && worker.building.active() != null) {
+      for (int up = 1; up <= 3; up++) {
+        BlockPos obstruction = next.above(up);
+        var state = level().getBlockState(obstruction);
+        if (safe(obstruction)
+            && Construction.naturalObstacle(state)
+            && worker.inReach(obstruction)) {
+          worker.building.active().clearObstacle(worker, obstruction, state);
+          return true;
+        }
+      }
+    }
     int slot = material();
     if (slot < 0 || !safe(next) || !level().getBlockState(next).isAir()) {
       finish();
@@ -142,6 +202,7 @@ public final class ForestryAccess {
   public boolean cleanup() {
     if (placed.isEmpty()) {
       base = target = null;
+      constructionId = null;
       cleaning = false;
       return false;
     }
@@ -199,6 +260,7 @@ public final class ForestryAccess {
 
   public CompoundTag save() {
     CompoundTag n = new CompoundTag();
+    if (constructionId != null) n.putUUID("Construction", constructionId);
     if (base != null) n.putLong("Base", base.asLong());
     if (target != null) n.putLong("Target", target.asLong());
     n.putBoolean("Cleaning", cleaning);
@@ -215,6 +277,7 @@ public final class ForestryAccess {
   }
 
   public void load(CompoundTag n) {
+    constructionId = n.hasUUID("Construction") ? n.getUUID("Construction") : null;
     base = n.contains("Base") ? BlockPos.of(n.getLong("Base")) : null;
     target = n.contains("Target") ? BlockPos.of(n.getLong("Target")) : null;
     cleaning = n.getBoolean("Cleaning");

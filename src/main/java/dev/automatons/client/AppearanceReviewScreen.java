@@ -12,11 +12,18 @@ import net.minecraft.network.chat.Component;
 final class AppearanceReviewScreen extends Screen {
   private final List<Lumberton> workers = new ArrayList<>();
   private final boolean states;
+  private final float viewX, viewY;
 
   AppearanceReviewScreen(boolean states) {
+    this(states, 14, -3);
+  }
+
+  AppearanceReviewScreen(boolean states, float viewX, float viewY) {
     super(Component.literal(states ? "Operating states" : "Thirteen professions"));
     this.states = states;
-    for (int job = 1; job <= 13; job++) {
+    this.viewX = viewX;
+    this.viewY = viewY;
+    for (int job = 0; job <= 13; job++) {
       Lumberton w =
           (job == WorkerJob.GUARDINGTON ? Automatons.GUARDINGTON : Automatons.LUMBERTON)
               .get()
@@ -46,7 +53,7 @@ final class AppearanceReviewScreen extends Screen {
       Lumberton w = workers.get(i);
       g.fill(x + 2, y, x + cellWidth - 2, y + rowHeight - 4, 0xffc6c6c6);
       InventoryScreen.renderEntityInInventoryFollowsMouse(
-          g, x + cellWidth / 2, bottom, Math.min(38, cellWidth * 3 / 5), 14, -3, w);
+          g, x + cellWidth / 2, bottom, Math.min(38, cellWidth * 3 / 5), viewX, viewY, w);
       g.pose().pushPose();
       g.pose().translate(x + cellWidth / 2f, bottom + 7, 0);
       g.pose().scale(.8f, .8f, 1);

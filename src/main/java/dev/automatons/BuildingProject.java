@@ -30,6 +30,14 @@ public final class BuildingProject {
   public final Set<Long> stagingChests = new HashSet<>();
   public UUID builder;
   public final ConstructionSupply supplies = new ConstructionSupply(this);
+  public CompoundTag issue = new CompoundTag();
+
+  public void blocked(Lumberton worker, BlockPos pos, String reason, String remedy) {
+    worker.blocked(pos, reason, remedy);
+    issue = worker.workIssue.copy();
+    this.reason = reason;
+  }
+
   private BuildingTemplate template;
   private List<BuildingTemplate.Cell> order;
   private int verifyCursor;
@@ -38,9 +46,161 @@ public final class BuildingProject {
   private int stanceWork;
   private long nextBuildAction;
   private long nextStanceSearch;
+  private Vec3 stanceProgress;
+  private long stanceProgressAt;
   private Set<Long> structuralCells;
   private BlockPos structureAnchor;
   private Direction structureFront;
+  private boolean siteCleared;
+  private List<BlockPos> clearance;
+  private int clearanceCursor;
+  private final Map<BlockPos, BlockState> clearanceTargets = new HashMap<>();
+
+  public AABB clearingArea(ServerLevel level) {
+    AABB area = bounds(level);
+    return new AABB(
+        area.minX,
+        Math.max(area.minY, anchor.getY()),
+        area.minZ,
+        area.maxX,
+        Math.min(level.getMaxBuildHeight(), Math.max(area.maxY, anchor.getY() + 16)),
+        area.maxZ);
+  }
+
+  public boolean preserveDuringClearing(ServerLevel level, BlockPos pos) {
+    if (pos.equals(anchor)) return true;
+    BlockState desired = clearanceTargets.get(pos);
+    if (desired != null)
+      return !desired.isAir() && Construction.matches(level.getBlockState(pos), desired);
+    for (var cell : template(level).cells)
+      if (!cell.state().isAir() && template.world(anchor, front, cell.local()).equals(pos))
+        return Construction.matches(
+            level.getBlockState(pos), cell.state().rotate(template.rotationFor(front)));
+    return false;
+  }
+
+  private boolean climbingMaterials(Lumberton worker, BlockPos obstacle) {
+    int count = 0;
+    for (int i = 0; i < worker.cargo.getSlots(); i++)
+      if (ForestryAccess.buildingBlock(worker.cargo.getStackInSlot(i)))
+        count += worker.cargo.getStackInSlot(i).getCount();
+    if (count >= 16) return true;
+    Station shed = worker.station();
+    if (shed == null) return false;
+    ServerLevel level = (ServerLevel) worker.level();
+    Set<BlockPos> sources = new LinkedHashSet<>(shed.chests);
+    if (supplies.chest != null) sources.add(supplies.chest);
+    for (BlockPos source : sources) {
+      if (!source.equals(supplies.chest)
+          && ((shed.flags(source) & 2) == 0 || ConstructionSupply.reserved(level, source)))
+        continue;
+      var inventory = Storage.handler(level, source, shed);
+      if (inventory == null) continue;
+      for (int slot = 0; slot < inventory.getSlots(); slot++) {
+        ItemStack stack = inventory.getStackInSlot(slot);
+        if (!ForestryAccess.buildingBlock(stack)
+            || !Storage.accepts(worker.cargo, stack)
+            || !worker.canReach(source)) continue;
+        if (worker.travelTo(
+            source, "Collecting temporary climbing blocks", "Collecting temporary climbing blocks"))
+          move(inventory, slot, worker.cargo, 16 - count);
+        return false;
+      }
+    }
+    blocked(
+        worker,
+        obstacle,
+        "Needs temporary climbing blocks",
+        "Supply dirt or wooden planks in the Builder's Shed or this project's construction chest."
+            + " The builder needs 16 reusable blocks for safe access up to 16 blocks high; it"
+            + " currently carries "
+            + count
+            + ". Leave cargo space for collection. Temporary supports are recovered before"
+            + " construction resumes.");
+    return false;
+  }
+
+  /** Clear the whole blueprint volume before the first new placement, including omitted air. */
+  public boolean clearSite(Lumberton worker, Station station) {
+    if (siteCleared || ready) return true;
+    ServerLevel level = (ServerLevel) worker.level();
+    issue = new CompoundTag();
+    if (!validate(worker, station)) {
+      worker.state(reason);
+      return false;
+    }
+    if (clearance == null) {
+      clearance = new ArrayList<>();
+      for (var cell : template(level).cells)
+        clearanceTargets.put(
+            template.world(anchor, front, cell.local()),
+            cell.state().rotate(template.rotationFor(front)));
+      AABB area = clearingArea(level);
+      for (int y = (int) area.minY; y < area.maxY; y++)
+        for (int x = (int) area.minX; x < area.maxX; x++)
+          for (int z = (int) area.minZ; z < area.maxZ; z++) clearance.add(new BlockPos(x, y, z));
+    }
+    while (clearanceCursor < clearance.size()) {
+      BlockPos pos = clearance.get(clearanceCursor);
+      if (!level.hasChunkAt(pos)) {
+        worker.state("Waiting for worksite chunks");
+        return false;
+      }
+      BlockState actual = level.getBlockState(pos);
+      BlockState target = clearanceTargets.getOrDefault(pos, Blocks.AIR.defaultBlockState());
+      if (pos.equals(anchor)
+          || Construction.matches(actual, target)
+          || !Construction.naturalObstacle(actual)) {
+        clearanceCursor++;
+        continue;
+      }
+      if (WorldData.get(level).protectedAt(pos) || WorldData.get(level).mineProtected(pos, null)) {
+        blocked(
+            worker,
+            pos,
+            "Construction site clearing is protected",
+            "Allow clearing at this coordinate or relocate the worksite.");
+        return false;
+      }
+      if (pos.getY() > anchor.getY() + 4) {
+        worker.building.perimeterRoute(null);
+        if (!worker.inReach(pos) || !worker.onGround()) {
+          if (worker.forestryAccess.active()) {
+            if (worker.forestryAccess.approach(pos)) return false;
+            worker.forestryAccess.finish();
+            return false;
+          }
+          if (!climbingMaterials(worker, pos)) return false;
+          if (!worker.forestryAccess.approach(pos)) {
+            blocked(
+                worker,
+                pos,
+                "Cannot reach upper construction obstruction",
+                "The builder needs a clear, supported climbing column beside this block. Move"
+                    + " protected structures or containers that block access; natural headroom"
+                    + " obstructions are cleared automatically.");
+          }
+          return false;
+        }
+      } else if (!outsideStance(worker, pos)) return false;
+      if (level.getGameTime() < nextBuildAction) return false;
+      clearObstacle(worker, pos, actual);
+      if (level.getBlockState(pos).isAir()) {
+        clearanceCursor++;
+        worker.state("Clearing construction site");
+      }
+      return false;
+    }
+    if (worker.forestryAccess.active()) {
+      worker.forestryAccess.finish();
+      return false;
+    }
+    siteCleared = true;
+    clearance = null;
+    clearanceTargets.clear();
+    worker.state("Construction site cleared");
+    return true;
+  }
 
   public BuildingTemplate template(ServerLevel l) {
     if (template == null) template = BuildingTemplate.load(l, purpose.blueprint);
@@ -97,6 +257,8 @@ public final class BuildingProject {
   }
 
   public boolean reserve(ServerLevel l) {
+    var conflicts = BuildConflicts.find(l, this);
+    if (!conflicts.isEmpty()) return fail("Overlaps " + conflicts.get(0).name());
     if (!new SiteLayout(this, l).waterValid())
       return fail("Fishing dock needs a 7 by 10 area of source water");
     for (BuildingProject other : WorldData.get(l).buildings.values()) {
@@ -364,6 +526,7 @@ public final class BuildingProject {
 
   public void tick(Lumberton w, Station s) {
     ServerLevel l = (ServerLevel) w.level();
+    issue = new CompoundTag();
     if (paused
         && (reason.equals("Worksite block changed — review site")
             || reason.startsWith("Site changed at "))) paused = false;
@@ -433,7 +596,8 @@ public final class BuildingProject {
       if (target.is(Blocks.GRASS_BLOCK) && !FarmPlan.soil(now))
         target = Blocks.DIRT.defaultBlockState();
       if (WorldData.get(l).protectedAt(p)) {
-        w.state("Construction protected");
+        blocked(
+            w, p, "Construction protected", "Allow construction here or relocate this worksite.");
         return;
       }
       if (completed.contains(p.asLong())) {
@@ -443,13 +607,21 @@ public final class BuildingProject {
       // Air is not a required building block. Clear loose terrain for headroom, but
       // leave extra player workstations/containers alone instead of demanding tools
       // for demolition and preventing the remaining structure from being finished.
-      if (target.isAir() && !Construction.soft(now) && !template(l).explicitAir) {
+      if (target.isAir()
+          && !Construction.soft(now)
+          && !now.is(net.minecraft.tags.BlockTags.LOGS)
+          && !now.is(net.minecraft.tags.BlockTags.LEAVES)
+          && !template(l).explicitAir) {
         cursor++;
         continue;
       }
       if (now.hasBlockEntity() && !Construction.matches(now, target)) {
         missing = true;
-        reason = "Move the existing container or workstation before construction";
+        blocked(
+            w,
+            p,
+            "Container or workstation occupies a required building cell",
+            "Move this block and its contents. The builder will not destroy a valuable container.");
         cursor++;
         continue;
       }
@@ -472,15 +644,11 @@ public final class BuildingProject {
       if (!now.isAir() && now.getDestroySpeed(l, p) < 0) {
         w.getNavigation().stop();
         ((WorkerMoveControl) w.getMoveControl()).stop();
-        w.state(
-            "Unbreakable "
-                + now.getBlock().getName().getString()
-                + " at "
-                + p.getX()
-                + ", "
-                + p.getY()
-                + ", "
-                + p.getZ());
+        blocked(
+            w,
+            p,
+            "Unbreakable " + now.getBlock().getName().getString() + " at " + p.toShortString(),
+            "Relocate the worksite or remove this obstruction manually if permitted.");
         return;
       }
       if (target.getBlock() instanceof DoorBlock
@@ -560,12 +728,14 @@ public final class BuildingProject {
     }
     if (missing) {
       // Use the materials already carried before interrupting construction for stock.
-      if (nextMaterial != null
+      if (issue.isEmpty()
+          && nextMaterial != null
           && restock(w, s, nextMaterial, Math.min(64, remaining(l).getOrDefault(nextMaterial, 1))))
         return;
       w.getNavigation().stop();
       ((WorkerMoveControl) w.getMoveControl()).stop();
-      w.state(reason);
+      w.state(issue.isEmpty() ? reason : issue.getString("Reason"));
+      if (!issue.isEmpty()) w.workIssue = issue.copy();
       w.alerts = 16;
       return;
     }
@@ -591,7 +761,11 @@ public final class BuildingProject {
       BlockState state = l.getBlockState(chest);
       if (!state.is(Blocks.CHEST)
           || ChestBlock.getContainer((ChestBlock) Blocks.CHEST, state, l, chest, false) == null) {
-        w.state("Free worksite chest lids before handover");
+        blocked(
+            w,
+            chest.above(),
+            "Worksite chest lid blocked",
+            "Clear the space above the chest so construction can finish.");
         return;
       }
     }
@@ -623,26 +797,26 @@ public final class BuildingProject {
     s.changed();
   }
 
-  private void clearObstacle(Lumberton w, BlockPos p, BlockState now) {
+  void clearObstacle(Lumberton w, BlockPos p, BlockState now) {
     ServerLevel l = (ServerLevel) w.level();
     if (now.hasBlockEntity()) {
-      w.state("Move the existing container or workstation before construction");
+      blocked(
+          w,
+          p,
+          "Container or workstation blocks construction",
+          "Move this block and its contents before continuing.");
       return;
     }
     if (WorldData.get(l).protectedAt(p)) {
-      w.state("Worksite protected");
+      blocked(w, p, "Worksite protected", "Allow building actions here or move the worksite.");
       return;
     }
     if (now.getDestroySpeed(l, p) < 0) {
-      w.state(
-          "Unbreakable "
-              + now.getBlock().getName().getString()
-              + " at "
-              + p.getX()
-              + ", "
-              + p.getY()
-              + ", "
-              + p.getZ());
+      blocked(
+          w,
+          p,
+          "Unbreakable " + now.getBlock().getName().getString(),
+          "Remove this obstruction manually if permitted, or relocate the worksite.");
       return;
     }
     var drops =
@@ -650,7 +824,11 @@ public final class BuildingProject {
             ? Block.getDrops(now, l, p, l.getBlockEntity(p), w, w.activeTool())
             : List.<ItemStack>of();
     if (MiningRules.breakPermission(w, p, now) < 0) {
-      w.state("Worksite protected");
+      blocked(
+          w,
+          p,
+          "Block removal denied",
+          "Check claim or protection permissions at this coordinate.");
       return;
     }
     var entity = l.getBlockEntity(p);
@@ -709,6 +887,7 @@ public final class BuildingProject {
   private boolean outsideStance(Lumberton w, BlockPos target) {
     ServerLevel l = (ServerLevel) w.level();
     AABB site = bounds(l);
+    if (w.building.access.active() && w.building.access.advance(this)) return false;
     if (!w.getBoundingBox().intersects(site)) w.building.perimeterRoute(site);
     if (buildingStance != null && !safeStance(w, buildingStance)) {
       buildingStance = null;
@@ -717,6 +896,19 @@ public final class BuildingProject {
     }
     if (buildingStance != null) {
       Vec3 center = Vec3.atBottomCenterOf(buildingStance);
+      if (stanceProgress == null || w.position().distanceToSqr(stanceProgress) > .25) {
+        stanceProgress = w.position();
+        stanceProgressAt = l.getGameTime();
+      } else if (l.getGameTime() - stanceProgressAt >= 100
+          && w.position().distanceToSqr(center) >= .16) {
+        BlockPos stuck = buildingStance;
+        buildingStance = null;
+        stanceProgress = null;
+        w.resetWorkPath();
+        w.building.perimeterRoute(null);
+        w.building.access.clear(this, Set.of(stuck));
+        return false;
+      }
       if (w.position().distanceToSqr(center) < .16
           && w.onGround()
           && !w.getBoundingBox().intersects(bounds(l))) {
@@ -761,7 +953,7 @@ public final class BuildingProject {
       }
     if (options.isEmpty()) {
       buildingStance = null;
-      w.state("Clear safe footing outside building");
+      w.building.access.clear(this, w.building.access.perimeter(this));
       return false;
     }
     Set<BlockPos> destinations = options;
@@ -797,6 +989,8 @@ public final class BuildingProject {
     var path = w.getNavigation().createPath(destinations, 0);
     if (path != null && path.canReach()) {
       buildingStance = path.getTarget();
+      stanceProgress = w.position();
+      stanceProgressAt = l.getGameTime();
       previousStance = null;
       w.getNavigation().moveTo(path, 1);
       w.state("Moving outside building");
@@ -816,7 +1010,7 @@ public final class BuildingProject {
             .orElseThrow();
     if (w.distanceToSqr(Vec3.atBottomCenterOf(nearest)) > 32 * 32)
       w.travelTo(nearest, "Travelling to construction site", "Finding building perimeter");
-    else w.state("Clear a route to building perimeter");
+    else w.building.access.clear(this, options);
     return false;
   }
 

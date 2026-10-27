@@ -11,6 +11,8 @@ Workers share saved progress and exclusive cell claims, construct access from ac
 Side cave/fluid hazards end the affected branch. Central-access hazards pause the mine with a reason. Settings expose the applicable resume control. Mine Totems do not offer variable tunnel-width or the previous quarry mode.
 
 ## Quarry
+A usable pickaxe is required before excavation starts, and a broken pickaxe must be replaced. Shovels are optional for soil and cannot satisfy this starting requirement. The tool alert names the needed tool tier and, once selected, the block and coordinates.
+
 The separate Quarry Totem excavates a fixed 15×15 footprint in layers. Ladder shaft and backing remain outside. Settings choose stopping depth, bounded by the dimension's minimum height, and expose cave acknowledgement.
 
 Fluid plugs consume safe filler and lighting consumes torches. Unbreakable cells remain and are reported. Cave alerts persist until acknowledged; a newly discovered opening causes a new alert. Workers use the ladder to unload and retreat. Guards stay on the surface.

@@ -359,6 +359,134 @@ public final class ExpansionVisualReview {
           "automatons-expansion-armored-handbook.png",
           mc.getMainRenderTarget(),
           c -> {});
+    }
+    if (tick == start + 700)
+      server(
+          p -> {
+            site(p, WorksitePurpose.LUMBER);
+            worker(p, WorkerJob.BUILDINGTON);
+            Station s = (Station) p.serverLevel().getBlockEntity(SITE);
+            Lumberton w = (Lumberton) p.serverLevel().getEntity(shownWorker);
+            s.project().claim(w);
+            BlockPos chest = SITE.south(3);
+            p.serverLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), 3);
+            var stock =
+                (net.minecraft.world.level.block.entity.ChestBlockEntity)
+                    p.serverLevel().getBlockEntity(chest);
+            stock.getPersistentData().putUUID("AutomatonsConstructionChest", s.project().id);
+            for (int i = 0; i < stock.getContainerSize(); i++)
+              stock.setItem(i, new ItemStack(Items.DIRT, 64));
+            s.project().supplies.chest = chest;
+            s.project().supplies.prepare(w, s);
+            if (!w.status().contains("chest full"))
+              throw new IllegalStateException("Full chest fixture did not block: " + w.status());
+          });
+    if (tick == start + 710) server(ExpansionVisualReview::openWorker);
+    if (tick == start + 735) shot("builder-assigned-building");
+    if (tick == start + 745) press("Build List");
+    if (tick == start + 765) shot("builder-assigned-build-list");
+    if (tick == start + 775) mc.screen.keyPressed(256, 0, 0);
+    if (tick == start + 785) press("Details");
+    if (tick == start + 805) shot("builder-full-chest-details");
+    if (tick == start + 815) server(ExpansionVisualReview::openSite);
+    if (tick == start + 835) {
+      var screen = mc.screen;
+      screen.keyPressed(69, 18, 0);
+      if (mc.screen != screen) throw new IllegalStateException("Inventory key closed Totem");
+      press("Build List");
+    }
+    if (tick == start + 855) shot("totem-shared-build-list");
+    if (tick == start + 865) {
+      mc.screen.keyPressed(69, 18, 0);
+      if (!(mc.screen instanceof ProfessionScreen screen) || !screen.buildPopup)
+        throw new IllegalStateException("Inventory key closed build dialog");
+      mc.screen.keyPressed(256, 0, 0);
+      press("Name");
+    }
+    if (tick == start + 885) {
+      var field =
+          mc.screen.children().stream()
+              .filter(c -> c instanceof EditBox)
+              .map(c -> (EditBox) c)
+              .findFirst()
+              .orElseThrow();
+      field.setValue("");
+      mc.screen.setFocused(field);
+      field.setFocused(true);
+      mc.screen.keyPressed(69, 18, 0);
+      mc.screen.charTyped('e', 0);
+      if (!field.getValue().equals("e"))
+        throw new IllegalStateException("Totem name cannot type e");
+      System.out.println("AUTOMATONS_BUILDER_GUI_VALID");
+    }
+    if (tick == start + 905) {
+      shot("totem-name-e-keeps-dialog-open");
+    }
+    if (tick == start + 915) {
+      mc.player.closeContainer();
+      mc.setScreen(new AppearanceReviewScreen(false, -40, -24));
+    }
+    if (tick == start + 935)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-profession-shoulders-left.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 945) mc.setScreen(new AppearanceReviewScreen(false, 40, -24));
+    if (tick == start + 965)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-profession-shoulders-right.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 975)
+      server(
+          p -> {
+            site(p, WorksitePurpose.UNCONFIGURED);
+            var s = (Station) p.serverLevel().getBlockEntity(SITE);
+            WorldData.get(p.serverLevel())
+                .protection
+                .put(new net.minecraft.world.level.ChunkPos(SITE).toLong(), p.getUUID());
+            if (s.configure(WorksitePurpose.BUILDER) || s.setupConflicts.isEmpty())
+              throw new IllegalStateException("Missing placement conflict");
+            Network.buildConflicts(p, s);
+            openSite(p);
+          });
+    if (tick == start + 1000) shot("protected-placement-rejected");
+    if (tick == start + 1010)
+      server(
+          p -> {
+            p.closeContainer();
+            p.teleportTo(p.serverLevel(), 21.5, 67, 20.5, 135, 24);
+          });
+    if (tick == start + 1040)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-protected-placement-green-outline.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 1050)
+      server(
+          p -> {
+            WorldData.get(p.serverLevel()).protection.clear();
+            site(p, WorksitePurpose.BUILDER);
+            var s = (Station) p.serverLevel().getBlockEntity(SITE);
+            Network.buildConflicts(p, s);
+            p.teleportTo(p.serverLevel(), 13.5, 65, 13.5, 120, 32);
+          });
+    if (tick == start + 1080)
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-perimeter-turn-left.png",
+          mc.getMainRenderTarget(),
+          c -> {});
+    if (tick == start + 1090) server(p -> p.teleportTo(p.serverLevel(), 13.5, 65, 13.5, 185, 32));
+    if (tick == start + 1120) {
+      Screenshot.grab(
+          mc.gameDirectory,
+          "automatons-perimeter-turn-right.png",
+          mc.getMainRenderTarget(),
+          c -> {});
       System.out.println("AUTOMATONS_WORKSITE_VISUAL_COMPLETE");
       mc.stop();
     }

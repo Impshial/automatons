@@ -41,6 +41,31 @@ public final class MiningRules {
     return best;
   }
 
+  public static String requiredTool(BlockState state) {
+    if (state == null) return "a usable Pickaxe";
+    boolean shovel = state.is(net.minecraft.tags.BlockTags.MINEABLE_WITH_SHOVEL);
+    Item[] options =
+        shovel
+            ? new Item[] {
+              Items.WOODEN_SHOVEL,
+              Items.STONE_SHOVEL,
+              Items.IRON_SHOVEL,
+              Items.DIAMOND_SHOVEL,
+              Items.NETHERITE_SHOVEL
+            }
+            : new Item[] {
+              Items.WOODEN_PICKAXE,
+              Items.STONE_PICKAXE,
+              Items.IRON_PICKAXE,
+              Items.DIAMOND_PICKAXE,
+              Items.NETHERITE_PICKAXE
+            };
+    for (Item item : options)
+      if (capable(new ItemStack(item), state))
+        return new ItemStack(item).getHoverName().getString() + " or stronger";
+    return "a compatible mining tool for " + state.getBlock().getName().getString();
+  }
+
   public static int duration(
       ItemStack tool, BlockState block, ServerLevel l, BlockPos p, Station station) {
     double speed = Math.max(1, tool.getDestroySpeed(block));

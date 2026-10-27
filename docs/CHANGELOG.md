@@ -1,5 +1,19 @@
 # Changelog
 
+## 0.10.1 - Builder recovery, work details and rendering
+
+- Show the Builder's assigned building and coordinates, with a Build List scoped to that assignment. Totems open the shared Pedestal material table in a dialog.
+- Keep Totem and worker dialogs open when the inventory key is pressed, while preserving text entry and Escape.
+- Keep supply chest destinations stable while travelling. A full construction materials chest reports the chest coordinates and carried items that cannot be stored, including surplus returns; cargo remains intact and retries when space is freed.
+- Remember the material that stopped construction and fetch it from the Builder's shed when it becomes available, instead of repeatedly collecting and returning unrelated site stock. Reserve cargo room for the next required material.
+- Clear the whole construction footprint up to 16 blocks above the Totem before placement. Use inventory-funded climbing supports for high obstructions and recover them afterward; preserve matching authored structure, containers, protection and fluids. Replan blocked construction access.
+- Treat a builder already safely inside its shed as home, without requiring an arbitrary center position.
+- Require a usable pickaxe for Quarrytons, request replacement after breakage, and explain the required harvest tier, equipment mismatch and target coordinates. Recalled quarry workers on lower surface hillsides continue home instead of returning to the shaft.
+- Reject overlapping building perimeters even at different ground heights. Show protected and reserved conflict regions in green for 60 seconds after a rejected Totem setup; include the full yellow perimeter in rendering bounds and retain its rendering registration when the camera turns.
+- Bake only exposed outfit/body surfaces for all 13 professions and unassigned workers. Correct sleeve joint clearance and robe/leg intersection while retaining native atlas UVs.
+- Shorten Guardington's visible neck to one model unit, raise its torso and shoulders, and give it a taller, wider head with a fitted helmet.
+- Provide a scrollable Details dialog for hard construction and persistent travel failures, including block identity, coordinates, dimension and corrective action.
+
 ## 0.10.0 - Thirteen professions and supplied layouts
 
 - Reuse six professions and add Hunterton, Crafterton, Fisherton, Rancherton, Quarryton, Luminariton and armored Guardington.
@@ -483,4 +497,3 @@ Courier routing now handles partial-path progress and full-body doorway clearanc
 
 
 First playable Lumberton with custom model and animation, pedestal creation, totem forestry, persistent inventories and bindings, tree protection, and upgrades.
-

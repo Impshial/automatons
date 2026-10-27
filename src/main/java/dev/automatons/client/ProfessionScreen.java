@@ -16,6 +16,8 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
   private final List<Runnable> bindings = new ArrayList<>();
   private int tab, scroll, rosterPage, guardPage, purposeSeen = -1, jobSeen = -1, confirmationSeen;
   private boolean choosing, renaming;
+  public boolean buildPopup, issuePopup;
+  private int buildScroll, issuePage, issueLines;
   private UUID selected;
   private EditBox name;
 
@@ -202,11 +204,33 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
           renaming = true;
           rebuild();
         });
+    button(
+        244,
+        3,
+        54,
+        () -> "Details",
+        () -> {
+          issuePopup = true;
+          issuePage = 0;
+        },
+        () -> !list("Blockers").isEmpty(),
+        "Block, coordinates and action for issues requiring intervention");
     if (menu.isWorker) {
       workerControls();
       return;
     }
     if (tab == 0) {
+      button(
+          12,
+          130,
+          160,
+          () -> "Build List",
+          () -> {
+            buildPopup = true;
+            buildScroll = 0;
+          },
+          () -> data().getBoolean("HasBuild"),
+          "Materials for this worksite only");
       button(
           12,
           207,
@@ -337,6 +361,18 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
         () -> editable() && !data().getBoolean("Authorized"),
         "");
     button(188, 207, 160, "Rebind home", () -> action(3));
+    if (data().getInt("Job") == WorkerJob.BUILDINGTON)
+      button(
+          12,
+          157,
+          160,
+          () -> "Build List",
+          () -> {
+            buildPopup = true;
+            buildScroll = 0;
+          },
+          () -> true,
+          "Only this builder's current construction assignment");
     if (data().getInt("Job") == WorkerJob.GUARDINGTON) {
       button(
           12,
@@ -559,7 +595,7 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
 
   @Override
   protected void renderLabels(GuiGraphics g, int mouseX, int mouseY) {
-    text(g, data().getString("Name"), 8, 8, 288);
+    text(g, data().getString("Name"), 8, 8, 230);
     if (data().getInt("PendingProfession") > 0) {
       text(
           g,
@@ -618,6 +654,12 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
         160,
         0xffc84949);
     bar(g, "Operating Lumina", data().getInt("Operating") / 1000f, 200, 188, 98, 160, 0xffd8ac38);
+    if (data().getInt("Job") == WorkerJob.BUILDINGTON) {
+      String building = data().getString("BuildingName");
+      text(g, building.isEmpty() ? "No building assigned" : "Building: " + building, 12, 126, 336);
+      if (!building.isEmpty())
+        text(g, "Worksite: " + data().getString("BuildingLocation"), 12, 141, 336);
+    }
     if (data().getInt("Job") == WorkerJob.LUMINARITON)
       bar(g, "Service reserve", data().getInt("Service") / 1000f, 400, 12, 131, 336, 0xffa569ca);
     if (data().getInt("Job") == WorkerJob.GUARDINGTON) {
@@ -649,30 +691,19 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
         94,
         336);
     text(g, "Linked storage: " + data().getInt("StorageCount") + " containers", 12, 110, 336);
-    text(g, "Supplies needed", 12, 130, 336);
-    int row = 0;
     ListTag needs = list("SupplyNeeds");
     if (!data().getBoolean("WorksiteReady")) {
-      for (Tag tag : list("WarehouseBuild")) {
-        CompoundTag entry = (CompoundTag) tag;
-        if (entry.getInt("Missing") <= 0) continue;
-        if (row++ < scroll) continue;
-        if (row - scroll > 3) break;
-        ItemStack stack = ItemStack.of(entry.getCompound("Item"));
-        int y = 145 + (row - scroll - 1) * 18;
-        g.renderItem(stack, 12, y);
-        text(g, entry.getInt("Missing") + " × " + stack.getHoverName().getString(), 34, y + 4, 314);
-      }
+      text(g, "Open Build List for construction materials.", 12, 159, 336);
     } else
-      for (int i = 0; i < 3 && i + scroll < needs.size(); i++) {
+      for (int i = 0; i < 2 && i + scroll < needs.size(); i++) {
         var entry = needs.getCompound(i + scroll);
         ItemStack stack = ItemStack.of(entry);
-        g.renderItem(stack, 12, 145 + i * 18);
+        g.renderItem(stack, 12, 159 + i * 18);
         text(
             g,
             entry.getInt("Need") + " × " + stack.getHoverName().getString(),
             34,
-            149 + i * 18,
+            163 + i * 18,
             314);
       }
   }
@@ -830,6 +861,12 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
 
   @Override
   public boolean mouseClicked(double x, double y, int button) {
+    if (buildPopup || issuePopup) {
+      int w = buildPopup ? 320 : 360, h = buildPopup ? 216 : 224;
+      int px = (width - w) / 2, py = (height - h) / 2;
+      if (x >= px + w - 24 && x < px + w && y >= py && y < py + 25) buildPopup = issuePopup = false;
+      return true;
+    }
     if (menu.isTotem
         && tab == 2
         && purpose() == WorksitePurpose.FARM
@@ -850,6 +887,16 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
   @Override
   public boolean mouseScrolled(double x, double y, double amount) {
     int delta = amount > 0 ? -1 : 1;
+    if (buildPopup) {
+      buildScroll =
+          Math.max(
+              0, Math.min(Math.max(0, list("WarehouseBuild").size() - 6), buildScroll + delta));
+      return true;
+    }
+    if (issuePopup) {
+      issuePage = Math.max(0, Math.min(Math.max(0, issueLines - 14), issuePage + delta * 3));
+      return true;
+    }
     if (menu.isWorker && data().getInt("Job") == WorkerJob.GUARDINGTON && tab == 0)
       guardPage =
           Math.max(0, Math.min(Math.max(0, list("GuardSites").size() - 1), guardPage + delta));
@@ -864,6 +911,90 @@ public final class ProfessionScreen extends AbstractContainerScreen<WorkMenu> {
   public void render(GuiGraphics g, int x, int y, float partial) {
     renderBackground(g);
     super.render(g, x, y, partial);
-    renderTooltip(g, x, y);
+    if (buildPopup)
+      buildScroll =
+          BuildListDialog.render(
+              g,
+              font,
+              width,
+              height,
+              data().getString("BuildTitle").isEmpty()
+                  ? "Builder — Build List"
+                  : data().getString("BuildTitle"),
+              list("WarehouseBuild"),
+              buildScroll,
+              x,
+              y);
+    else if (issuePopup) renderIssue(g);
+    else renderTooltip(g, x, y);
+  }
+
+  @Override
+  public boolean keyPressed(int key, int scan, int modifiers) {
+    if (buildPopup || issuePopup) {
+      if (key == 256) buildPopup = issuePopup = false;
+      if (key == 264 || key == 267) mouseScrolled(0, 0, -1);
+      if (key == 265 || key == 266) mouseScrolled(0, 0, 1);
+      return true;
+    }
+    // Inventory binding must not dismiss these dialogs; text boxes still receive typing.
+    if (minecraft.options.keyInventory.matches(key, scan)) {
+      if (getFocused() instanceof EditBox field) field.keyPressed(key, scan, modifiers);
+      return true;
+    }
+    return super.keyPressed(key, scan, modifiers);
+  }
+
+  @Override
+  public boolean mouseReleased(double x, double y, int button) {
+    return buildPopup || issuePopup || super.mouseReleased(x, y, button);
+  }
+
+  @Override
+  public boolean mouseDragged(double x, double y, int button, double dx, double dy) {
+    return buildPopup || issuePopup || super.mouseDragged(x, y, button, dx, dy);
+  }
+
+  private void renderIssue(GuiGraphics g) {
+    int x = (width - 360) / 2, y = (height - 224) / 2;
+    g.pose().pushPose();
+    g.pose().translate(0, 0, 400);
+    g.fill(0, 0, width, height, 0xa0000000);
+    g.fill(x, y, x + 360, y + 224, 0xffeadfc8);
+    g.fill(x + 1, y + 1, x + 359, y + 25, 0xff713c35);
+    g.drawString(font, "Work needs attention", x + 10, y + 9, 0xffffe89a, false);
+    g.drawString(font, "X", x + 345, y + 9, 0xffffffff, false);
+    ListTag issues = list("Blockers");
+    List<net.minecraft.util.FormattedCharSequence> lines = new java.util.ArrayList<>();
+    if (issues.isEmpty())
+      lines.add(Component.literal("The blocking issue has cleared.").getVisualOrderText());
+    for (int i = 0; i < issues.size(); i++) {
+      CompoundTag issue = issues.getCompound(i);
+      for (String line :
+          List.of(
+              "Issue "
+                  + (i + 1)
+                  + "/"
+                  + issues.size()
+                  + (issue.getString("Worker").isEmpty() ? "" : " — " + issue.getString("Worker")),
+              issue.getString("Reason"),
+              "Block: " + issue.getString("Block"),
+              issue.getString("BlockId"),
+              "At: " + issue.getString("Coordinates"),
+              "Dimension: " + issue.getString("Dimension"),
+              "Action: " + issue.getString("Action"),
+              " ")) lines.addAll(font.split(Component.literal(line), 330));
+    }
+    issueLines = lines.size();
+    issuePage = Math.min(issuePage, Math.max(0, issueLines - 14));
+    for (int i = 0; i < 14 && issuePage + i < lines.size(); i++)
+      g.drawString(font, lines.get(issuePage + i), x + 12, y + 36 + i * 11, 0xff302b28, false);
+    if (issueLines > 14) {
+      g.fill(x + 350, y + 34, x + 354, y + 193, 0xffa89b84);
+      int thumb = y + 34 + 135 * issuePage / (issueLines - 14);
+      g.fill(x + 350, thumb, x + 354, thumb + 24, 0xff713c35);
+    }
+    g.drawString(font, "Scroll for details | ESC to close", x + 12, y + 207, 0xff574d40, false);
+    g.pose().popPose();
   }
 }

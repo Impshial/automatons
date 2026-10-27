@@ -731,43 +731,7 @@ public class WorkScreen extends AbstractContainerScreen<WorkMenu> {
       g.pose().popPose();
       return;
     }
-    g.drawString(font, "Available: worker cargo + supply chests", x + 9, y + 31, 0xff443c35, false);
-    g.drawString(font, "Block", x + 9, y + 48, 0xff443c35, false);
-    String[] labels = {"Total", "Left", "Have", "Need"};
-    for (int col = 0; col < 4; col++)
-      g.drawString(font, labels[col], x + 169 + 35 * col, y + 48, 0xff443c35, false);
-    ListTag rows = buildRows();
-    buildScroll = Math.min(buildScroll, Math.max(0, rows.size() - 6));
-    for (int row = 0; row < 6 && row + buildScroll < rows.size(); row++) {
-      CompoundTag data = rows.getCompound(row + buildScroll);
-      var item = net.minecraft.world.item.ItemStack.of(data.getCompound("Item"));
-      int ry = y + 63 + row * 22;
-      g.fill(x + 5, ry - 2, x + 309, ry + 19, row % 2 == 0 ? 0xffd8cdb8 : 0xffe4d9c2);
-      g.renderItem(item, x + 9, ry);
-      g.drawString(
-          font,
-          font.plainSubstrByWidth(item.getHoverName().getString(), 132),
-          x + 30,
-          ry + 4,
-          0xff302b28,
-          false);
-      String[] keys = {"Total", "Left", "Have", "Missing"};
-      for (int col = 0; col < 4; col++)
-        g.drawString(
-            font,
-            Integer.toString(data.getInt(keys[col])),
-            x + 169 + 35 * col,
-            ry + 4,
-            col == 3 ? data.getInt("Missing") > 0 ? 0xff9d281c : 0xff286234 : 0xff302b28,
-            false);
-      if (mouseX >= x + 9 && mouseX < x + 164 && mouseY >= ry && mouseY < ry + 18)
-        g.renderTooltip(font, item.getHoverName(), mouseX, mouseY);
-    }
-    if (rows.size() > 6) {
-      g.fill(x + 312, y + 61, x + 316, y + 195, 0xffa89b84);
-      int thumb = y + 61 + 110 * buildScroll / Math.max(1, rows.size() - 6);
-      g.fill(x + 312, thumb, x + 316, thumb + 24, 0xff6a546f);
-    }
+    buildScroll = BuildListDialog.rows(g, font, x, y, buildRows(), buildScroll, mouseX, mouseY);
     g.drawString(
         font,
         networkBuildLists != null

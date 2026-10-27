@@ -49,7 +49,7 @@ def author():
     for expression in ['idle','smile','brow','focused','frown','anger','blink','off']:
         a=[row[:] for row in atlas]
         for head in [p for p in parts if p['name'] in ('head','guard_head')]:
-            u,v=head['uv']; d=head['size'][2]; fx=u+d; fy=v+d+head['size'][1]-8
+            u,v=head['uv']; d=head['size'][2]; fx=u+d+(head['size'][0]-9)//2; fy=v+d+head['size'][1]-8
             rect(a,fx,fy,9,8,wood[2]);rect(a,fx+1,fy+1,7,6,wood[4])
             for offset in [1,5]:
                 eye=fx+offset
@@ -70,6 +70,11 @@ def author():
         png(RES/f'assets/automatons/textures/entity/lumberton_{expression}.png',a)
         png(ART/f'lumberton-{expression}-atlas-preview.png',[[c for c in row for _ in range(4)] for row in a for _ in range(4)])
     write(ART/'lumberton-model.json',{'texture_size':[atlas_size,atlas_size],'standing_body_height':26,'guard_body_height':40,'units_per_block':16,'parts':parts})
+    from worker_surfaces import build, audit, OUTPUT
+    surfaces = build({'parts': parts})
+    audit(surfaces, {'parts': parts})
+    OUTPUT.parent.mkdir(parents=True, exist_ok=True)
+    OUTPUT.write_text(json.dumps(surfaces, separators=(',', ':'))+'\n', encoding='utf-8', newline='\n')
     global_origins={};elements=[];groups={}
     for p in parts:
         parent_origin=global_origins.get(p['parent'],[0,0,0]);origin=[p['origin'][i]+parent_origin[i] for i in range(3)];global_origins[p['name']]=origin

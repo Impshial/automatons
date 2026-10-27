@@ -13,6 +13,194 @@ import net.minecraftforge.gametest.*;
 @GameTestHolder("automatons_worksites")
 @PrefixGameTestTemplate(false)
 public final class WorksiteGameTests {
+  @GameTest(template = "empty", timeoutTicks = 100)
+  public static void perimeter_rejects_hillside_overlap_and_covers_render_bounds(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, true);
+    var original = r.site.project();
+    BuildingProject raised = new BuildingProject();
+    raised.anchor = original.anchor.above(30);
+    raised.purpose = original.purpose;
+    raised.front = original.front;
+    raised.owner = original.owner;
+    h.assertTrue(
+        !raised.reserve(h.getLevel()) && raised.reason.contains("Reserved"),
+        "Buildings with different floor heights overlap in plan view");
+    var area = original.bounds(h.getLevel());
+    r.site.buildOutlineMin = new BlockPos((int) area.minX, original.anchor.getY(), (int) area.minZ);
+    r.site.buildOutlineMax = new BlockPos((int) area.maxX, original.anchor.getY(), (int) area.maxZ);
+    var rendered = r.site.getRenderBoundingBox();
+    h.assertTrue(
+        rendered.contains(area.minX - .12, original.anchor.getY() + .07, area.minZ - .12)
+            && rendered.contains(area.maxX + .12, original.anchor.getY() + .07, area.maxZ + .12),
+        "Frustum bounds exclude yellow perimeter corners");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2200)
+  public static void builder_clears_sixteen_high_with_paid_recovered_climbing_blocks(
+      GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var project = r.site.project();
+    var area = project.bounds(h.getLevel());
+    BlockPos high =
+        new BlockPos((int) area.minX + 2, project.anchor.getY() + 15, (int) area.minZ + 2);
+    h.getLevel().setBlock(high, Blocks.OAK_LOG.defaultBlockState(), 3);
+    h.getLevel().setBlock(high.above(), Blocks.OAK_LOG.defaultBlockState(), 3);
+    var w = worker(h, r, WorkerJob.BUILDINGTON, new BlockPos(21, 1, 15));
+    w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.DIRT, 16));
+    w.cargo.setStackInSlot(1, new ItemStack(Items.COBBLESTONE, 64));
+    var chest = materialsChest(h, project, r.site.getBlockPos().east(6));
+    chest.setItem(0, new ItemStack(Items.SPRUCE_PLANKS, 64));
+    project.supplies.stocked = true;
+    double[] peak = {w.getY()};
+    boolean[] climbed = {false};
+    h.onEachTick(
+        () -> {
+          if (h.getTick() % 200 == 0)
+            System.out.println(
+                "HIGH_CLEAR "
+                    + h.getTick()
+                    + " "
+                    + w.status()
+                    + " "
+                    + w.position()
+                    + " "
+                    + w.forestryAccess.save()
+                    + " "
+                    + w.workIssue);
+          peak[0] = Math.max(peak[0], w.getY());
+          climbed[0] |= w.forestryAccess.active();
+          if (!h.getLevel().getBlockState(high).isAir()) {
+            h.assertTrue(
+                project.completed.isEmpty(),
+                "Construction started before high obstruction was cleared");
+            return;
+          }
+          if (w.forestryAccess.active()) return;
+          h.assertTrue(
+              climbed[0] && peak[0] > project.anchor.getY() + 9,
+              "High obstruction cleared without physically climbing");
+          h.assertTrue(
+              h.getLevel().getBlockState(high.above()).is(Blocks.OAK_LOG),
+              "Clearing exceeded the requested sixteen-block height");
+          h.assertTrue(
+              w.mining.carried(Items.DIRT) == 16, "Temporary climbing materials were lost");
+          w.setNoAi(true);
+          h.succeed();
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 100)
+  public static void quarry_requires_pickaxe_and_explains_missing_or_broken_tool(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.QUARRY, true);
+    var w = worker(h, r, WorkerJob.QUARRYTON, new BlockPos(24, 1, 20));
+    w.setNoAi(true);
+    for (int i = 0; i < 3; i++) w.tools.setStackInSlot(i, new ItemStack(Items.IRON_SHOVEL));
+    h.assertTrue(w.mining.needsTool(), "Shovels incorrectly satisfy the required starting pickaxe");
+    h.assertTrue(
+        !w.mining.acceptsNeededTool(new ItemStack(Items.DIAMOND_SHOVEL)),
+        "Another shovel replaces the required pickaxe");
+    h.assertTrue(
+        w.mining.replacementSlot(new ItemStack(Items.IRON_PICKAXE)) >= 0,
+        "Full shovel slots prevent replacing one with a pickaxe");
+    w.mining.tick(r.site);
+    h.assertTrue(
+        w.status().contains("Pickaxe") && w.workIssue.getString("Action").contains("shovel"),
+        "Missing pickaxe diagnosis is vague");
+    h.assertTrue(
+        w.workIssue.getString("Coordinates").contains("Not selected"),
+        "Invented a mining target before choosing one");
+    ItemStack pick = new ItemStack(Items.IRON_PICKAXE);
+    w.tools.setStackInSlot(0, pick);
+    h.assertTrue(!w.mining.needsTool(), "Usable pickaxe did not release the tool requirement");
+    pick.setDamageValue(pick.getMaxDamage());
+    h.assertTrue(w.mining.needsTool(), "Broken pickaxe did not request replacement");
+    h.assertTrue(
+        MiningRules.requiredTool(Blocks.DIAMOND_ORE.defaultBlockState()).contains("Iron Pickaxe"),
+        "Wrong ore harvest tier explanation");
+    h.assertTrue(
+        MiningRules.requiredTool(Blocks.OBSIDIAN.defaultBlockState()).contains("Diamond Pickaxe"),
+        "Wrong obsidian harvest tier explanation");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 900)
+  public static void recalled_quarry_workers_leave_lower_hillside_and_stay_home(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.QUARRY, true);
+    MinePlan mine = new MinePlan();
+    mine.entrance = h.absolutePos(new BlockPos(12, 5, 4));
+    mine.stage = MinePlan.Stage.READY;
+    mine.shaftDepth = 1;
+    mine.quarry = new QuarryPlan();
+    mine.quarry.minimum = h.absolutePos(new BlockPos(5, 0, 5));
+    mine.quarry.maximum = h.absolutePos(new BlockPos(19, 0, 19));
+    mine.quarry.topY = mine.entrance.getY() - 1;
+    mine.quarry.bottomY = h.getLevel().getMinBuildHeight();
+    r.site.mine = mine;
+    WorldData.get(h.getLevel()).mines.put(mine.id, mine);
+    List<Lumberton> workers = new ArrayList<>();
+    for (int x : new int[] {3, 6}) {
+      var w = worker(h, r, WorkerJob.QUARRYTON, new BlockPos(x, 1, 25));
+      CompoundTag saved = new CompoundTag();
+      saved.put("Access", mine.save());
+      w.mining.load(saved);
+      h.assertTrue(
+          !w.mining.returnToSurface(),
+          "Surface hillside incorrectly sends worker back to quarry shaft");
+      workers.add(w);
+    }
+    WorldData.get(h.getLevel())
+        .setHome(r.home.identity, r.home.owner, r.home.getBlockPos(), true, true);
+    long[] arrived = {-1};
+    h.onEachTick(
+        () -> {
+          boolean home =
+              workers.stream()
+                  .allMatch(w -> w.status().equals("Recalled") && w.inReach(r.home.getBlockPos()));
+          if (arrived[0] < 0 && home) arrived[0] = h.getTick();
+          if (arrived[0] >= 0) {
+            h.assertTrue(home, "Recalled worker left the pedestal again");
+            if (h.getTick() - arrived[0] >= 80) {
+              workers.forEach(w -> w.setNoAi(true));
+              h.succeed();
+            }
+          }
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 100)
+  public static void rejected_totem_exposes_exact_protected_and_reserved_regions(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, true);
+    BuildingProject existing = r.site.project();
+    WorldData data = WorldData.get(h.getLevel());
+    data.buildings.remove(r.site.identity);
+    long chunk = new net.minecraft.world.level.ChunkPos(r.site.getBlockPos()).toLong();
+    data.protection.put(chunk, r.home.owner);
+    h.assertTrue(!r.site.configure(WorksitePurpose.BUILDER), "Protected chunk accepted a building");
+    h.assertTrue(
+        r.site.setupIssue.contains("Protected chunk") && !r.site.setupConflicts.isEmpty(),
+        "Protected land lacks named green outline data");
+    var packet = BuildConflicts.packet(h.getLevel(), r.site.setupConflicts);
+    var box = packet.getList("Boxes", 10).getCompound(0);
+    h.assertTrue(
+        BlockPos.of(box.getLong("Max")).getX() - BlockPos.of(box.getLong("Min")).getX() == 15,
+        "Protected outline must cover the full chunk");
+    h.assertTrue(
+        packet.getString("Dimension").equals(h.getLevel().dimension().location().toString()),
+        "Outline lacks dimension");
+    data.protection.remove(chunk);
+    data.buildings.put(UUID.randomUUID(), existing);
+    h.assertTrue(
+        !r.site.configure(WorksitePurpose.BUILDER) && r.site.setupIssue.contains("Reserved"),
+        "Overlapping building lacks reservation outline");
+    data.buildings.values().removeIf(p -> p == existing);
+    h.assertTrue(
+        r.site.configure(WorksitePurpose.BUILDER) && r.site.setupConflicts.isEmpty(),
+        "Resolved conflict did not clear outlines");
+    h.succeed();
+  }
+
   private record Rig(Station home, Station site) {}
 
   /**
@@ -60,6 +248,309 @@ public final class WorksiteGameTests {
     w.authorized = true;
     WorkerIdentity.update(w, "Deployed");
     return w;
+  }
+
+  private static net.minecraft.world.level.block.entity.ChestBlockEntity materialsChest(
+      GameTestHelper h, BuildingProject project, BlockPos at) {
+    h.getLevel().setBlock(at, Blocks.CHEST.defaultBlockState(), 3);
+    var chest =
+        (net.minecraft.world.level.block.entity.ChestBlockEntity) h.getLevel().getBlockEntity(at);
+    chest.getPersistentData().putUUID("AutomatonsConstructionChest", project.id);
+    project.supplies.chest = at;
+    return chest;
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 6000)
+  public static void builder_fetches_late_shed_materials_without_recycling_site_stock(
+      GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, true);
+    for (int x = 5; x < 27; x++)
+      for (int z = 27; z < 44; z++) h.setBlock(new BlockPos(x, 0, z), Blocks.GRASS_BLOCK);
+    BlockPos remote = h.absolutePos(new BlockPos(15, 1, 35));
+    h.getLevel().setBlock(remote, Automatons.TOTEM.get().defaultBlockState(), 3);
+    var destination = (Station) h.getLevel().getBlockEntity(remote);
+    destination.owner = r.home.owner;
+    destination.logisticsHome = r.home.identity;
+    h.assertTrue(destination.configure(WorksitePurpose.LUMBER), "Remote project rejected");
+    var p = destination.project();
+    BlockPos source = r.site.getBlockPos().east(6), second = r.site.getBlockPos().west(6);
+    h.getLevel().setBlock(source, Blocks.CHEST.defaultBlockState(), 3);
+    h.getLevel().setBlock(second, Blocks.CHEST.defaultBlockState(), 3);
+    r.site.chests.add(source);
+    r.site.chests.add(second);
+    r.site.storageComplete = true;
+    var inventory = Storage.handler(h.getLevel(), source, r.site);
+    var otherInventory = Storage.handler(h.getLevel(), second, r.site);
+    var w = worker(h, r, 4, new BlockPos(21, 1, 35));
+    w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.COBBLESTONE, 64));
+    var kit = materialsChest(h, p, remote.east(6));
+    kit.setItem(0, new ItemStack(Items.SPRUCE_SLAB, 16));
+    p.supplies.stocked = true;
+    p.claim(w);
+    long[] waitingAt = {-1};
+    boolean[] delivered = {false}, visitedShed = {false};
+    h.onEachTick(
+        () -> {
+          if (waitingAt[0] < 0 && w.status().startsWith("Waiting for materials:"))
+            waitingAt[0] = h.getTick();
+          if (!delivered[0] && waitingAt[0] >= 0 && h.getTick() - waitingAt[0] >= 100) {
+            h.assertTrue(
+                !p.ready && p.completed.size() > 0, "Fixture never reached a partial build");
+            int index = 0;
+            for (var entry : p.remaining(h.getLevel()).entrySet())
+              h.assertTrue(
+                  net.minecraftforge.items.ItemHandlerHelper.insertItem(
+                          index++ % 2 == 0 ? inventory : otherInventory,
+                          new ItemStack(entry.getKey(), entry.getValue()),
+                          false)
+                      .isEmpty(),
+                  "Late materials did not fit");
+            delivered[0] = true;
+          }
+          if (delivered[0] && (w.inReach(source) || w.inReach(second))) visitedShed[0] = true;
+          if (p.ready) {
+            h.assertTrue(
+                delivered[0] && visitedShed[0],
+                "Builder did not fetch late materials physically from its shed");
+            h.assertTrue(
+                w.getUUID().equals(p.builder), "Late delivery replaced the accepted assignment");
+            w.setNoAi(true);
+            h.succeed();
+          }
+          if (h.getTick() % 200 == 0)
+            System.out.println(
+                "LATE_BUILDER_SUPPLIES "
+                    + h.getTick()
+                    + " "
+                    + w.status()
+                    + " "
+                    + w.position()
+                    + " "
+                    + p.completed.size());
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void full_materials_chest_preserves_incoming_cargo_and_recovers(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var p = r.site.project();
+    var w = worker(h, r, 4, new BlockPos(20, 1, 15));
+    w.setNoAi(true);
+    w.setOnGround(true);
+    p.claim(w);
+    BlockPos at = r.site.getBlockPos().east(6);
+    var stock = materialsChest(h, p, at);
+    for (int i = 0; i < stock.getContainerSize(); i++)
+      stock.setItem(i, new ItemStack(Items.DIRT, 64));
+    ItemStack cargo = new ItemStack(Items.DIAMOND, 7);
+    cargo.setHoverName(net.minecraft.network.chat.Component.literal("Preserve me"));
+    w.cargo.setStackInSlot(0, cargo.copy());
+    for (int i = 0; i < 20; i++) {
+      h.assertTrue(!p.supplies.prepare(w, r.site), "Full chest allowed staging to finish");
+      h.assertTrue(
+          w.status().contains("chest full") && !w.status().contains("Waiting for materials"),
+          "Wrong full chest status: " + w.status());
+      h.assertTrue(ItemStack.matches(cargo, w.cargo.getStackInSlot(0)), "Cargo lost or changed");
+    }
+    h.assertTrue(
+        w.workIssue.getLong("Position") == at.asLong()
+            && w.workIssue.getString("BlockId").equals("minecraft:chest")
+            && w.workIssue.getString("Action").contains("7 × Preserve me"),
+        "Missing chest/item diagnostics");
+    stock.setItem(0, ItemStack.EMPTY);
+    p.supplies.prepare(w, r.site);
+    h.assertTrue(
+        w.cargoEmpty() && ItemStack.matches(stock.getItem(0), cargo),
+        "Did not resume when space became available");
+    h.assertTrue(w.workIssue.isEmpty() && p.issue.isEmpty(), "Resolved chest error persisted");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void full_materials_chest_reports_surplus_return_before_missing_materials(
+      GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var p = r.site.project();
+    var w = worker(h, r, 4, new BlockPos(20, 1, 15));
+    w.setNoAi(true);
+    w.setOnGround(true);
+    p.claim(w);
+    var stock = materialsChest(h, p, r.site.getBlockPos().east(6));
+    for (int i = 0; i < stock.getContainerSize(); i++)
+      stock.setItem(i, new ItemStack(Items.DIRT, 64));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.DIAMOND, 5));
+    p.supplies.stocked = true;
+    h.assertTrue(
+        p.supplies.refill(w, Items.COBBLESTONE),
+        "Failed return fell through to generic material wait");
+    h.assertTrue(
+        w.status().contains("chest full") && w.mining.carried(Items.DIAMOND) == 5,
+        "Surplus was lost or wrong error: " + w.status());
+    stock.setItem(1, new ItemStack(Items.COBBLESTONE, 64));
+    p.supplies.refill(w, Items.COBBLESTONE);
+    h.assertTrue(
+        w.status().contains("chest full") && w.mining.carried(Items.COBBLESTONE) == 0,
+        "New stock concealed failed surplus return");
+    stock.setItem(0, ItemStack.EMPTY);
+    p.supplies.refill(w, Items.COBBLESTONE);
+    h.assertTrue(
+        w.mining.carried(Items.DIAMOND) == 0 && w.mining.carried(Items.COBBLESTONE) > 0,
+        "Refill did not recover after clearing a slot");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 40)
+  public static void worker_build_list_only_exposes_accepted_project(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var w = worker(h, r, 4, new BlockPos(20, 1, 15));
+    w.setNoAi(true);
+    var player = h.makeMockPlayer();
+    var menu = new WorkMenu(1, player.getInventory(), null, w);
+    h.assertTrue(
+        !menu.describe().getBoolean("HasBuild")
+            && menu.describe().getList("WarehouseBuild", 10).isEmpty(),
+        "Idle builder displayed an unassigned project");
+    r.site.project().claim(w);
+    h.assertTrue(
+        menu.describe().getString("BuildingName").equals("Builder's Shed")
+            && menu.describe()
+                .getString("BuildingLocation")
+                .equals(r.site.getBlockPos().toShortString()),
+        "Assigned building or coordinates missing from Builder status");
+    var workerRows = menu.describe().getList("WarehouseBuild", 10);
+    var totemRows =
+        new WorkMenu(2, player.getInventory(), r.site, null)
+            .describe()
+            .getList("WarehouseBuild", 10);
+    h.assertTrue(
+        !workerRows.isEmpty()
+            && workerRows.equals(totemRows)
+            && workerRows.equals(BuildMaterials.network(r.home).getCompound(0).getList("Rows", 10)),
+        "Build lists disagree");
+    r.site.project().release(w.getUUID());
+    h.assertTrue(
+        menu.describe().getList("WarehouseBuild", 10).isEmpty(),
+        "Released project remains assigned");
+    h.succeed();
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 900)
+  public static void builder_clears_natural_enclosure_and_keeps_authored_beam(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var p = r.site.project();
+    BlockPos start = h.absolutePos(new BlockPos(15, 1, 17));
+    Set<BlockPos> obstacles = new HashSet<>();
+    for (int dx = -1; dx <= 1; dx++)
+      for (int dz = -1; dz <= 1; dz++) {
+        if (dx == 0 && dz == 0) continue;
+        for (int dy = 0; dy < 3; dy++) {
+          BlockPos at = start.offset(dx, dy, dz);
+          obstacles.add(at);
+          h.getLevel()
+              .setBlock(
+                  at,
+                  (dy == 0 ? Blocks.DIRT : dy == 1 ? Blocks.OAK_LOG : Blocks.OAK_LEAVES)
+                      .defaultBlockState(),
+                  3);
+        }
+      }
+    var cell =
+        p.template(h.getLevel()).cells.stream()
+            .filter(
+                c ->
+                    c.state().is(Blocks.OAK_LOG)
+                        && !obstacles.contains(
+                            p.template(h.getLevel()).world(p.anchor, p.front, c.local())))
+            .findFirst()
+            .orElseThrow();
+    BlockPos beam = p.template(h.getLevel()).world(p.anchor, p.front, cell.local());
+    var beamState = cell.state().rotate(p.template(h.getLevel()).rotationFor(p.front));
+    h.getLevel().setBlock(beam, beamState, 3);
+    var w = worker(h, r, 4, new BlockPos(15, 1, 17));
+    w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.COBBLESTONE, 64));
+    materialsChest(h, p, p.anchor.east(6));
+    p.supplies.stocked = true;
+    p.claim(w);
+    Vec3[] previous = {w.position()};
+    h.onEachTick(
+        () -> {
+          h.assertTrue(
+              w.position().distanceToSqr(previous[0]) < 4, "Builder teleported during clearance");
+          previous[0] = w.position();
+          h.assertTrue(
+              h.getLevel().getBlockState(beam).equals(beamState),
+              "Access clearing removed authored beam");
+          if (obstacles.stream().anyMatch(at -> h.getLevel().getBlockState(at).isAir())
+              && !p.bounds(h.getLevel()).intersects(w.getBoundingBox())
+              && p.completed.size() > 2) {
+            w.setNoAi(true);
+            h.succeed();
+          }
+          if (h.getTick() % 100 == 0)
+            System.out.println(
+                "BUILDER_ACCESS "
+                    + h.getTick()
+                    + " "
+                    + w.status()
+                    + " "
+                    + w.position()
+                    + " "
+                    + p.issue);
+        });
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 2400)
+  public static void builder_clears_entire_volume_before_any_new_placement(GameTestHelper h) {
+    Rig r = rig(h, WorksitePurpose.BUILDER, false);
+    var p = r.site.project();
+    Set<BlockPos> cover = new HashSet<>();
+    for (var cell : p.template(h.getLevel()).cells) {
+      if (!cell.state().isAir() || cell.local().getY() < 1) continue;
+      BlockPos at = p.template(h.getLevel()).world(p.anchor, p.front, cell.local());
+      if (at.equals(p.anchor)) continue;
+      cover.add(at);
+      h.getLevel()
+          .setBlock(
+              at,
+              (cell.local().getY() % 2 == 0 ? Blocks.OAK_LOG : Blocks.OAK_LEAVES)
+                  .defaultBlockState(),
+              3);
+    }
+    h.assertTrue(
+        cover.stream().anyMatch(at -> at.getY() > p.anchor.getY() + 2),
+        "No upper-volume obstruction fixture");
+    var w = worker(h, r, 4, new BlockPos(22, 1, 20));
+    w.tools.setStackInSlot(0, new ItemStack(Automatons.HAMMER.get()));
+    w.cargo.setStackInSlot(0, new ItemStack(Items.COBBLESTONE, 64));
+    w.cargo.setStackInSlot(1, new ItemStack(Items.DIRT, 16));
+    materialsChest(h, p, p.anchor.east(6));
+    p.supplies.stocked = true;
+    p.claim(w);
+    h.onEachTick(
+        () -> {
+          boolean anyCover = cover.stream().anyMatch(at -> !h.getLevel().getBlockState(at).isAir());
+          if (h.getTick() % 200 == 0)
+            System.out.println(
+                "VOLUME_CLEAR "
+                    + h.getTick()
+                    + " "
+                    + w.status()
+                    + " "
+                    + w.position()
+                    + " remaining="
+                    + cover.stream().filter(at -> !h.getLevel().getBlockState(at).isAir()).count()
+                    + " "
+                    + w.workIssue);
+          boolean placed = p.completed.stream().anyMatch(at -> !BlockPos.of(at).equals(p.anchor));
+          h.assertTrue(
+              !anyCover || !placed, "Construction began with trees/leaves still inside its volume");
+          if (!anyCover && placed) {
+            w.setNoAi(true);
+            h.succeed();
+          }
+        });
   }
 
   @GameTest(template = "empty", timeoutTicks = 40)
@@ -171,16 +662,39 @@ public final class WorksiteGameTests {
 
   @GameTest(template = "empty", timeoutTicks = 6000)
   public static void first_buildington_physically_builds_shed_without_runner(GameTestHelper h) {
+    bootstrapBuild(h, false);
+  }
+
+  @GameTest(template = "empty", timeoutTicks = 6000)
+  public static void builder_finishes_with_materials_split_across_multiple_chests(
+      GameTestHelper h) {
+    bootstrapBuild(h, true);
+  }
+
+  private static void bootstrapBuild(GameTestHelper h, boolean multipleChests) {
     Rig r = rig(h, WorksitePurpose.BUILDER, false);
     BlockPos chest = h.absolutePos(new BlockPos(21, 1, 15));
     h.getLevel().setBlock(chest, Blocks.CHEST.defaultBlockState(), 3);
     r.site.chests.add(chest);
     r.site.storageComplete = true;
     var inventory = Storage.handler(h.getLevel(), chest, r.site);
+    var second = inventory;
+    if (multipleChests) {
+      BlockPos other = h.absolutePos(new BlockPos(9, 1, 15));
+      h.getLevel().setBlock(other, Blocks.CHEST.defaultBlockState(), 3);
+      r.site.chests.add(other);
+      second = Storage.handler(h.getLevel(), other, r.site);
+      BlockPos empty = h.absolutePos(new BlockPos(15, 1, 18));
+      h.getLevel().setBlock(empty, Blocks.CHEST.defaultBlockState(), 3);
+      r.site.chests.add(empty);
+    }
+    int materialIndex = 0;
     for (var e : r.site.project().template(h.getLevel()).materials.entrySet()) {
       ItemStack rest =
           net.minecraftforge.items.ItemHandlerHelper.insertItem(
-              inventory, new ItemStack(e.getKey(), e.getValue()), false);
+              materialIndex++ % 2 == 0 ? inventory : second,
+              new ItemStack(e.getKey(), e.getValue()),
+              false);
       h.assertTrue(rest.isEmpty(), "Bootstrap stock did not fit");
     }
     net.minecraftforge.items.ItemHandlerHelper.insertItem(

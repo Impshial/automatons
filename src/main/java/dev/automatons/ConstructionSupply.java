@@ -18,6 +18,20 @@ public final class ConstructionSupply {
   public BlockPos chest;
   public boolean stocked;
   private BlockPos planned;
+  private BlockPos fetching, depositing;
+  private Item wanted;
+
+  private boolean travel(Lumberton worker, BlockPos pos, String moving, String arrived) {
+    worker.building.perimeterRoute(null);
+    if (worker.building.access.active() && worker.building.access.advance(project)) return false;
+    if (worker.travelStalled(pos)
+        && project.bounds((ServerLevel) worker.level()).inflate(4).contains(worker.position())
+        && project.bounds((ServerLevel) worker.level()).inflate(4).contains(Vec3.atCenterOf(pos))) {
+      if (worker.building.access.chest(project, pos)) return false;
+      if (!worker.workIssue.isEmpty()) return false;
+    }
+    return worker.travelTo(pos, moving, arrived);
+  }
 
   public ConstructionSupply(BuildingProject project) {
     this.project = project;
@@ -70,6 +84,7 @@ public final class ConstructionSupply {
 
   public boolean prepare(Lumberton worker, Station site) {
     ServerLevel level = (ServerLevel) worker.level();
+    project.issue = new CompoundTag();
     var stock = handler(level);
     if (chest != null && !level.hasChunkAt(chest)) {
       worker.state("Construction chest unloaded");
@@ -80,7 +95,11 @@ public final class ConstructionSupply {
       if (level.getBlockEntity(chest) instanceof ChestBlockEntity entity
           && entity.getPersistentData().hasUUID(OWNER)
           && project.id.equals(entity.getPersistentData().getUUID(OWNER))) {
-        worker.state("Free the construction chest lid and keep it separate");
+        project.blocked(
+            worker,
+            chest,
+            "Construction materials chest cannot open",
+            "Clear its lid and keep this temporary chest separate from adjacent chests.");
         return false;
       }
       chest = null;
@@ -98,9 +117,11 @@ public final class ConstructionSupply {
         worker.state("Needs clear ground outside construction for supply chest");
         return false;
       }
-      if (!worker.travelTo(
-          planned, "Placing construction supply chest", "Placing construction supply chest"))
-        return false;
+      if (!travel(
+          worker,
+          planned,
+          "Placing construction supply chest",
+          "Placing construction supply chest")) return false;
       if (!validSpot(level, site, planned)
           || !MiningRules.place(
               worker,
@@ -118,18 +139,35 @@ public final class ConstructionSupply {
       return false;
     }
     var required = project.remaining(level);
+    if (wanted != null) {
+      // Retain the precise shortage across ticks. Unrelated stock must not send us
+      // back through the same site-chest load/unload cycle.
+      if (!required.containsKey(wanted)
+          || worker.mining.carried(wanted) + count(level, wanted)
+              >= project.minimumWorkingAmount(level, wanted)) {
+        wanted = null;
+        stocked = true;
+        changed(level);
+        worker.state("Construction materials ready");
+        return true;
+      }
+      if (!fetch(
+          worker, site, Map.of(wanted, Math.min(wanted.getMaxStackSize(), required.get(wanted)))))
+        waitFor(worker, wanted);
+      return false;
+    }
     if (stocked) return true;
     // Stage the arriving load, then work with it immediately. The full project bill
     // is a logistics request, not a prerequisite for placing the first blocks.
     if (!worker.cargoEmpty()) {
-      if (!worker.travelTo(chest, "Stocking construction chest", "Stocking construction chest"))
+      if (!travel(worker, chest, "Stocking construction chest", "Stocking construction chest"))
         return false;
       int moved = 0;
       for (int slot = 0; slot < worker.cargo.getSlots(); slot++)
         moved += BuildingProject.move(worker.cargo, slot, stock, 64);
       if (moved > 0) changed(level);
       if (!worker.cargoEmpty()) {
-        if (!depositHome(worker)) worker.state("Construction chest full — free storage space");
+        chestFull(worker, Map.of());
         return false;
       }
     }
@@ -195,76 +233,136 @@ public final class ConstructionSupply {
 
   private boolean fetch(Lumberton worker, Station site, Map<Item, Integer> needed) {
     ServerLevel level = (ServerLevel) worker.level();
-    Set<BlockPos> visited = new HashSet<>();
-    boolean inaccessible = false;
-    for (Station source :
-        worker.station() == site ? List.of(site) : List.of(worker.station(), site))
-      for (BlockPos pos : source.chests) {
-        if (!visited.add(Storage.canonical(level, pos)) || reserved(level, pos)) continue;
-        var inventory = Storage.handler(level, pos, source);
-        if (inventory == null) continue;
-        boolean useful = false;
-        for (int slot = 0; slot < inventory.getSlots(); slot++) {
-          ItemStack item = inventory.getStackInSlot(slot);
-          if (needed.getOrDefault(item.getItem(), 0) > worker.mining.carried(item.getItem())
-              && Storage.accepts(worker.cargo, item)) useful = true;
-        }
-        if (!useful) continue;
+    Map<BlockPos, Station> candidates = new LinkedHashMap<>();
+    if (worker.station() != null)
+      for (BlockPos pos : worker.station().chests)
+        candidates.put(Storage.canonical(level, pos), worker.station());
+    for (BlockPos pos : site.chests) candidates.putIfAbsent(Storage.canonical(level, pos), site);
+    List<BlockPos> ordered =
+        candidates.keySet().stream()
+            .sorted(
+                Comparator.comparingDouble(
+                        (BlockPos pos) ->
+                            pos.equals(fetching) ? -1 : worker.distanceToSqr(Vec3.atCenterOf(pos)))
+                    .thenComparingLong(BlockPos::asLong))
+            .toList();
+    BlockPos inaccessible = null;
+    for (BlockPos pos : ordered) {
+      Station source = candidates.get(pos);
+      if (reserved(level, pos) || (source.flags(pos) & 2) == 0) continue;
+      var inventory = Storage.handler(level, pos, source);
+      if (inventory == null) continue;
+      boolean useful = false;
+      for (int slot = 0; slot < inventory.getSlots(); slot++) {
+        ItemStack item = inventory.getStackInSlot(slot);
+        if (needed.getOrDefault(item.getItem(), 0) > worker.mining.carried(item.getItem())
+            && Storage.accepts(worker.cargo, item)) useful = true;
+      }
+      if (!useful) continue;
+      if (pos.equals(fetching)) {
+        if (!travel(worker, pos, "Gathering construction kit", "Gathering construction kit"))
+          return true;
+      } else {
         if (!worker.canReach(pos)) {
-          inaccessible = true;
+          if (worker.pathDeferred) {
+            worker.state("Planning construction supply route");
+            return true;
+          }
+          if (inaccessible == null) inaccessible = pos;
           continue;
         }
-        if (worker.travelTo(pos, "Gathering construction kit", "Gathering construction kit")) {
-          for (int slot = 0; slot < inventory.getSlots(); slot++) {
-            Item item = inventory.getStackInSlot(slot).getItem();
-            BuildingProject.move(
-                inventory,
-                slot,
-                worker.cargo,
-                needed.getOrDefault(item, 0) - worker.mining.carried(item));
-          }
-          changed(level);
-        }
-        return true;
+        fetching = pos;
       }
-    if (inaccessible) worker.state("Construction supplies unreachable");
-    return inaccessible;
+      if (travel(worker, pos, "Gathering construction kit", "Gathering construction kit")) {
+        for (int slot = 0; slot < inventory.getSlots(); slot++) {
+          Item item = inventory.getStackInSlot(slot).getItem();
+          BuildingProject.move(
+              inventory,
+              slot,
+              worker.cargo,
+              needed.getOrDefault(item, 0) - worker.mining.carried(item));
+        }
+        changed(level);
+        fetching = null;
+      }
+      return true;
+    }
+    if (inaccessible != null) {
+      fetching = inaccessible;
+      travel(worker, inaccessible, "Gathering construction kit", "Gathering construction kit");
+      return true;
+    }
+    fetching = null;
+    return false;
+  }
+
+  private void chestFull(Lumberton worker, Map<Item, Integer> keep) {
+    List<String> blocked = new ArrayList<>();
+    Set<Item> seen = new HashSet<>();
+    for (int slot = 0; slot < worker.cargo.getSlots(); slot++) {
+      ItemStack stack = worker.cargo.getStackInSlot(slot);
+      int excess = worker.mining.carried(stack.getItem()) - keep.getOrDefault(stack.getItem(), 0);
+      if (!stack.isEmpty() && excess > 0 && seen.add(stack.getItem()))
+        blocked.add(excess + " × " + stack.getHoverName().getString());
+    }
+    worker.getNavigation().stop();
+    ((WorkerMoveControl) worker.getMoveControl()).stop();
+    project.blocked(
+        worker,
+        chest,
+        "Construction materials chest full — cannot store carried items",
+        "Make space in this chest for "
+            + String.join(", ", blocked)
+            + ". The builder is keeping these items and will retry.");
   }
 
   public boolean refill(Lumberton worker, Item item) {
     ServerLevel level = (ServerLevel) worker.level();
     var stock = handler(level);
     var required = project.remaining(level);
-    if (stock != null && !canRefill(worker, level, item))
-      item =
-          required.keySet().stream()
-              .filter(
-                  candidate ->
-                      canRefill(worker, level, candidate)
-                          && worker.mining.carried(candidate)
-                              < Math.min(candidate.getMaxStackSize(), required.get(candidate)))
-              .findFirst()
-              .orElse(item);
-    if (stock == null || !canRefill(worker, level, item)) {
+    if (stock == null) {
       stocked = false;
       changed(level);
       return false;
     }
     worker.building.perimeterRoute(null);
-    if (!worker.travelTo(
-        chest, "Collecting from construction chest", "Collecting from construction chest"))
+    if (!travel(
+        worker, chest, "Collecting from construction chest", "Collecting from construction chest"))
       return true;
     // Leave surplus at the site, then take the next working load in blueprint order.
+    Map<Item, Integer> retained = new LinkedHashMap<>(required);
+    retained.replaceAll((material, count) -> Math.min(material.getMaxStackSize(), count));
+    if (!Storage.accepts(worker.cargo, new ItemStack(item))) {
+      for (int slot = worker.cargo.getSlots() - 1; slot >= 0; slot--) {
+        ItemStack held = worker.cargo.getStackInSlot(slot);
+        if (!held.isEmpty() && !held.is(item)) {
+          retained.put(
+              held.getItem(), Math.max(0, worker.mining.carried(held.getItem()) - held.getCount()));
+          break;
+        }
+      }
+    }
     for (int slot = 0; slot < worker.cargo.getSlots(); slot++) {
       Item held = worker.cargo.getStackInSlot(slot).getItem();
       BuildingProject.move(
           worker.cargo,
           slot,
           stock,
-          Math.max(
-              0,
-              worker.mining.carried(held)
-                  - Math.min(held.getMaxStackSize(), required.getOrDefault(held, 0))));
+          Math.max(0, worker.mining.carried(held) - retained.getOrDefault(held, 0)));
+    }
+    for (int slot = 0; slot < worker.cargo.getSlots(); slot++) {
+      ItemStack held = worker.cargo.getStackInSlot(slot);
+      if (!held.isEmpty()
+          && worker.mining.carried(held.getItem()) > retained.getOrDefault(held.getItem(), 0)) {
+        chestFull(worker, retained);
+        return true;
+      }
+    }
+    if (!canRefill(worker, level, item)) {
+      wanted = item;
+      stocked = false;
+      changed(level);
+      return false;
     }
     for (int slot = 0; slot < stock.getSlots(); slot++)
       if (stock.getStackInSlot(slot).is(item))
@@ -290,19 +388,33 @@ public final class ConstructionSupply {
     Station site = worker.station();
     // The assigned Builder worksite is the builder's home storage. Never put cleanup
     // cargo back into this or another project's temporary supply chest.
-    for (BlockPos pos : site.chests) {
-      if (reserved(level, pos)) continue;
+    for (BlockPos pos :
+        site.chests.stream()
+            .sorted(
+                Comparator.comparingDouble(
+                        (BlockPos p) ->
+                            p.equals(depositing) ? -1 : worker.distanceToSqr(Vec3.atCenterOf(p)))
+                    .thenComparingLong(BlockPos::asLong))
+            .toList()) {
+      if (reserved(level, pos) || (site.flags(pos) & 1) == 0) continue;
       var stock = Storage.handler(level, pos, site);
       if (stock == null) continue;
       boolean fits = false;
       for (int slot = 0; slot < worker.cargo.getSlots(); slot++)
         if (!worker.cargo.getStackInSlot(slot).isEmpty()
             && Storage.accepts(stock, worker.cargo.getStackInSlot(slot))) fits = true;
-      if (!fits || !worker.canReach(pos)) continue;
-      if (worker.travelTo(
-          pos, "Returning construction supplies home", "Storing construction supplies"))
+      if (!fits) continue;
+      if (!pos.equals(depositing) && !worker.canReach(pos)) {
+        if (worker.pathDeferred) return true;
+        continue;
+      }
+      depositing = pos;
+      if (travel(
+          worker, pos, "Returning construction supplies home", "Storing construction supplies")) {
         for (int slot = 0; slot < worker.cargo.getSlots(); slot++)
           BuildingProject.move(worker.cargo, slot, stock, 64);
+        depositing = null;
+      }
       return true;
     }
     return false;
@@ -324,14 +436,18 @@ public final class ConstructionSupply {
         if (level.getBlockEntity(chest) instanceof ChestBlockEntity entity
             && entity.getPersistentData().hasUUID(OWNER)
             && project.id.equals(entity.getPersistentData().getUUID(OWNER))) {
-          worker.state("Free the construction chest lid and keep it separate");
+          project.blocked(
+              worker,
+              chest,
+              "Construction materials chest cannot open",
+              "Clear its lid and keep this temporary chest separate from adjacent chests.");
           return;
         }
         chest = null;
         changed(level);
         return;
       }
-      if (!worker.travelTo(chest, "Packing construction chest", "Packing construction chest"))
+      if (!travel(worker, chest, "Packing construction chest", "Packing construction chest"))
         return;
       for (int slot = 0; slot < stock.getSlots(); slot++)
         BuildingProject.move(stock, slot, worker.cargo, 64);
@@ -376,11 +492,19 @@ public final class ConstructionSupply {
     CompoundTag tag = new CompoundTag();
     if (chest != null) tag.putLong("Chest", chest.asLong());
     tag.putBoolean("Stocked", stocked);
+    if (wanted != null)
+      tag.putString(
+          "Wanted", net.minecraft.core.registries.BuiltInRegistries.ITEM.getKey(wanted).toString());
     return tag;
   }
 
   public void load(CompoundTag tag) {
     chest = tag.contains("Chest") ? BlockPos.of(tag.getLong("Chest")) : null;
     stocked = tag.getBoolean("Stocked");
+    var itemId = net.minecraft.resources.ResourceLocation.tryParse(tag.getString("Wanted"));
+    wanted =
+        itemId == null
+            ? null
+            : net.minecraft.core.registries.BuiltInRegistries.ITEM.getOptional(itemId).orElse(null);
   }
 }

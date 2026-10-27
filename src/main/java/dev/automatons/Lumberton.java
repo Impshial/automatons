@@ -585,7 +585,15 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         .info("{} at {}: {} (flags {})", getUUID(), blockPosition(), message, alerts);
   }
 
+  public CompoundTag workIssue = new CompoundTag();
+
+  public void blocked(BlockPos at, String reason, String remedy) {
+    state(reason);
+    workIssue = WorkIssue.at((ServerLevel) level(), at, reason, remedy);
+  }
+
   public void state(String text) {
+    if (!text.equals(status())) workIssue = new CompoundTag();
     if (!text.equals("Chopping")
         && !text.equals("Clearing leaves")
         && !text.equals("Processing timber")
@@ -878,11 +886,48 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
     return worksiteAccess.canRoute(p) || inReach(p) || pathTo(p) != null;
   }
 
+  public void resetWorkPath() {
+    routes.clear();
+    pathTarget = null;
+    nextPath = 0;
+    navigation.stop();
+  }
+
+  private BlockPos travelDestination;
+  private Vec3 travelProgress;
+  private long travelProgressAt;
+
+  public boolean travelStalled(BlockPos target) {
+    return target.equals(travelDestination) && level().getGameTime() - travelProgressAt >= 100;
+  }
+
+  private void travelState(BlockPos target, String activity) {
+    if (travelStalled(target) && !pathDeferred) {
+      blocked(
+          target,
+          "Cannot reach work destination",
+          "No movement for five seconds while trying to "
+              + activity.toLowerCase(java.util.Locale.ROOT)
+              + ". Worker at "
+              + blockPosition().toShortString()
+              + ". Check the route to this destination for obstacles, closed access or missing"
+              + " ground.");
+    } else state(activity);
+  }
+
   public boolean travelTo(BlockPos p, String moving, String arrived) {
+    if (!p.equals(travelDestination)
+        || travelProgress == null
+        || position().distanceToSqr(travelProgress) > .25) {
+      travelDestination = p;
+      travelProgress = position();
+      travelProgressAt = level().getGameTime();
+    }
     if (worksiteAccess.travel(p)) return false;
     if (inReach(p)) {
       navigation.stop();
       blockedSince = -1;
+      travelProgressAt = level().getGameTime();
       state(arrived);
       return true;
     }
@@ -894,9 +939,13 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       Vec3 feet = Vec3.atBottomCenterOf(end);
       if (reachesFrom(feet, p)
           && position().distanceToSqr(feet) < 2.25
-          && position().distanceToSqr(feet) > .000001) {
+          && position().distanceToSqr(feet) > .000001
+          && !level()
+              .getBlockCollisions(this, getBoundingBox().expandTowards(feet.subtract(position())))
+              .iterator()
+              .hasNext()) {
         moveControl.setWantedPosition(feet.x, feet.y, feet.z, 1);
-        state(moving);
+        travelState(p, moving);
         return false;
       }
     }
@@ -905,7 +954,7 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
         || !pathTarget.equals(p)
         || navigation.isDone()) {
       if (tickCount < nextPath && p.equals(pathTarget) && navigation.isDone()) {
-        state("Waiting for path");
+        travelState(p, "Waiting for path");
         return false;
       }
       Path path = pathTo(p);
@@ -914,12 +963,12 @@ public class Lumberton extends PathfinderMob implements MenuProvider {
       if (path == null) {
         navigation.stop();
         if (!pathDeferred && blockedSince < 0) blockedSince = level().getGameTime();
-        state(pathDeferred ? "Replanning" : "Waiting for path");
+        travelState(p, pathDeferred ? "Replanning" : "Waiting for path");
         return false;
       }
       navigation.moveTo(path, 1);
     }
-    state(moving);
+    travelState(p, moving);
     return false;
   }
 

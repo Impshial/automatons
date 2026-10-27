@@ -13,6 +13,7 @@ library = Path('F:/Minecraft/Automatons')
 version = re.search(r'(?m)^mod_version=(.+)$', (root / 'gradle.properties').read_text()).group(1).strip()
 parser = argparse.ArgumentParser()
 parser.add_argument('--client', type=Path, required=True)
+parser.add_argument('--focused-log', default='expansion-tests')
 args = parser.parse_args()
 client = args.client.resolve()
 assert client.is_relative_to((root / 'build/packaged-smoke').resolve())
@@ -23,7 +24,8 @@ installed = Path('C:/Users/impsh/curseforge/minecraft/Instances/Rackworks Tester
 assert installed.is_file() and sha(installed) == sha(jar), 'Install the verified JAR first'
 assert len(list(installed.parent.glob('automatons-*.jar'))) == 1
 counts = {}
-for name in ['full-regression-tests', 'expansion-tests']:
+assert re.fullmatch(r'[a-z0-9-]+', args.focused_log), 'Expected a build log basename'
+for name in ['full-regression-tests', args.focused_log]:
     log = read(root / f'build/{name}.log')
     match = re.search(r'All (\d+) required tests passed', log)
     assert match and 'BUILD SUCCESSFUL' in log and 'Exception stopping' not in log, name
@@ -42,7 +44,7 @@ target, source = release / jar.name, release / f'automatons-{version}-source.zip
 assert not target.exists() and not source.exists(), 'Never overwrite a released archive'
 evidence = library / 'verification' / version
 evidence.mkdir(parents=True, exist_ok=True)
-for pattern in ['expansion-*.log', 'full-regression*.log']:
+for pattern in ['expansion-*.log', 'full-regression*.log', 'builder-*.log']:
     for path in (root / 'build').glob(pattern):
         shutil.copy2(path, evidence / path.name)
 for name in ['instance-smoke.log', 'smoke-launch.json']:

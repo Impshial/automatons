@@ -119,6 +119,7 @@ public final class Mining {
   }
 
   private void service(Station s, String reason, int flags) {
+    if (reason.equals("Needs capable tool")) reason = "Needs " + requiredTool();
     if (reason.startsWith("Needs") && (flags & 16) != 0) flags = 0;
     if (!reason.startsWith("Needs")
         && !reason.equals("Cargo full")
@@ -318,6 +319,7 @@ public final class Mining {
 
   public boolean wants(ItemStack stack) {
     if (Inventories.tool(2, stack)) {
+      if (needsTool() && !acceptsNeededTool(stack)) return false;
       if (replacementSlot(stack) >= 0) return true;
       for (int i = 0; i < 3; i++) if (w.tools.getStackInSlot(i).isEmpty()) return true;
     }
@@ -330,6 +332,9 @@ public final class Mining {
   }
 
   public int replacementSlot(ItemStack candidate) {
+    if (missingQuarryPickaxe() && Inventories.pick(candidate)) {
+      for (int i = 0; i < 3; i++) if (!Inventories.pick(w.tools.getStackInSlot(i))) return i;
+    }
     if (targetState == null
         || !MiningRules.capable(candidate, targetState)
         || MiningRules.select(w, targetState) >= 0) return -1;
@@ -338,15 +343,27 @@ public final class Mining {
   }
 
   public boolean needsTool() {
+    if (missingQuarryPickaxe()) return true;
     if (targetState != null) return MiningRules.select(w, targetState) < 0;
     for (int i = 0; i < 3; i++) if (Inventories.pick(w.tools.getStackInSlot(i))) return false;
     return true;
   }
 
   public boolean acceptsNeededTool(ItemStack candidate) {
+    if (missingQuarryPickaxe()) return Inventories.pick(candidate);
     return targetState == null
         ? Inventories.pick(candidate)
         : MiningRules.capable(candidate, targetState);
+  }
+
+  private boolean missingQuarryPickaxe() {
+    if (w.job() != WorkerJob.QUARRYTON) return false;
+    for (int i = 0; i < 3; i++) if (Inventories.pick(w.tools.getStackInSlot(i))) return false;
+    return true;
+  }
+
+  private String requiredTool() {
+    return missingQuarryPickaxe() ? "a usable Pickaxe" : MiningRules.requiredTool(targetState);
   }
 
   public boolean courierTravel(MinePlan mine, BlockPos destination, String message) {
@@ -486,13 +503,13 @@ public final class Mining {
       if (!available) {
         w.getNavigation().stop();
         w.alerts = serviceFlags;
-        w.state(serviceReason + " — waiting for supplies");
+        serviceWait(" — waiting for supplies");
         return;
       }
     }
     if (returnToSurface()) return;
     if (level().getGameTime() < retry) {
-      w.state(serviceReason);
+      serviceWait("");
       return;
     }
     w.pathDeferred = false;
@@ -520,7 +537,57 @@ public final class Mining {
     blockedAt = -1;
     retry = level().getGameTime() + 40;
     w.alerts = serviceFlags;
-    w.state(serviceReason);
+    serviceWait("");
+  }
+
+  private void serviceWait(String suffix) {
+    if (serviceFlags != 1 || !needsTool()) {
+      w.state(serviceReason + suffix);
+      return;
+    }
+    String reason = "Needs " + requiredTool();
+    String equipped =
+        java.util.stream.IntStream.range(0, w.tools.getSlots())
+            .mapToObj(
+                i -> {
+                  ItemStack tool = w.tools.getStackInSlot(i);
+                  return "Slot "
+                      + (i + 1)
+                      + ": "
+                      + (tool.isEmpty()
+                          ? "empty"
+                          : tool.getHoverName().getString()
+                              + (tool.isDamageableItem()
+                                  ? " ("
+                                      + (tool.getMaxDamage() - tool.getDamageValue())
+                                      + " durability left)"
+                                  : ""));
+                })
+            .collect(java.util.stream.Collectors.joining("; "));
+    String action =
+        "Put "
+            + requiredTool()
+            + " in an equipment slot or an accessible worksite supply chest. "
+            + equipped
+            + ". "
+            + (missingQuarryPickaxe()
+                ? "Quarrytons require a usable pickaxe before excavation and a replacement when it"
+                    + " breaks. A shovel is optional and cannot replace the required pickaxe."
+                : targetState == null
+                    ? "A pickaxe is required before selecting the next mining block."
+                    : "None of the equipped tools can harvest this block. The tool must have"
+                        + " durability remaining and meet the block's harvest requirement.");
+    if (target != null && targetState != null) w.blocked(target, reason + suffix, action);
+    else {
+      w.state(reason + suffix);
+      w.workIssue = new CompoundTag();
+      w.workIssue.putString("Reason", reason + suffix);
+      w.workIssue.putString("Block", "No mining block selected yet");
+      w.workIssue.putString(
+          "Coordinates", "Not selected; worker at " + w.blockPosition().toShortString());
+      w.workIssue.putString("Dimension", level().dimension().location().toString());
+      w.workIssue.putString("Action", action);
+    }
   }
 
   public void tick(Station s) {
@@ -593,6 +660,10 @@ public final class Mining {
     }
     if (servicing) {
       serviceTick(s);
+      return;
+    }
+    if (missingQuarryPickaxe()) {
+      service(s, "Needs capable tool", 1);
       return;
     }
     if (level().getGameTime() < retry) {
@@ -2138,6 +2209,16 @@ public final class Mining {
       w.setDeltaMovement(Vec3.ZERO);
     }
     if (climb > 0 || exiting) return true;
+    // A hillside below the quarry entrance is still surface terrain. Only the actual pit,
+    // shaft, or a recorded excavated access cell needs the quarry's ascent controller.
+    if (access.quarry != null
+        && !atShaft()
+        && !access.quarry.contains(w.blockPosition())
+        && !access.passage.contains(w.blockPosition().asLong())
+        && !access.passage.contains(w.blockPosition().below().asLong())) {
+      stopLadderHold();
+      return false;
+    }
     if (w.getY() >= access.entrance.getY() - .2) {
       stopLadderHold();
       return false;

@@ -66,9 +66,9 @@ public class TotemRenderer implements BlockEntityRenderer<Station> {
 
   @Override
   public boolean shouldRenderOffScreen(Station s) {
-    return s.alerts != 0
-        || s.buildOutlineMin != null
-        || s.mine != null && s.mine.stage == MinePlan.Stage.ARCH;
+    // Registration happens when the chunk is compiled, often before a Totem is configured.
+    // Keep it in the global block-entity pass so a later outline is not culled with its anchor.
+    return s.isTotem();
   }
 
   private static void outline(

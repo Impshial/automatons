@@ -27,7 +27,11 @@ assert next(p for p in model['parts'] if p['name']=='head')['size']==[9,8,8]
 assert next(p for p in model['parts'] if p['name']=='body')['size']==[9,9,6]
 assert set(p['job'] for p in model['parts'] if p['job']>0)==set(range(1,13))
 assert next(p for p in model['parts'] if p['name']=='guard_head')['origin'][1]+next(p for p in model['parts'] if p['name']=='guard_head')['from'][1]==-16
-assert next(p for p in model['parts'] if p['name']=='guard_body')['size']==[12,14,8]
+assert next(p for p in model['parts'] if p['name']=='guard_body')['size']==[12,16,8]
+guard_head=next(p for p in model['parts'] if p['name']=='guard_head')
+guard_body=next(p for p in model['parts'] if p['name']=='guard_body')
+assert guard_head['size']==[11,11,10]
+assert guard_body['origin'][1]+guard_body['from'][1]-(guard_head['origin'][1]+guard_head['from'][1]+guard_head['size'][1])==1, 'Guardington should have the same one-unit neck gap as ordinary Automatons'
 assert len({p['name'] for p in model['parts']})==len(model['parts'])
 for path in (resources/'assets/automatons/models/block').glob('*.json'):
     m=json.loads(path.read_text())
@@ -44,3 +48,8 @@ for path in (resources/'assets/automatons/models/block').glob('*.json'):
             uv=data['uv'];expected=(dimensions[0],dimensions[1]) if face in ['north','south'] else (dimensions[2],dimensions[1]) if face in ['east','west'] else (dimensions[0],dimensions[2])
             assert (uv[2]-uv[0],uv[3]-uv[1])==expected,(path,face)
 print(f'PASS: {count} JSON assets, {len(textures)} texture dimensions, thirteen profession appearances, 26-unit ordinary / 40-unit armored rigs, non-overlapping entity UVs, and block-face UV density.')
+
+from worker_surfaces import build, audit, OUTPUT
+surfaces = build(model)
+audit(surfaces, model)
+assert json.loads(OUTPUT.read_text(encoding="utf-8")) == surfaces, "Worker surface mesh is stale"

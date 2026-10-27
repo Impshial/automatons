@@ -19,9 +19,11 @@ public final class Building {
   private BlockPos idleSpot;
   private UUID idleShed;
   private long nextIdlePath;
+  public final BuilderAccess access;
 
   public Building(Lumberton worker) {
     w = worker;
+    access = new BuilderAccess(worker);
   }
 
   public void lookAt(BlockPos target) {
@@ -56,6 +58,7 @@ public final class Building {
   }
 
   public void release() {
+    access.reset();
     perimeterRoute = null;
     idleSpot = null;
     idleShed = null;
@@ -134,12 +137,17 @@ public final class Building {
       return;
     }
     w.alerts = 0;
+    if (!p.clearSite(w, destination)) {
+      p.reason = w.status();
+      return;
+    }
     if (!p.supplies.prepare(w, destination)) {
       p.reason = w.status();
       return;
     }
     p.tick(w, destination);
     if (!p.ready
+        && p.supplies.chest == null
         && WorkSupplies.full(w)
         && (w.status().equals("Unload construction cargo")
             || w.status().startsWith("Waiting for materials:"))) {
@@ -169,6 +177,17 @@ public final class Building {
       w.running.idle("Waiting for construction requests");
       return;
     }
+    // Already standing safely inside is success; reaching an arbitrary preferred center is not
+    // a prerequisite for being home. The schematic floor may be above the Totem's anchor height.
+    AABB interior = shed.bounds(level).deflate(1, 0, 1);
+    if (interior.contains(w.position()) && freeIdleSpot(level, w.blockPosition())) {
+      w.resetWorkPath();
+      ((WorkerMoveControl) w.getMoveControl()).stop();
+      idleSpot = w.blockPosition();
+      idleShed = shed.id;
+      w.state("Waiting for construction requests");
+      return;
+    }
     if (!shed.id.equals(idleShed)) {
       idleShed = shed.id;
       idleSpot = null;
@@ -188,7 +207,7 @@ public final class Building {
       }
     } else idleSpot = null;
     if (level.getGameTime() < nextIdlePath) {
-      w.state("Waiting for access to Builder shed");
+      if (w.workIssue.isEmpty()) w.state("Planning return to Builder shed");
       return;
     }
     nextIdlePath = level.getGameTime() + 20;
@@ -196,8 +215,10 @@ public final class Building {
     List<BlockPos> candidates = new ArrayList<>();
     for (int x = 2; x < template.size.getX() - 2; x++)
       for (int z = 2; z < template.size.getZ() - 2; z++) {
-        BlockPos pos = shed.at(level, x, template.anchor.getY(), z);
-        if (freeIdleSpot(level, pos)) candidates.add(pos);
+        for (int dy = 0; dy <= 2; dy++) {
+          BlockPos pos = shed.at(level, x, template.anchor.getY() + dy, z);
+          if (freeIdleSpot(level, pos)) candidates.add(pos);
+        }
       }
     Vec3 center = shed.bounds(level).getCenter();
     candidates.sort(
@@ -206,7 +227,10 @@ public final class Building {
                     p.equals(idleSpot) ? -1 : p.distToCenterSqr(center.x, p.getY() + .5, center.z))
             .thenComparingLong(BlockPos::asLong));
     for (BlockPos pos : candidates) {
-      if (!WorldEvents.pathBudget()) break;
+      if (!WorldEvents.pathBudget()) {
+        w.state("Planning return to Builder shed");
+        return;
+      }
       var path = w.getNavigation().createPath(pos, 0);
       if (path != null && path.canReach()) {
         idleSpot = pos;
@@ -217,6 +241,14 @@ public final class Building {
     }
     w.getNavigation().stop();
     ((WorkerMoveControl) w.getMoveControl()).stop();
-    w.state("Waiting for access to Builder shed");
+    BlockPos destination = candidates.isEmpty() ? shed.entrance(level) : candidates.get(0);
+    w.blocked(
+        destination,
+        "Cannot reach a free waiting spot inside Builder shed",
+        "No construction is assigned. Worker is at "
+            + w.blockPosition().toShortString()
+            + ". Clear the shed entrance and an interior floor space with two blocks of headroom."
+            + " The location shown is the attempted destination; no specific obstructing block was"
+            + " identified.");
   }
 }

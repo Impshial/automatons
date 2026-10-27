@@ -102,3 +102,14 @@ The other failure exposed a real ranch bug: the dispatched animal's lead could b
 All 277 full regression tests passed, followed by clean saving/shutdown and BUILD SUCCESSFUL. All 44 focused tests also passed. Final packaged review 20261027-103656 completed 39 captures and current guide validation; the client exited 0. Windows locked its disposable JAR during the old wrapper's cleanup, after the review had finished. The isolated harness now retains exact reviewed artifacts instead of deleting them. No live world was used.
 
 Compared all 654 JAR entries: server-tested and client-reviewed binaries differ only by the manifest build timestamp. Installed the exact client-reviewed 0.10.0 JAR, SHA256 50FC9D48A292C3443211DF564E875E85178D8CBCA484021C46E9F877F872890A. The installer updated 33 guide files without local-edit conflicts, verified the installed hash and preserved 0.9.1 in .automatons-release-backups/20261027-105036-474. Player worlds are untouched. Versioned distribution includes source, ten schematic layouts and material bills, handbook, receipts and screenshots. Multiplayer, long-duration play and broad third-party compatibility remain manual; use a fresh test world.
+
+
+## 0.10.1 player-feedback corrections
+
+Implemented Builder assignment/build-list UI, shared Totem material dialogs, inventory-key handling, persistent shed supply retries, stable chest destinations, precise full-chest errors with retained cargo, physical access clearing, full-footprint preparation to 16 blocks with real recoverable climbing supports, and idle arrival inside the Builder Shed. Quarrytons require usable pickaxes and report exact tool tiers and target details; recalled workers on lower hillsides no longer turn back to the quarry.
+
+Building reservations now reject perimeter overlap across elevation changes, rejected placement exposes named protected/reserved regions in green, and full yellow perimeters remain registered/rendered when looking away from the anchor. Hard failures have a separate details dialog with block identity, coordinates, dimension and remedy.
+
+Runtime worker geometry now removes buried and coincident surfaces from authoring solids. The original 0.10.0 cuboid validation covered UV regions, not all visible intersections; the new mesh audit explicitly covers all 14 variants, articulated standing groups and base boots. Guardington has a taller torso, wider/taller head and one-unit neck gap. The final renderer was reviewed in standing, elevated-angle and depleted poses.
+
+All 289 full regressions and 46 focused worksite tests pass with clean shutdown. The final client review captured 50 views, validated the guide and Builder GUI, saved and exited 0. Only client-model assets/class and build timestamp changed after the full server suite; gameplay classes match byte for byte. Final release and installation status is recorded in VERIFICATION.md.

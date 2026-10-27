@@ -14,6 +14,8 @@ Configure a Building Totem, equip an ordinary Automaton with a Hammer and assign
 
 Supply actual materials in reachable chests outside the footprint. Partial kits are useful. The missing-material list includes real chest halves, ladders, machines, frames, display items and armor stands. Containers and stands begin empty. Builders place from supported positions outside the footprint and preserve progress through shortages and reloads.
 
-The supplied schematic geometry, orientation and explicit clearing cells govern the new layouts. Existing valuable block entities are not overwritten. Move a reported conflicting chest or workstation yourself, then resume. Omitted cells are preserved, and changing a Totem's profession never automatically demolishes its old building.
+Before placing new structure, the Builder clears natural obstructions throughout the footprint up to 16 blocks above the Totem, including cells omitted from the schematic. Supply 16 dirt or wooden plank blocks for temporary climbing when high obstacles require it; those supports are recovered before construction continues. Correct existing building blocks and valuable containers are preserved. Move a reported conflicting chest or workstation yourself, then resume. Changing a Totem's profession never automatically demolishes its old building.
+
+The worker screen shows its assigned building and that project's Build List. The Totem opens the same material table as the Pedestal. Missing materials are checked again in every eligible Builder's Shed chest; stock delivered later can resume work. If the temporary construction chest cannot accept carried items, Details identifies the chest and items that need space. Persistent access and protection problems also provide coordinates and corrective action.
 
 [Builder shed](../worksites/builders-shed.md).

@@ -13,6 +13,7 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
       new ModelLayerLocation(Automatons.id("lumberton"), "main");
   public final ModelPart root, head, body, leftArm, rightArm, leftLeg, rightLeg;
   private final boolean armored;
+  private int appearance;
 
   public LumbertonModel(ModelPart root) {
     this(root, false);
@@ -21,6 +22,7 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
   public LumbertonModel(ModelPart root, boolean armored) {
     this.root = root;
     this.armored = armored;
+    appearance = armored ? 13 : 0;
     String prefix = armored ? "guard_" : "";
     head = root.getChild(prefix + "head");
     body = root.getChild(prefix + "body");
@@ -502,12 +504,12 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
     PartDefinition mage_robePart =
         bodyPart.addOrReplaceChild(
             "mage_robe",
-            CubeListBuilder.create().texOffs(76, 114).addBox(-5f, 0f, -4f, 10f, 13f, 8f),
+            CubeListBuilder.create().texOffs(76, 114).addBox(-5f, 0f, -4f, 10f, 9f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition mage_trimPart =
         bodyPart.addOrReplaceChild(
             "mage_trim",
-            CubeListBuilder.create().texOffs(114, 114).addBox(-1f, 0f, -4.5f, 2f, 13f, 1f),
+            CubeListBuilder.create().texOffs(114, 114).addBox(-1f, 0f, -4.5f, 2f, 9f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition mage_sleeve_rPart =
         right_armPart.addOrReplaceChild(
@@ -532,148 +534,153 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
     PartDefinition mage_hat_1Part =
         headPart.addOrReplaceChild(
             "mage_hat_1",
-            CubeListBuilder.create().texOffs(0, 137).addBox(-3.0f, -12.5f, -3.0f, 6f, 2f, 6f),
+            CubeListBuilder.create().texOffs(0, 134).addBox(-3.0f, -12.5f, -3.0f, 6f, 2f, 6f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition mage_hat_2Part =
         headPart.addOrReplaceChild(
             "mage_hat_2",
-            CubeListBuilder.create().texOffs(26, 137).addBox(-2.0f, -14.5f, -2.0f, 4f, 2f, 4f),
+            CubeListBuilder.create().texOffs(26, 134).addBox(-2.0f, -14.5f, -2.0f, 4f, 2f, 4f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition mage_hat_3Part =
         headPart.addOrReplaceChild(
             "mage_hat_3",
-            CubeListBuilder.create().texOffs(44, 137).addBox(-1.0f, -16.5f, -1.0f, 2f, 2f, 2f),
+            CubeListBuilder.create().texOffs(44, 134).addBox(-1.0f, -16.5f, -1.0f, 2f, 2f, 2f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_headPart =
         root.addOrReplaceChild(
             "guard_head",
-            CubeListBuilder.create().texOffs(54, 137).addBox(-4.5f, -10f, -5f, 9f, 10f, 10f),
-            PartPose.offset(0f, -6f, 0f));
+            CubeListBuilder.create().texOffs(54, 134).addBox(-5.5f, -11f, -5f, 11f, 11f, 10f),
+            PartPose.offset(0f, -5f, 0f));
     PartDefinition guard_bodyPart =
         root.addOrReplaceChild(
             "guard_body",
-            CubeListBuilder.create().texOffs(94, 137).addBox(-6f, 0f, -4f, 12f, 14f, 8f),
-            PartPose.offset(0f, -2f, 0f));
+            CubeListBuilder.create().texOffs(98, 134).addBox(-6f, 0f, -4f, 12f, 16f, 8f),
+            PartPose.offset(0f, -4f, 0f));
     PartDefinition guard_right_armPart =
         root.addOrReplaceChild(
             "guard_right_arm",
-            CubeListBuilder.create().texOffs(136, 137).addBox(-5f, 0f, -3f, 5f, 19f, 6f),
-            PartPose.offset(-6f, -2f, 0f));
+            CubeListBuilder.create().texOffs(140, 134).addBox(-5f, 0f, -3f, 5f, 21f, 6f),
+            PartPose.offset(-6f, -4f, 0f));
     PartDefinition guard_left_armPart =
         root.addOrReplaceChild(
             "guard_left_arm",
-            CubeListBuilder.create().texOffs(160, 137).addBox(0f, 0f, -3f, 5f, 19f, 6f),
-            PartPose.offset(6f, -2f, 0f));
+            CubeListBuilder.create().texOffs(164, 134).addBox(0f, 0f, -3f, 5f, 21f, 6f),
+            PartPose.offset(6f, -4f, 0f));
     PartDefinition guard_right_legPart =
         root.addOrReplaceChild(
             "guard_right_leg",
-            CubeListBuilder.create().texOffs(184, 137).addBox(-2.5f, 0f, -3f, 5f, 12f, 6f),
+            CubeListBuilder.create().texOffs(188, 134).addBox(-2.5f, 0f, -3f, 5f, 12f, 6f),
             PartPose.offset(-3.5f, 12f, 0f));
     PartDefinition guard_left_legPart =
         root.addOrReplaceChild(
             "guard_left_leg",
-            CubeListBuilder.create().texOffs(208, 137).addBox(-2.5f, 0f, -3f, 5f, 12f, 6f),
+            CubeListBuilder.create().texOffs(212, 134).addBox(-2.5f, 0f, -3f, 5f, 12f, 6f),
             PartPose.offset(3.5f, 12f, 0f));
     PartDefinition guard_neckPart =
         root.addOrReplaceChild(
             "guard_neck",
-            CubeListBuilder.create().texOffs(232, 137).addBox(-3f, -6f, -3f, 6f, 4f, 6f),
+            CubeListBuilder.create().texOffs(0, 163).addBox(-3f, -5f, -3f, 6f, 1f, 6f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_helmet_topPart =
         guard_headPart.addOrReplaceChild(
             "guard_helmet_top",
-            CubeListBuilder.create().texOffs(0, 164).addBox(-5.5f, -10f, -5.5f, 11f, 2f, 11f),
+            CubeListBuilder.create().texOffs(26, 163).addBox(-6.5f, -11f, -5.5f, 13f, 2f, 11f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_helmet_backPart =
         guard_headPart.addOrReplaceChild(
             "guard_helmet_back",
-            CubeListBuilder.create().texOffs(46, 164).addBox(-5.5f, -8f, 4.5f, 11f, 8f, 1f),
+            CubeListBuilder.create().texOffs(76, 163).addBox(-6.5f, -9f, 4.5f, 13f, 9f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_helmet_rPart =
         guard_headPart.addOrReplaceChild(
             "guard_helmet_r",
-            CubeListBuilder.create().texOffs(72, 164).addBox(-5.5f, -8f, -5.5f, 2f, 8f, 10f),
+            CubeListBuilder.create().texOffs(106, 163).addBox(-6.5f, -9f, -5.5f, 2f, 9f, 10f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_helmet_lPart =
         guard_headPart.addOrReplaceChild(
             "guard_helmet_l",
-            CubeListBuilder.create().texOffs(98, 164).addBox(3.5f, -8f, -5.5f, 2f, 8f, 10f),
+            CubeListBuilder.create().texOffs(132, 163).addBox(4.5f, -9f, -5.5f, 2f, 9f, 10f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_chestplatePart =
         guard_bodyPart.addOrReplaceChild(
             "guard_chestplate",
-            CubeListBuilder.create().texOffs(124, 164).addBox(-6.5f, 1f, -5f, 13f, 10f, 2f),
+            CubeListBuilder.create().texOffs(158, 163).addBox(-6.5f, 1f, -5f, 13f, 12f, 2f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_corePart =
         guard_bodyPart.addOrReplaceChild(
             "guard_core",
-            CubeListBuilder.create().texOffs(156, 164).addBox(-1.5f, 3f, -5.5f, 3f, 4f, 1f),
+            CubeListBuilder.create().texOffs(190, 163).addBox(-1.5f, 3f, -5.5f, 3f, 4f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_shoulder_rightPart =
         guard_right_armPart.addOrReplaceChild(
             "guard_shoulder_right",
-            CubeListBuilder.create().texOffs(166, 164).addBox(-5.5f, -1f, -4f, 6f, 6f, 8f),
+            CubeListBuilder.create().texOffs(200, 163).addBox(-5.5f, -1f, -4f, 6f, 6f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_hand_rightPart =
         guard_right_armPart.addOrReplaceChild(
             "guard_hand_right",
-            CubeListBuilder.create().texOffs(196, 164).addBox(-5.5f, 14f, -3.5f, 6f, 5f, 7f),
+            CubeListBuilder.create().texOffs(230, 163).addBox(-5.5f, 16f, -3.5f, 6f, 5f, 7f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_boot_rightPart =
         guard_right_legPart.addOrReplaceChild(
             "guard_boot_right",
-            CubeListBuilder.create().texOffs(224, 164).addBox(-3f, 7f, -4f, 6f, 5f, 8f),
+            CubeListBuilder.create().texOffs(0, 184).addBox(-3f, 7f, -4f, 6f, 5f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_shoulder_leftPart =
         guard_left_armPart.addOrReplaceChild(
             "guard_shoulder_left",
-            CubeListBuilder.create().texOffs(0, 184).addBox(-0.5f, -1f, -4f, 6f, 6f, 8f),
+            CubeListBuilder.create().texOffs(30, 184).addBox(-0.5f, -1f, -4f, 6f, 6f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_hand_leftPart =
         guard_left_armPart.addOrReplaceChild(
             "guard_hand_left",
-            CubeListBuilder.create().texOffs(30, 184).addBox(-0.5f, 14f, -3.5f, 6f, 5f, 7f),
+            CubeListBuilder.create().texOffs(60, 184).addBox(-0.5f, 16f, -3.5f, 6f, 5f, 7f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition guard_boot_leftPart =
         guard_left_legPart.addOrReplaceChild(
             "guard_boot_left",
-            CubeListBuilder.create().texOffs(58, 184).addBox(-3f, 7f, -4f, 6f, 5f, 8f),
+            CubeListBuilder.create().texOffs(88, 184).addBox(-3f, 7f, -4f, 6f, 5f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition fishing_chairPart =
         root.addOrReplaceChild(
             "fishing_chair",
-            CubeListBuilder.create().texOffs(88, 184).addBox(-5f, 17f, -3f, 10f, 1f, 8f),
+            CubeListBuilder.create().texOffs(118, 184).addBox(-5f, 17f, -3f, 10f, 1f, 8f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition chair_rlPart =
         fishing_chairPart.addOrReplaceChild(
             "chair_rl",
-            CubeListBuilder.create().texOffs(126, 184).addBox(-5f, 18f, -3f, 1f, 6f, 1f),
+            CubeListBuilder.create().texOffs(156, 184).addBox(-5f, 18f, -3f, 1f, 6f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition chair_llPart =
         fishing_chairPart.addOrReplaceChild(
             "chair_ll",
-            CubeListBuilder.create().texOffs(132, 184).addBox(4f, 18f, -3f, 1f, 6f, 1f),
+            CubeListBuilder.create().texOffs(162, 184).addBox(4f, 18f, -3f, 1f, 6f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition chair_rbPart =
         fishing_chairPart.addOrReplaceChild(
             "chair_rb",
-            CubeListBuilder.create().texOffs(138, 184).addBox(-5f, 18f, 4f, 1f, 6f, 1f),
+            CubeListBuilder.create().texOffs(168, 184).addBox(-5f, 18f, 4f, 1f, 6f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition chair_lbPart =
         fishing_chairPart.addOrReplaceChild(
             "chair_lb",
-            CubeListBuilder.create().texOffs(144, 184).addBox(4f, 18f, 4f, 1f, 6f, 1f),
+            CubeListBuilder.create().texOffs(174, 184).addBox(4f, 18f, 4f, 1f, 6f, 1f),
             PartPose.offset(0f, 0f, 0f));
     PartDefinition chair_backPart =
         fishing_chairPart.addOrReplaceChild(
             "chair_back",
-            CubeListBuilder.create().texOffs(150, 184).addBox(-5f, 10f, 4f, 10f, 7f, 1f),
+            CubeListBuilder.create().texOffs(180, 184).addBox(-5f, 10f, 4f, 10f, 7f, 1f),
             PartPose.offset(0f, 0f, 0f));
     return LayerDefinition.create(mesh, 256, 256);
   }
 
   @Override
   public void setupAnim(Lumberton w, float limb, float amount, float age, float yaw, float pitch) {
+    appearance = armored ? 13 : Math.max(0, Math.min(12, w.job()));
+    // Sleeves and shoulder armor need real joint clearance from the torso throughout a swing.
+    float shoulder = WorkerSurfaces.shoulder(appearance);
+    rightArm.x = -shoulder;
+    leftArm.x = shoulder;
     // Job equipment visibility is derived from the synchronized, persistent job.
     if (!armored) {
       body.getChild("lumber_shirt").visible = w.job() == 1;
@@ -810,7 +817,7 @@ public class LumbertonModel extends EntityModel<Lumberton> implements ArmedModel
   @Override
   public void renderToBuffer(
       PoseStack p, VertexConsumer v, int light, int overlay, float r, float g, float b, float a) {
-    root.render(p, v, light, overlay, r, g, b, a);
+    WorkerSurfaces.render(root, appearance, p, v, light, overlay, r, g, b, a);
   }
 
   @Override

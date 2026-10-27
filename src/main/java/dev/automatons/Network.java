@@ -14,7 +14,8 @@ import net.minecraftforge.network.simple.SimpleChannel;
 
 public final class Network {
   public static final SimpleChannel CHANNEL =
-      NetworkRegistry.newSimpleChannel(Automatons.id("main"), () -> "10", "10"::equals, "10"::equals);
+      NetworkRegistry.newSimpleChannel(
+          Automatons.id("main"), () -> "10", "10"::equals, "10"::equals);
 
   public static void pickup(LuminaOrb orb, net.minecraft.world.entity.player.Player player) {
     CompoundTag n = new CompoundTag();
@@ -171,6 +172,12 @@ public final class Network {
             .mapToLong(Long::longValue)
             .toArray());
     send(p, new ClientData(1, 0, n));
+  }
+
+  public static void buildConflicts(ServerPlayer player, Station station) {
+    send(
+        player,
+        new ClientData(7, 0, BuildConflicts.packet(player.serverLevel(), station.setupConflicts)));
   }
 
   public static void requestProtection(ServerPlayer p, BlockPos selected, boolean protect) {

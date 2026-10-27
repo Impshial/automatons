@@ -233,7 +233,10 @@ public class WorkMenu extends AbstractContainerMenu {
       }
     }
     if (isTotem) {
-      if (action >= 161 && action <= 171) station.configure(WorksitePurpose.of(action - 160));
+      if (action >= 161 && action <= 171) {
+        station.configure(WorksitePurpose.of(action - 160));
+        Network.buildConflicts((ServerPlayer) p, station);
+      }
       if (action == 240) {
         station.recalled = !station.recalled;
         station.changed();
@@ -263,7 +266,10 @@ public class WorkMenu extends AbstractContainerMenu {
           station.changed();
         }
       }
-      if (action >= 61 && action <= 65) station.configure(WorksitePurpose.of(action - 60));
+      if (action >= 61 && action <= 65) {
+        station.configure(WorksitePurpose.of(action - 60));
+        Network.buildConflicts((ServerPlayer) p, station);
+      }
       if (action == 66 && station.project() == null) {
         station.orientation = station.orientation.getClockWise();
         station.changed();
@@ -353,16 +359,63 @@ public class WorkMenu extends AbstractContainerMenu {
   public CompoundTag describe() {
     CompoundTag n = new CompoundTag();
     Station buildStation = isTotem ? station : worker == null ? null : worker.station();
-    if (worker != null
-        && worker.job() == WorkerJob.BUILDINGTON
-        && worker.building.active() != null
-        && player.level().getBlockEntity(worker.building.active().anchor)
-            instanceof Station destination) buildStation = destination;
+    if (worker != null && worker.job() == WorkerJob.BUILDINGTON) {
+      // A builder's list is its accepted project, never its shed or the entire network.
+      buildStation = null;
+      BuildingProject active = worker.building.active();
+      if (active != null) {
+        n.putString(
+            "BuildingName",
+            active.purpose == WorksitePurpose.BUILDER ? "Builder's Shed" : active.purpose.label);
+        n.putString("BuildingLocation", active.anchor.toShortString());
+      }
+      if (active != null
+          && player.level().hasChunkAt(active.anchor)
+          && player.level().getBlockEntity(active.anchor) instanceof Station destination
+          && destination.identity.equals(active.totem)) {
+        buildStation = destination;
+        if (!destination.customName.isBlank())
+          n.putString("BuildingName", n.getString("BuildingName") + " — " + destination.customName);
+      }
+    }
+    n.putBoolean("HasBuild", buildStation != null);
     if (buildStation != null) {
       n.put("MineBuild", BuildMaterials.describe(buildStation, worker, false));
       n.put("WarehouseBuild", BuildMaterials.describe(buildStation, worker, true));
       n.putString("BuildTitle", buildStation.purpose.label + " — Build List");
     }
+    ListTag issues = new ListTag();
+    if (isTotem && !station.setupConflicts.isEmpty()) {
+      for (var conflict :
+          station.setupConflicts.stream().map(BuildConflicts.Conflict::name).distinct().toList()) {
+        var detail =
+            WorkIssue.at(
+                (ServerLevel) player.level(),
+                station.getBlockPos(),
+                "Building overlaps " + conflict,
+                "Move the Totem or rotate its entrance so the new building clears the green region."
+                    + " The conflicting reserved or protected land is highlighted in green for 60"
+                    + " seconds, including after closing this dialog. Retry to refresh the"
+                    + " outline.");
+        issues.add(detail);
+      }
+    }
+    if (worker != null && !worker.workIssue.isEmpty()) issues.add(worker.workIssue.copy());
+    BuildingProject activeProject =
+        worker != null && worker.job() == WorkerJob.BUILDINGTON
+            ? worker.building.active()
+            : isTotem ? station.project() : null;
+    if (activeProject != null
+        && !activeProject.issue.isEmpty()
+        && !issues.contains(activeProject.issue)) issues.add(activeProject.issue.copy());
+    if (isTotem)
+      for (Lumberton member : station.loadedWorkers())
+        if (!member.workIssue.isEmpty() && !issues.contains(member.workIssue)) {
+          CompoundTag problem = member.workIssue.copy();
+          problem.putString("Worker", member.getDisplayName().getString());
+          issues.add(problem);
+        }
+    n.put("Blockers", issues);
     n.putBoolean("Editable", canEdit());
     n.putInt("Lumina", Lumina.balance(player));
     n.putInt("LuminaThirds", Lumina.remainder(player));

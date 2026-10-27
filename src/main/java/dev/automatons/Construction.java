@@ -7,7 +7,8 @@ import net.minecraft.world.level.block.state.BlockState;
 /** Natural surface cover may change while a roof is built (grass, snow, tall plants). */
 public final class Construction {
   public static boolean matches(BlockState actual, BlockState target) {
-    if (target.is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK) && FarmPlan.soil(actual)) return true;
+    if (target.is(net.minecraft.world.level.block.Blocks.GRASS_BLOCK) && FarmPlan.soil(actual))
+      return true;
     if (actual.getBlock() != target.getBlock()) return false;
     for (var property : target.getProperties()) {
       String name = property.getName();
@@ -27,6 +28,15 @@ public final class Construction {
 
   public static boolean naturalChange(BlockState before, BlockState after) {
     return before != null && soft(before) && soft(after);
+  }
+
+  public static boolean naturalObstacle(BlockState state) {
+    return !state.isAir()
+        && (soft(state)
+            || state.is(net.minecraft.tags.BlockTags.LOGS)
+            || state.is(net.minecraft.tags.BlockTags.LEAVES)
+            || state.is(net.minecraft.tags.BlockTags.BASE_STONE_OVERWORLD)
+            || state.is(net.minecraft.tags.BlockTags.BASE_STONE_NETHER));
   }
 
   public static void placed(Lumberton worker, BlockPos pos, BlockState state) {

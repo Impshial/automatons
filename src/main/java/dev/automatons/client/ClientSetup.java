@@ -43,6 +43,9 @@ public final class ClientSetup {
 
   @SubscribeEvent
   public static void guides(RegisterClientReloadListenersEvent e) {
+    e.registerReloadListener(
+        (net.minecraft.server.packs.resources.ResourceManagerReloadListener)
+            manager -> WorkerSurfaces.reload());
     // Register before the first resource reload prepares its guide list. Client setup can run
     // later.
     Handbook.register();
@@ -69,6 +72,7 @@ public final class ClientSetup {
     var mc = Minecraft.getInstance();
     CompoundTag n = message.data();
     if (n == null) return;
+    if (message.kind() == 7) WorldOverlay.buildConflicts(n);
     if (message.kind() == 6
         && mc.player != null
         && mc.player.containerMenu instanceof MachineMenu menu

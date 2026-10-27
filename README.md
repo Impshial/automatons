@@ -1,4 +1,6 @@
 # Automatons — Minecraft 1.20.1 / Forge
+Current version **0.10.1** adds Builder supply recovery and 16-block site clearing, precise blocking-error details, shared build lists, reliable perimeter outlines, Quarryton recall fixes, and corrected worker models. See [changes](docs/CHANGELOG.md) and [verification](docs/VERIFICATION.md).
+
 Version **0.10.0** expands the existing six professions to thirteen. It adds Hunterton, Crafterton, Fisherton, Rancherton, Quarryton, Luminariton and the armored Guardington, using the supplied building schematics. Runnerton is the courier's current name.
 
 This is a fresh-world prerelease. Use Java 17, Forge 47.4.10 and GuideME 20.1.15, with matching mod versions on client and server. JEI 15.56.0.205 and JER 1.4.0.247 are optional client integrations.
@@ -37,6 +39,6 @@ The editable handbook is in `resourcepacks/Automatons-Guide`. Enable it in Resou
 
 `tools/test_release.ps1` builds and runs the full Forge GameTest suite; `-Expansion` selects expansion tests. Tests use disposable worlds under `build/gametest-redesign`. Also run `validate_assets.py`, `validate_handbook.py` and `verify_machine_package.py` from `tools`.
 
-The build output is `build/libs/automatons-0.10.0.jar`. Close Minecraft before installation. `tools/install_test_instance.ps1` targets Rackworks Tester, backs up the previous JAR, installs the handbook and verifies the copied hash. Versioned distributions use `F:/Minecraft/Automatons/releases`. Consult verification for the actual release status.
+The build output is `build/libs/automatons-0.10.1.jar`. Close Minecraft before installation. `tools/install_test_instance.ps1` targets Rackworks Tester, backs up the previous JAR, installs the handbook and verifies the copied hash. Versioned distributions use `F:/Minecraft/Automatons/releases`. Consult verification for the actual release status.
 
 The original schematic bundle is preserved under `reference/schematics-2026-10-27/Automatons-Schematics`. `tools/import_expansion.py` verifies and imports its ten native layouts, matching exports, metadata and material bills.
